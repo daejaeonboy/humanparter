@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { auth } from '../firebase';
 
 export interface UserProfile {
     id?: string;
@@ -92,14 +93,34 @@ export const searchUsers = async (query: string): Promise<UserProfile[]> => {
     return data || [];
 };
 
-// 서버 API 기본 URL
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+
+const getAuthenticatedApiHeaders = async () => {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+        throw new Error('로그인이 필요합니다.');
+    }
+
+    const idToken = await currentUser.getIdToken();
+    return {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${idToken}`,
+    };
+};
+
+const getApiBaseUrl = () => {
+    if (!API_BASE_URL) {
+        throw new Error('계정 보안 정보 변경 API가 아직 설정되지 않았습니다.');
+    }
+
+    return API_BASE_URL;
+};
 
 // Firebase 이메일 변경 (서버 API 호출)
 export const updateFirebaseEmail = async (firebaseUid: string, newEmail: string): Promise<void> => {
-    const response = await fetch(`${API_BASE_URL}/api/users/update-email`, {
+    const response = await fetch(`${getApiBaseUrl()}/api/users/update-email`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await getAuthenticatedApiHeaders(),
         body: JSON.stringify({ firebaseUid, newEmail })
     });
 
@@ -111,9 +132,9 @@ export const updateFirebaseEmail = async (firebaseUid: string, newEmail: string)
 
 // Firebase 비밀번호 변경 (서버 API 호출)
 export const updateFirebasePassword = async (firebaseUid: string, newPassword: string): Promise<void> => {
-    const response = await fetch(`${API_BASE_URL}/api/users/update-password`, {
+    const response = await fetch(`${getApiBaseUrl()}/api/users/update-password`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await getAuthenticatedApiHeaders(),
         body: JSON.stringify({ firebaseUid, newPassword })
     });
 

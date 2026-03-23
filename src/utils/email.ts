@@ -1,81 +1,96 @@
-// Email API 호출 유틸리티 (Firebase Cloud Functions)
+import type { QuoteInquiryPayload } from "../api/inquiryApi";
 
-/**
- * 6자리 랜덤 인증번호 생성
- */
-export const generateVerificationCode = () => {
-    return Math.floor(100000 + Math.random() * 900000).toString();
+const DEFAULT_SITE_EMAIL_API_URL =
+    "https://us-central1-human-partner.cloudfunctions.net/sendSiteEmail";
+const configuredSiteEmailApiUrl = (import.meta.env.VITE_SITE_EMAIL_API_URL || "").trim();
+const QUOTE_REQUEST_RECEIVER_EMAIL = "hm_solution@naver.com";
+
+const getSiteEmailApiUrl = () => {
+    if (configuredSiteEmailApiUrl) {
+        return configuredSiteEmailApiUrl;
+    }
+
+    return DEFAULT_SITE_EMAIL_API_URL;
 };
 
-/**
- * 이메일 발송 함수 (백엔드 API 호출)
- * @param toName 수신자 이름
- * @param toEmail 수신자 이메일
- * @param code 인증번호
- */
-export const sendVerificationEmail = async (toName: string, toEmail: string, code: string) => {
-    // HTML 템플릿 생성
+const sendSiteEmailRequest = async (params: {
+    to: string;
+    subject: string;
+    html: string;
+}) => {
+    const response = await fetch(getSiteEmailApiUrl(), {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(params),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.error || "Email send failed");
+    }
+
+    return response.json();
+};
+
+const escapeHtml = (value: string) =>
+    value
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+
+export const sendQuoteInquiryFallbackEmail = async (
+    payload: QuoteInquiryPayload,
+    requester?: {
+        userId?: string;
+        userName?: string;
+        userEmail?: string;
+    },
+) => {
+    const productList =
+        payload.neededProducts.length > 0
+            ? `<ul style="margin:8px 0 0; padding-left:18px;">${payload.neededProducts
+                  .map((item) => `<li>${escapeHtml(item)}</li>`)
+                  .join("")}</ul>`
+            : '<p style="margin:8px 0 0;">선택된 품목이 없습니다.</p>';
+
     const htmlContent = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
-            <div style="text-align: center; margin-bottom: 20px;">
-                <h1 style="color: #FF5B60; margin: 0;">마이스파트너</h1>
-                <p style="color: #666; font-size: 14px;">장소, 장비 </p>
+        <div style="font-family: Arial, sans-serif; max-width: 720px; margin: 0 auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 16px; color: #0f172a;">
+            <h1 style="margin: 0 0 8px; color: #001e45; font-size: 24px;">휴먼파트너 견적 문의 접수</h1>
+            <p style="margin: 0 0 20px; color: #475569; font-size: 14px;">
+                온라인 문의가 메일 fallback 경로로 접수되었습니다.
+            </p>
+
+            <div style="display: grid; gap: 12px; line-height: 1.6;">
+                <div><strong>업체명</strong><br/>${escapeHtml(payload.companyName)}</div>
+                <div><strong>담당자명</strong><br/>${escapeHtml(payload.contactName)}</div>
+                <div><strong>연락처</strong><br/>${escapeHtml(payload.phone)}</div>
+                <div><strong>이메일</strong><br/>${escapeHtml(payload.email)}</div>
+                <div><strong>필요 품목</strong>${productList}</div>
+                <div><strong>렌탈 시작일</strong><br/>${escapeHtml(payload.rentalStart || "-")}</div>
+                <div><strong>렌탈 종료일</strong><br/>${escapeHtml(payload.rentalEnd || "-")}</div>
+                <div><strong>예상 수량</strong><br/>${escapeHtml(payload.quantity || "-")}</div>
+                <div><strong>예산 범위</strong><br/>${escapeHtml(payload.budget || "-")}</div>
+                <div><strong>설치 / 회수 장소</strong><br/>${escapeHtml(payload.location || "-")}</div>
+                <div><strong>요청 내용</strong><br/><div style="margin-top: 8px; white-space: pre-wrap; padding: 12px; background: #f8fafc; border-radius: 10px;">${escapeHtml(payload.notes)}</div></div>
             </div>
-            
-            <div style="background-color: #f9f9f9; padding: 30px; border-radius: 8px; text-align: center;">
-                <h2 style="color: #333; margin-top: 0;">이메일 인증 안내</h2>
-                <p style="color: #555; line-height: 1.5;">
-                    안녕하세요, ${toName}님.<br/>
-                    행사어때 회원가입을 환영합니다.<br/>
-                    아래 인증번호를 회원가입 화면에 입력해주세요.
-                </p>
-                
-                <div style="margin: 30px 0;">
-                    <span style="display: inline-block; background-color: #fff; padding: 15px 30px; font-size: 24px; font-weight: bold; color: #FF5B60; border: 2px solid #FF5B60; border-radius: 5px; letter-spacing: 5px;">
-                        ${code}
-                    </span>
-                </div>
-                
-                <p style="color: #888; font-size: 12px;">
-                    본 메일은 발신 전용이며 회신되지 않습니다.<br/>
-                    인증번호는 10분간 유효합니다.
-                </p>
-            </div>
-            
-            <div style="text-align: center; margin-top: 20px; color: #aaa; font-size: 12px;">
-                &copy; 2026 Hangsaeottae. All rights reserved.
+
+            <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
+
+            <div style="font-size: 13px; color: #64748b; line-height: 1.7;">
+                <div><strong>Requester UID</strong>: ${escapeHtml(requester?.userId || "guest")}</div>
+                <div><strong>Requester Name</strong>: ${escapeHtml(requester?.userName || payload.contactName)}</div>
+                <div><strong>Requester Email</strong>: ${escapeHtml(requester?.userEmail || payload.email)}</div>
             </div>
         </div>
     `;
 
-    try {
-        // 로컬 환경(localhost)에서는 클라우드 함수 URL 직접 호출
-        // 배포 환경(firebase hosting)에서는 rewrites 규칙에 따라 상대 경로 호출
-        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        const apiUrl = isLocalhost
-            ? 'https://us-central1-human-partner.cloudfunctions.net/sendEmailVerification'
-            : '/api/email/verify';
-
-        const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                to: toEmail,
-                subject: '[행사어때] 회원가입 이메일 인증번호',
-                html: htmlContent
-            }),
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || '이메일 발송 실패');
-        }
-
-        return await response.json();
-    } catch (error) {
-        console.error('Email send failed:', error);
-        throw error;
-    }
+    return sendSiteEmailRequest({
+        to: QUOTE_REQUEST_RECEIVER_EMAIL,
+        subject: `[휴먼파트너 견적문의] ${payload.companyName} / ${payload.contactName}`,
+        html: htmlContent,
+    });
 };
