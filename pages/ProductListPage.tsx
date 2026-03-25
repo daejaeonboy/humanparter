@@ -2,10 +2,13 @@
 import { Container } from '../components/ui/Container';
 import { Loader2 } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { Seo } from '../components/Seo';
 import { getProducts, Product } from '../src/api/productApi';
 import { getAllNavMenuItems } from '../src/api/cmsApi';
+import { usePrerenderData } from '../src/prerender/context';
 import { supabase } from '../src/lib/supabase';
 import { MainCategoryTabs } from '../components/MainCategoryTabs';
+import { buildBreadcrumbStructuredData, normalizeMetaText, toAbsoluteUrl } from '../src/utils/seo';
 
 const ALL_CATEGORY = '전체';
 const PRODUCTS_PER_PAGE = 16;
@@ -14,10 +17,12 @@ export const ProductListPage: React.FC = () => {
     const [searchParams] = useSearchParams();
     const urlCategory = searchParams.get('category');
     const urlTitle = searchParams.get('title');
+    const prerenderData = usePrerenderData();
+    const preloadedList = prerenderData?.productList;
 
     const [activeCategory, setActiveCategory] = useState(ALL_CATEGORY);
-    const [products, setProducts] = useState<Product[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [products, setProducts] = useState<Product[]>(preloadedList?.products || []);
+    const [loading, setLoading] = useState(!preloadedList);
     const [displayedCategories, setDisplayedCategories] = useState<string[]>([ALL_CATEGORY]);
     const [currentPage, setCurrentPage] = useState(1);
 
@@ -25,14 +30,7 @@ export const ProductListPage: React.FC = () => {
     const [parentToChildMap, setParentToChildMap] = useState<Record<string, string[]>>({});
     const [currentGroup, setCurrentGroup] = useState<string | null>(null);
 
-    const fetchProducts = useCallback(async () => {
-        setLoading(true);
-        try {
-            const [productData, navItems] = await Promise.all([
-                getProducts(),
-                getAllNavMenuItems()
-            ]);
-
+    const applyProductData = useCallback((productData: Product[], navItems: Awaited<ReturnType<typeof getAllNavMenuItems>>) => {
             // Build category maps from nav_menu_items FIRST
             const pMap: Record<string, string[]> = {};
             const cMap: Record<string, string> = {};
@@ -47,7 +45,6 @@ export const ProductListPage: React.FC = () => {
                     return orderA - orderB;
                 });
 
-            // 1. Build hierarchy mapping
             sortedNavItems.forEach((item) => {
                 const name = item.name?.trim();
                 const parent = item.category?.trim();
@@ -67,7 +64,6 @@ export const ProductListPage: React.FC = () => {
                 cMap[name] = parent;
             });
 
-            // 2. Assign absolute sequence index (Top level Category first, then all its children)
             let absoluteIndex = 0;
             topCategories.forEach(parentName => {
                 categoryIndexMap[parentName] = absoluteIndex++;
@@ -78,7 +74,6 @@ export const ProductListPage: React.FC = () => {
                 }
             });
 
-            // Filter basic products
             const basicProducts = productData.filter((p) => {
                 const category = p.category || '';
                 return (
@@ -92,29 +87,25 @@ export const ProductListPage: React.FC = () => {
                     const catA = a.category ? a.category.trim() : '';
                     const catB = b.category ? b.category.trim() : '';
 
-                    // Lookup parent to ensure we sort by parent block first
                     let rootA = catA;
                     while (cMap[rootA]) rootA = cMap[rootA];
-                    
+
                     let rootB = catB;
                     while (cMap[rootB]) rootB = cMap[rootB];
 
                     const rootIndexA = categoryIndexMap[rootA] ?? 9999;
                     const rootIndexB = categoryIndexMap[rootB] ?? 9999;
 
-                    // 1. Sort by top-level category chunk
                     if (rootIndexA !== rootIndexB) {
                         return rootIndexA - rootIndexB;
                     }
 
-                    // 2. Sort by exact subcategory index inside the chunk
                     const exactIndexA = categoryIndexMap[catA] ?? 9999;
                     const exactIndexB = categoryIndexMap[catB] ?? 9999;
                     if (exactIndexA !== exactIndexB) {
                         return exactIndexA - exactIndexB;
                     }
 
-                    // Fallback to display_order / created_at within same exact category
                     const aOrder = typeof a.display_order === 'number' ? a.display_order : Number.MAX_SAFE_INTEGER;
                     const bOrder = typeof b.display_order === 'number' ? b.display_order : Number.MAX_SAFE_INTEGER;
                     if (aOrder !== bOrder) return aOrder - bOrder;
@@ -127,7 +118,6 @@ export const ProductListPage: React.FC = () => {
             setParentToChildMap(pMap);
             const defaultDisplayed = [ALL_CATEGORY, ...topCategories];
 
-            // Determine Group & Active Category
             let targetGroup: string | null = null;
             let targetActive = ALL_CATEGORY;
             let targetDisplayed = defaultDisplayed;
@@ -161,12 +151,25 @@ export const ProductListPage: React.FC = () => {
             setCurrentGroup(targetGroup);
             setActiveCategory(targetActive);
             setDisplayedCategories(Array.from(new Set(targetDisplayed.filter(Boolean))));
+    }, [urlCategory]);
+
+    const fetchProducts = useCallback(async () => {
+        setLoading(true);
+        try {
+            const [productData, navItems] = preloadedList
+                ? [preloadedList.products, preloadedList.navItems]
+                : await Promise.all([
+                    getProducts(),
+                    getAllNavMenuItems()
+                ]);
+
+            applyProductData(productData, navItems);
         } catch (error) {
             console.error("Error getting products: ", error);
         } finally {
             setLoading(false);
         }
-    }, [urlCategory]);
+    }, [applyProductData, preloadedList]);
 
     useEffect(() => {
         fetchProducts();
@@ -245,8 +248,50 @@ export const ProductListPage: React.FC = () => {
         }
     }, [currentPage, totalPages]);
 
+    const pageHeading = currentGroup || urlTitle || (activeCategory !== ALL_CATEGORY ? activeCategory : '모든 상품');
+    const pageTitle = pageHeading === '모든 상품' ? '제품 안내 | 휴먼파트너' : `${pageHeading} | 휴먼파트너`;
+    const pageDescription = normalizeMetaText(
+        pageHeading === '모든 상품'
+            ? '기업 환경에 필요한 최적의 장비와 가구를 찾아보세요.'
+            : `${pageHeading} 카테고리에서 기업 환경에 필요한 최적의 장비와 가구를 찾아보세요.`,
+    );
+    const normalizedCategory = urlCategory?.trim();
+    const canonicalPath = normalizedCategory
+        ? `/products?category=${encodeURIComponent(normalizedCategory)}`
+        : '/products';
+    const collectionStructuredData = {
+        '@context': 'https://schema.org',
+        '@type': 'CollectionPage',
+        name: pageTitle,
+        description: pageDescription,
+        url: toAbsoluteUrl(canonicalPath),
+        mainEntity: {
+            '@type': 'ItemList',
+            itemListElement: pagedProducts
+                .filter((product) => product.id)
+                .map((product, index) => ({
+                    '@type': 'ListItem',
+                    position: index + 1,
+                    url: toAbsoluteUrl(`/products/${product.id}`),
+                    name: product.name,
+                })),
+        },
+    };
+
     return (
         <main className="bg-slate-50 min-h-screen pb-24 pt-0">
+            <Seo
+                title={pageTitle}
+                description={pageDescription}
+                canonicalPath={canonicalPath}
+                structuredData={[
+                    buildBreadcrumbStructuredData([
+                        { name: '홈', path: '/' },
+                        { name: '제품 안내', path: '/products' },
+                    ]),
+                    collectionStructuredData,
+                ]}
+            />
             {/* Main Category Navigation Bar */}
             <MainCategoryTabs variant="compact" />
             
@@ -254,7 +299,7 @@ export const ProductListPage: React.FC = () => {
                 {/* Header Section */}
                 <div className="mb-10 mt-10 flex flex-col items-start text-left">
                     <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 md:text-4xl">
-                        {currentGroup || urlTitle || (activeCategory !== ALL_CATEGORY ? activeCategory : "모든 상품")}
+                        {pageHeading}
                     </h1>
                     <p className="mt-4 text-slate-500">
                         기업 환경에 필요한 최적의 장비와 가구를 찾아보세요.
@@ -375,5 +420,3 @@ export const ProductListPage: React.FC = () => {
         </main>
     );
 };
-
-

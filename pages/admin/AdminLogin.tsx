@@ -80,7 +80,7 @@ export const AdminLogin: React.FC = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none transition-all focus:border-transparent focus:ring-2 focus:ring-[#001e45]"
-                placeholder="admin@humanpartner-enterprise.web.app"
+                placeholder="admin@humanpartner.kr"
               />
             </div>
 

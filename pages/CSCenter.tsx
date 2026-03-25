@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Container } from '../components/ui/Container';
 import { Phone, MessageCircle, ChevronDown, Loader2 } from 'lucide-react';
-import { Helmet } from 'react-helmet-async';
+import { Seo } from '../components/Seo';
 import { getFAQs, FAQ, getFAQCategories } from '../src/api/faqApi';
+import { buildBreadcrumbStructuredData } from '../src/utils/seo';
 
 
 export const CSCenter: React.FC = () => {
@@ -42,13 +43,37 @@ export const CSCenter: React.FC = () => {
     const filteredFAQ = faqs.filter(item => {
         return item.category === activeCategory;
     });
+    const faqStructuredData = faqs.length > 0
+        ? {
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: faqs
+                .filter((item) => item.question && item.answer)
+                .map((item) => ({
+                    '@type': 'Question',
+                    name: item.question,
+                    acceptedAnswer: {
+                        '@type': 'Answer',
+                        text: item.answer,
+                    },
+                })),
+        }
+        : null;
 
     return (
         <div className="pb-20 pt-10 bg-white min-h-screen">
-            <Helmet>
-                <title>고객센터 | 휴먼파트너</title>
-                <meta name="description" content="휴먼파트너 고객센터입니다. 자주 묻는 질문부터 실시간 상담까지 도와드립니다." />
-            </Helmet>
+            <Seo
+                title="고객센터 | 휴먼파트너"
+                description="휴먼파트너 고객센터입니다. 자주 묻는 질문부터 실시간 상담까지 도와드립니다."
+                canonicalPath="/cs"
+                structuredData={[
+                    buildBreadcrumbStructuredData([
+                        { name: '홈', path: '/' },
+                        { name: '고객센터', path: '/cs' },
+                    ]),
+                    ...(faqStructuredData ? [faqStructuredData] : []),
+                ]}
+            />
 
             <Container>
                 {/* Header Section */}

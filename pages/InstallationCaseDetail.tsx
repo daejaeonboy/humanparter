@@ -1,10 +1,12 @@
 ﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Helmet } from 'react-helmet-async';
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { Seo } from '../components/Seo';
 import { Container } from '../components/ui/Container';
 import { getAllInstallationCases, InstallationCase } from '../src/api/cmsApi';
+import { usePrerenderData } from '../src/prerender/context';
 import { extractInstallationCaseContent } from '../src/utils/installationCaseContent';
+import { buildBreadcrumbStructuredData, normalizeMetaText, SITE_NAME, SITE_URL, toAbsoluteUrl } from '../src/utils/seo';
 
 const TEXT = {
   notFoundTitle: '게시글을 찾을 수 없습니다.',
@@ -26,12 +28,22 @@ const TEXT = {
 export const InstallationCaseDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const prerenderData = usePrerenderData();
+  const preloadedDetail = prerenderData?.installationCaseDetail;
+  const hasPreloadedDetail = !!(id && preloadedDetail?.post?.id === id);
   const sliderRef = useRef<HTMLDivElement>(null);
-  const [loading, setLoading] = useState(true);
-  const [post, setPost] = useState<InstallationCase | null>(null);
-  const [allCases, setAllCases] = useState<InstallationCase[]>([]);
+  const [loading, setLoading] = useState(!hasPreloadedDetail);
+  const [post, setPost] = useState<InstallationCase | null>(hasPreloadedDetail ? preloadedDetail?.post || null : null);
+  const [allCases, setAllCases] = useState<InstallationCase[]>(hasPreloadedDetail ? preloadedDetail?.allCases || [] : []);
 
   useEffect(() => {
+    if (hasPreloadedDetail && preloadedDetail) {
+      setPost(preloadedDetail.post);
+      setAllCases(preloadedDetail.allCases);
+      setLoading(false);
+      return;
+    }
+
     const loadPost = async () => {
       try {
         const data = await getAllInstallationCases();
@@ -51,9 +63,18 @@ export const InstallationCaseDetail: React.FC = () => {
     if (id) {
       void loadPost();
     }
-  }, [id]);
+  }, [hasPreloadedDetail, id, preloadedDetail]);
 
   const parsedContent = useMemo(() => extractInstallationCaseContent(post?.content), [post?.content]);
+  const pageDescription =
+    normalizeMetaText(
+      post?.subtitle ||
+      parsedContent.bodyContent ||
+      parsedContent.blocks
+        .map((block) => ('text' in block ? block.text : ''))
+        .filter(Boolean)
+        .join(' '),
+    ) || TEXT.pageDescriptionFallback;
 
   const otherCases = useMemo(() => allCases.filter((item) => item.id !== post?.id).slice(0, 8), [allCases, post?.id]);
 
@@ -93,10 +114,36 @@ export const InstallationCaseDetail: React.FC = () => {
 
   return (
     <main className="min-h-screen bg-[#f8f9fa] pb-20 pt-10">
-      <Helmet>
-        <title>{`${post.title} | ${TEXT.pageTitleSuffix}`}</title>
-        <meta name="description" content={post.subtitle || TEXT.pageDescriptionFallback} />
-      </Helmet>
+      <Seo
+        title={`${post.title} | ${TEXT.pageTitleSuffix}`}
+        description={pageDescription}
+        image={post.image_url}
+        imageAlt={post.title}
+        type="article"
+        canonicalPath={post.id ? `/cases/${post.id}` : '/cases'}
+        structuredData={[
+          buildBreadcrumbStructuredData([
+            { name: '홈', path: '/' },
+            { name: '설치사례', path: '/cases' },
+            { name: post.title, path: post.id ? `/cases/${post.id}` : '/cases' },
+          ]),
+          {
+            '@context': 'https://schema.org',
+            '@type': 'Article',
+            headline: post.title,
+            description: pageDescription,
+            image: [toAbsoluteUrl(post.image_url)],
+            datePublished: post.created_at,
+            dateModified: post.created_at,
+            mainEntityOfPage: toAbsoluteUrl(post.id ? `/cases/${post.id}` : '/cases'),
+            publisher: {
+              '@type': 'Organization',
+              name: SITE_NAME,
+              url: SITE_URL,
+            },
+          },
+        ]}
+      />
 
       <Container className="max-w-[1000px]">
         <nav className="mb-6 flex items-center text-sm text-slate-500">

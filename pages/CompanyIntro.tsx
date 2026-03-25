@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react';
-import { Helmet } from 'react-helmet-async';
 import { CheckCircle2, ChevronDown, MapPin, MonitorSmartphone, Phone } from 'lucide-react';
+import { Seo } from '../components/Seo';
 import { Container } from '../components/ui/Container';
+import { buildBreadcrumbStructuredData, SITE_URL, toAbsoluteUrl } from '../src/utils/seo';
 
 const NAVER_MAP_URL =
   'https://map.naver.com/p/search/%ED%9C%B4%EB%A8%BC%ED%8C%8C%ED%8A%B8%EB%84%88/place/1420776065?c=15.44,0,0,0,dh&placePath=/home&from=map&fromPanelNum=2&locale=ko&searchText=%ED%9C%B4%EB%A8%BC%ED%8C%8C%ED%8A%B8%EB%84%88';
@@ -92,13 +93,29 @@ export const CompanyIntro: React.FC = () => {
       className="min-h-screen overflow-x-hidden bg-white selection:bg-[#001e45] selection:text-white"
       style={{ fontFamily: "'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" }}
     >
-      <Helmet>
-        <title>기업소개 | 휴먼파트너</title>
-        <meta
-          name="description"
-          content="휴먼파트너의 B2B 맞춤 렌탈 서비스와 운영 방식, 제공 서비스 분야, 오시는 길을 안내합니다."
-        />
-      </Helmet>
+      <Seo
+        title="기업소개 | 휴먼파트너"
+        description="휴먼파트너의 B2B 맞춤 렌탈 서비스와 운영 방식, 제공 서비스 분야, 오시는 길을 안내합니다."
+        canonicalPath="/company"
+        structuredData={[
+          buildBreadcrumbStructuredData([
+            { name: '홈', path: '/' },
+            { name: '기업소개', path: '/company' },
+          ]),
+          {
+            '@context': 'https://schema.org',
+            '@type': 'AboutPage',
+            name: '기업소개 | 휴먼파트너',
+            description: '휴먼파트너의 B2B 맞춤 렌탈 서비스와 운영 방식, 제공 서비스 분야, 오시는 길을 안내합니다.',
+            url: toAbsoluteUrl('/company'),
+            about: {
+              '@type': 'Organization',
+              name: '휴먼파트너',
+              url: SITE_URL,
+            },
+          },
+        ]}
+      />
 
       <style>{`
         .animate-on-scroll {

@@ -58,6 +58,7 @@ export const PopupManager: React.FC = () => {
         setPopups(prev => prev.filter(p => p.id !== id));
     };
 
+    if (typeof window === 'undefined') return null;
     if (loading || popups.length === 0) return null;
 
     return (

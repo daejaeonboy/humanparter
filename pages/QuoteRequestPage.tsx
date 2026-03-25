@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Helmet } from "react-helmet-async";
 import DatePicker from "react-datepicker";
 import { ko } from "date-fns/locale";
 import "react-datepicker/dist/react-datepicker.css";
@@ -19,6 +18,7 @@ import {
   X,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { Seo } from "../components/Seo";
 import { Container } from "../components/ui/Container";
 import { useAuth } from "../src/context/AuthContext";
 import {
@@ -28,6 +28,7 @@ import {
 } from "../src/api/inquiryApi";
 import { getAllNavMenuItems } from "../src/api/cmsApi";
 import { sendQuoteInquiryFallbackEmail } from "../src/utils/email";
+import { buildBreadcrumbStructuredData, toAbsoluteUrl } from "../src/utils/seo";
 
 type CategoryGroup = {
   parentName: string;
@@ -343,9 +344,24 @@ export const QuoteRequestPage: React.FC = () => {
   if (submitted) {
     return (
       <main className="bg-white py-16 md:py-24">
-        <Helmet>
-          <title>{TEXT.pageTitle}</title>
-        </Helmet>
+        <Seo
+          title={TEXT.pageTitle}
+          description={TEXT.pageDescription}
+          canonicalPath="/quote-request"
+          structuredData={[
+            buildBreadcrumbStructuredData([
+              { name: '홈', path: '/' },
+              { name: '견적문의', path: '/quote-request' },
+            ]),
+            {
+              '@context': 'https://schema.org',
+              '@type': 'ContactPage',
+              name: TEXT.pageTitle,
+              description: TEXT.pageDescription,
+              url: toAbsoluteUrl('/quote-request'),
+            },
+          ]}
+        />
         <Container>
           <div className="mx-auto max-w-3xl rounded-3xl border border-slate-200 bg-slate-50 p-8 text-center md:p-12">
             <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-[#001e45]/10 text-[#001e45]">
@@ -368,10 +384,24 @@ export const QuoteRequestPage: React.FC = () => {
 
   return (
     <main className="bg-white pb-20 pt-8 md:pt-12">
-      <Helmet>
-        <title>{TEXT.pageTitle}</title>
-        <meta name="description" content={TEXT.pageDescription} />
-      </Helmet>
+      <Seo
+        title={TEXT.pageTitle}
+        description={TEXT.pageDescription}
+        canonicalPath="/quote-request"
+        structuredData={[
+          buildBreadcrumbStructuredData([
+            { name: '홈', path: '/' },
+            { name: '견적문의', path: '/quote-request' },
+          ]),
+          {
+            '@context': 'https://schema.org',
+            '@type': 'ContactPage',
+            name: TEXT.pageTitle,
+            description: TEXT.pageDescription,
+            url: toAbsoluteUrl('/quote-request'),
+          },
+        ]}
+      />
 
       <Container>
         <section className="rounded-3xl border border-slate-200 bg-gradient-to-r from-slate-50 to-white px-6 py-8 md:px-10 md:py-12">

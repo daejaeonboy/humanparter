@@ -1,6 +1,6 @@
 # 🔍 검색엔진(네이버/구글) 사이트 등록 가이드
 
-우리 웹사이트(`https://human-partner.web.app`)를 사람들이 검색했을 때 나오게 하려면, **반드시 직접 등록**을 해줘야 합니다. 천천히 따라해보세요!
+우리 웹사이트(`https://humanpartner.kr`)를 사람들이 검색했을 때 나오게 하려면, **반드시 직접 등록**을 해줘야 합니다. 천천히 따라해보세요!
 
 ---
 
@@ -10,7 +10,7 @@
 ### 1단계: 사이트 등록
 1. [네이버 서치어드바이저](https://searchadvisor.naver.com/) 접속 및 로그인
 2. 우측 상단 **[웹마스터 도구]** 클릭
-3. **사이트 등록** 입력창에 `https://human-partner.web.app` 입력 후 엔터
+3. **사이트 등록** 입력창에 `https://humanpartner.kr` 입력 후 엔터
 4. **사이트 소유확인** 단계가 나옵니다.
    - **"HTML 태그"** 방식을 선택하세요.
    - `<meta name="naver-site-verification" content="..." />` 형태의 코드가 보입니다.
@@ -29,7 +29,7 @@
 1. [구글 서치 콘솔](https://search.google.com/search-console) 접속 및 로그인
 2. 좌측 상단 **속성 검색** > **+ 속성 추가** 클릭
 3. **URL 접두어 (오른쪽 박스)** 방식을 선택하세요.
-4. `https://human-partner.web.app` 입력 후 [계속] 클릭
+4. `https://humanpartner.kr` 입력 후 [계속] 클릭
 5. **소유권 확인** 단계가 나옵니다.
    - **"HTML 태그"** 항목을 열어보세요.
    - `<meta name="google-site-verification" content="..." />` 형태의 코드가 보입니다.

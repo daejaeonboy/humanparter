@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Helmet } from 'react-helmet-async';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, Boxes, CheckCircle2, Loader2, Package, Phone } from 'lucide-react';
+import { Seo } from '../components/Seo';
 import { Container } from '../components/ui/Container';
 import { getProductById, getProducts, Product } from '../src/api/productApi';
+import { usePrerenderData } from '../src/prerender/context';
+import { buildBreadcrumbStructuredData, normalizeMetaText, toAbsoluteUrl } from '../src/utils/seo';
 
 const fallbackImage =
   'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80';
@@ -52,12 +54,23 @@ const renderComponentList = (
 
 export const ProductDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const [product, setProduct] = useState<Product | null>(null);
-  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+  const prerenderData = usePrerenderData();
+  const preloadedDetail = prerenderData?.productDetail;
+  const hasPreloadedDetail = !!(id && preloadedDetail?.product?.id === id);
+  const [product, setProduct] = useState<Product | null>(hasPreloadedDetail ? preloadedDetail?.product || null : null);
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>(hasPreloadedDetail ? preloadedDetail?.relatedProducts || [] : []);
+  const [loading, setLoading] = useState(!hasPreloadedDetail);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (hasPreloadedDetail && preloadedDetail) {
+      setProduct(preloadedDetail.product);
+      setRelatedProducts(preloadedDetail.relatedProducts);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+
     const load = async () => {
       if (!id) {
         setError('상품 정보를 찾을 수 없습니다.');
@@ -93,12 +106,13 @@ export const ProductDetailPage: React.FC = () => {
     };
 
     void load();
-  }, [id]);
+  }, [hasPreloadedDetail, id, preloadedDetail]);
 
   const description = useMemo(() => {
     if (!product) return '';
     return product.description || product.short_description || '제품 상세 정보는 견적 문의를 통해 안내해드립니다.';
   }, [product]);
+  const metaDescription = normalizeMetaText(product?.short_description || description) || '제품 상세 정보는 견적 문의를 통해 안내해드립니다.';
 
   if (loading) {
     return (
@@ -127,17 +141,48 @@ export const ProductDetailPage: React.FC = () => {
 
   return (
     <main className="bg-slate-50 pb-24 pt-8 md:pt-12">
-      <Helmet>
-        <title>{`${product.name} | 휴먼파트너`}</title>
-        <meta
-          name="description"
-          content={product.short_description || description}
-        />
-        <meta property="og:title" content={`${product.name} | 휴먼파트너`} />
-        <meta property="og:description" content={product.short_description || description} />
-        <meta property="og:image" content={product.image_url || fallbackImage} />
-        <meta property="og:type" content="website" />
-      </Helmet>
+      <Seo
+        title={`${product.name} | 휴먼파트너`}
+        description={metaDescription}
+        image={product.image_url || fallbackImage}
+        imageAlt={product.name}
+        type="product"
+        canonicalPath={product.id ? `/products/${product.id}` : '/products'}
+        structuredData={[
+          buildBreadcrumbStructuredData([
+            { name: '홈', path: '/' },
+            { name: '제품 안내', path: '/products' },
+            { name: product.name, path: product.id ? `/products/${product.id}` : '/products' },
+          ]),
+          {
+            '@context': 'https://schema.org',
+            '@type': 'Product',
+            name: product.name,
+            description: metaDescription,
+            image: [toAbsoluteUrl(product.image_url || fallbackImage)],
+            category: product.category || '사무 환경 구성',
+            sku: product.id,
+            brand: {
+              '@type': 'Brand',
+              name: '휴먼파트너',
+            },
+            ...(product.price > 0
+              ? {
+                  offers: {
+                    '@type': 'Offer',
+                    priceCurrency: 'KRW',
+                    price: product.price,
+                    availability:
+                      product.stock > 0
+                        ? 'https://schema.org/InStock'
+                        : 'https://schema.org/OutOfStock',
+                    url: toAbsoluteUrl(product.id ? `/products/${product.id}` : '/products'),
+                  },
+                }
+              : {}),
+          },
+        ]}
+      />
 
       <Container className="space-y-8">
         <Link to="/products" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-[#001e45]">

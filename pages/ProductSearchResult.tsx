@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { searchProducts, Product } from '../src/api/productApi';
+import { Seo } from '../components/Seo';
 import { Container } from '../components/ui/Container';
 import { Loader2, Search } from 'lucide-react';
-import { Helmet } from 'react-helmet-async';
 
 export const ProductSearchResult: React.FC = () => {
     const [searchParams] = useSearchParams();
@@ -34,16 +34,20 @@ export const ProductSearchResult: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-slate-50 py-8 md:py-12">
-            <Helmet>
-                <title>'{query}' 검색 결과 - 휴먼파트너</title>
-            </Helmet>
+            <Seo
+                title={query ? `${query} 검색 결과 | 휴먼파트너` : '검색 | 휴먼파트너'}
+                description={query ? `휴먼파트너 사이트 내 ${query} 검색 결과 페이지입니다.` : '휴먼파트너 사이트 내 검색 페이지입니다.'}
+                canonicalPath={false}
+                urlPath={false}
+                noindex
+            />
 
             <Container>
                 {/* Search Header */}
                 <div className="mb-8">
                     <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
                         <Search className="text-[#001e45]" />
-                        <span>'{query}' 검색 결과</span>
+                        <span>{query ? `'${query}' 검색 결과` : '검색 결과'}</span>
                         <span className="text-sm font-medium text-slate-500 bg-white px-3 py-1 rounded-full border ml-2">
                             총 {products.length}개
                         </span>

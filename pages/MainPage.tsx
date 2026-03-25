@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Helmet } from "react-helmet-async";
 import { ArrowRight } from "lucide-react";
+import { Seo } from "../components/Seo";
 import { Container } from "../components/ui/Container";
 import { MainVisualSlider } from "../components/MainVisualSlider";
 import { MainCategoryTabs } from "../components/MainCategoryTabs";
@@ -9,6 +9,7 @@ import { CompanyIntroSection } from "../components/CompanyIntroSection";
 import { InstallationCasesSection } from "../components/InstallationCasesSection";
 import { ClientLogoMarqueeSection } from "../components/ClientLogoMarqueeSection";
 import { PopupManager } from "../components/Layout/PopupManager";
+import { buildOrganizationStructuredData, buildWebsiteStructuredData } from "../src/utils/seo";
 
 interface OperationStep {
   step: string;
@@ -68,13 +69,12 @@ export const MainPage: React.FC = () => {
 
   return (
     <main className="bg-white text-slate-900">
-      <Helmet>
-        <title>휴먼파트너 | B2B 렌탈 기업몰</title>
-        <meta
-          name="description"
-          content="사무가구, IT 장비, 프로젝트 물품까지 기업 환경 맞춤형 B2B 렌탈 서비스를 제공합니다."
-        />
-      </Helmet>
+      <Seo
+        title="휴먼파트너 | 사무가구 렌탈 전문기업"
+        description="사무가구, IT 장비, 프로젝트 물품까지 기업 환경 맞춤형 B2B 렌탈 서비스를 제공합니다."
+        canonicalPath="/"
+        structuredData={[buildOrganizationStructuredData(), buildWebsiteStructuredData()]}
+      />
       <PopupManager />
 
       <MainVisualSlider />

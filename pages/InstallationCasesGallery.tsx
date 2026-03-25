@@ -1,10 +1,12 @@
 ﻿import React, { useEffect, useState } from 'react';
-import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
 import { ArrowUpRight, Loader2, Search } from 'lucide-react';
+import { Seo } from '../components/Seo';
 import { Container } from '../components/ui/Container';
 import { getInstallationCases, InstallationCase } from '../src/api/cmsApi';
+import { usePrerenderData } from '../src/prerender/context';
 import { stripInstallationCaseMetadata } from '../src/utils/installationCaseContent';
+import { buildBreadcrumbStructuredData, toAbsoluteUrl } from '../src/utils/seo';
 
 const getPreviewText = (item: InstallationCase) => {
   if (item.subtitle) return item.subtitle;
@@ -20,8 +22,10 @@ const getPreviewText = (item: InstallationCase) => {
 };
 
 export const InstallationCasesGallery: React.FC = () => {
-  const [loading, setLoading] = useState(true);
-  const [cases, setCases] = useState<InstallationCase[]>([]);
+  const prerenderData = usePrerenderData();
+  const preloadedCases = prerenderData?.installationCases?.cases;
+  const [loading, setLoading] = useState(!preloadedCases);
+  const [cases, setCases] = useState<InstallationCase[]>(preloadedCases || []);
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredCases = cases.filter((item) => {
@@ -38,6 +42,12 @@ export const InstallationCasesGallery: React.FC = () => {
   });
 
   useEffect(() => {
+    if (preloadedCases) {
+      setCases(preloadedCases);
+      setLoading(false);
+      return;
+    }
+
     const loadCases = async () => {
       try {
         const data = await getInstallationCases();
@@ -51,7 +61,7 @@ export const InstallationCasesGallery: React.FC = () => {
     };
 
     void loadCases();
-  }, []);
+  }, [preloadedCases]);
 
   const isExternalLink = (url: string) => /^https?:\/\//i.test(url);
 
@@ -107,13 +117,35 @@ export const InstallationCasesGallery: React.FC = () => {
 
   return (
     <main className="min-h-screen bg-[linear-gradient(180deg,#f7f9fc_0%,#eef3f8_100%)] pb-20 pt-10">
-      <Helmet>
-        <title>휴먼파트너 설치사례 갤러리</title>
-        <meta
-          name="description"
-          content="기업, 공공기관, 교육기관 등 다양한 업무 환경에 맞춘 휴먼파트너의 실제 설치 사례를 확인해보세요."
-        />
-      </Helmet>
+      <Seo
+        title="휴먼파트너 설치사례 갤러리"
+        description="기업, 공공기관, 교육기관 등 다양한 업무 환경에 맞춘 휴먼파트너의 실제 설치 사례를 확인해보세요."
+        canonicalPath="/cases"
+        structuredData={[
+          buildBreadcrumbStructuredData([
+            { name: '홈', path: '/' },
+            { name: '설치사례', path: '/cases' },
+          ]),
+          {
+            '@context': 'https://schema.org',
+            '@type': 'CollectionPage',
+            name: '휴먼파트너 설치사례 갤러리',
+            description: '기업, 공공기관, 교육기관 등 다양한 업무 환경에 맞춘 휴먼파트너의 실제 설치 사례를 확인해보세요.',
+            url: toAbsoluteUrl('/cases'),
+            mainEntity: {
+              '@type': 'ItemList',
+              itemListElement: cases
+                .filter((item) => item.id)
+                .map((item, index) => ({
+                  '@type': 'ListItem',
+                  position: index + 1,
+                  name: item.title,
+                  url: toAbsoluteUrl(`/cases/${item.id}`),
+                })),
+            },
+          },
+        ]}
+      />
 
       <Container>
         <section className="rounded-[32px] border border-slate-200/70 bg-white px-6 py-8 shadow-[0_25px_80px_-50px_rgba(15,23,42,0.28)] md:px-10 md:py-12">

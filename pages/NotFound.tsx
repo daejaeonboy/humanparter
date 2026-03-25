@@ -2,14 +2,19 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Container } from '../components/ui/Container';
 import { Home, ArrowLeft } from 'lucide-react';
-import { Helmet } from 'react-helmet-async';
+import { Seo } from '../components/Seo';
 
 export const NotFound: React.FC = () => {
     return (
         <div className="min-h-[70vh] flex items-center justify-center py-20 px-4">
-            <Helmet>
-                <title>페이지를 찾을 수 없습니다 - 휴먼파트너</title>
-            </Helmet>
+            <Seo
+                title="페이지를 찾을 수 없습니다 - 휴먼파트너"
+                description="요청하신 페이지를 찾을 수 없습니다."
+                canonicalPath={false}
+                urlPath={false}
+                noindex
+                nofollow
+            />
             
             <Container>
                 <div className="max-w-md mx-auto text-center">

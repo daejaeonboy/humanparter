@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { useEffect, type ReactNode } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Header } from './components/Layout/Header';
 import { Footer } from './components/Layout/Footer';
 import { MainPage } from './pages/MainPage';
@@ -15,6 +15,7 @@ import { NotFound } from './pages/NotFound';
 import { InstallationCasesGallery } from './pages/InstallationCasesGallery';
 import { InstallationCaseDetail } from './pages/InstallationCaseDetail';
 import { QuoteRequestPage } from './pages/QuoteRequestPage';
+import { PrerenderDataProvider, type PrerenderData } from './src/prerender/context';
 import { AuthProvider } from './src/context/AuthContext';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { ProductManager } from './pages/admin/ProductManager';
@@ -41,60 +42,82 @@ function ScrollToTop() {
   return null;
 }
 
+export const AppProviders = ({
+  children,
+  prerenderData,
+}: {
+  children: ReactNode;
+  prerenderData?: PrerenderData | null;
+}) => {
+  return (
+    <PrerenderDataProvider initialData={prerenderData}>
+      <AuthProvider>{children}</AuthProvider>
+    </PrerenderDataProvider>
+  );
+};
+
+export function AppContent() {
+  return (
+    <>
+      <ScrollToTop />
+      <Routes>
+        {/* Admin Routes - Protected */}
+        <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>}>
+          <Route path="cms" element={<CMSManager />} />
+          <Route path="sections" element={<CMSManager />} />
+          <Route path="products" element={<ProductManager />} />
+          <Route path="bookings" element={<BookingList />} />
+          <Route path="users" element={<UserManager />} />
+          <Route path="cases" element={<InstallationCasesManager />} />
+          <Route path="main-reviews" element={<MainReviewCardsManager />} />
+          <Route path="faqs" element={<FAQManager />} />
+          <Route path="inquiries" element={<InquiryManager />} />
+        </Route>
+
+        {/* Admin Login - Separate Route */}
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/admin/signup" element={<AdminSignup />} />
+
+        {/* Public Routes */}
+        <Route
+          path="/*"
+          element={
+            <div className="min-h-screen bg-white">
+              <Header />
+              <Routes>
+                <Route path="/" element={<MainPage />} />
+                <Route path="/products" element={<ProductListPage />} />
+                <Route path="/products/:id" element={<ProductDetailPage />} />
+                <Route path="/mypage/*" element={<Navigate to="/" replace />} />
+                <Route path="/login" element={<Navigate to="/" replace />} />
+                <Route path="/signup" element={<Navigate to="/" replace />} />
+                <Route path="/cs" element={<CSCenter />} />
+                <Route path="/p/:code" element={<RedirectToProduct />} />
+                <Route path="/search" element={<ProductSearchResult />} />
+                <Route path="/company" element={<CompanyIntro />} />
+                <Route path="/quote-request" element={<QuoteRequestPage />} />
+                <Route path="/terms" element={<TermsOfService />} />
+                <Route path="/privacy" element={<PrivacyPolicy />} />
+                <Route path="/cases" element={<InstallationCasesGallery />} />
+                <Route path="/cases/:id" element={<InstallationCaseDetail />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+              <Footer />
+            </div>
+          }
+        />
+      </Routes>
+    </>
+  );
+}
+
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <ScrollToTop />
-        <Routes>
-          {/* Admin Routes - Protected */}
-          <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>}>
-            <Route path="cms" element={<CMSManager />} />
-            <Route path="sections" element={<CMSManager />} />
-            <Route path="products" element={<ProductManager />} />
-            <Route path="bookings" element={<BookingList />} />
-            <Route path="users" element={<UserManager />} />
-            <Route path="cases" element={<InstallationCasesManager />} />
-            <Route path="main-reviews" element={<MainReviewCardsManager />} />
-            <Route path="faqs" element={<FAQManager />} />
-            <Route path="inquiries" element={<InquiryManager />} />
-          </Route>
-
-          {/* Admin Login - Separate Route */}
-          <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/admin/signup" element={<AdminSignup />} />
-
-          {/* Public Routes */}
-          <Route
-            path="/*"
-            element={
-              <div className="min-h-screen bg-white">
-                <Header />
-                <Routes>
-                  <Route path="/" element={<MainPage />} />
-                  <Route path="/products" element={<ProductListPage />} />
-                  <Route path="/products/:id" element={<ProductDetailPage />} />
-                  <Route path="/mypage/*" element={<Navigate to="/" replace />} />
-                  <Route path="/login" element={<Navigate to="/" replace />} />
-                  <Route path="/signup" element={<Navigate to="/" replace />} />
-                  <Route path="/cs" element={<CSCenter />} />
-                  <Route path="/p/:code" element={<RedirectToProduct />} />
-                  <Route path="/search" element={<ProductSearchResult />} />
-                  <Route path="/company" element={<CompanyIntro />} />
-                  <Route path="/quote-request" element={<QuoteRequestPage />} />
-                  <Route path="/terms" element={<TermsOfService />} />
-                  <Route path="/privacy" element={<PrivacyPolicy />} />
-                  <Route path="/cases" element={<InstallationCasesGallery />} />
-                  <Route path="/cases/:id" element={<InstallationCaseDetail />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-                <Footer />
-              </div>
-            }
-          />
-        </Routes>
-      </Router>
-    </AuthProvider>
+    <AppProviders>
+      <BrowserRouter>
+        <AppContent />
+      </BrowserRouter>
+    </AppProviders>
   );
 }
 

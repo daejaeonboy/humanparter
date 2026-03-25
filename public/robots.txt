@@ -2,5 +2,9 @@ User-agent: *
 Allow: /
 Disallow: /admin/
 Disallow: /mypage/
+Disallow: /login
+Disallow: /signup
+Disallow: /search
+Disallow: /p/
 
-Sitemap: https://humanpartner-enterprise.web.app/sitemap.xml
+Sitemap: https://humanpartner.kr/sitemap.xml
