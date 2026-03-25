@@ -252,8 +252,8 @@ export const ProductListPage: React.FC = () => {
     const pageTitle = pageHeading === '모든 상품' ? '제품 안내 | 휴먼파트너' : `${pageHeading} | 휴먼파트너`;
     const pageDescription = normalizeMetaText(
         pageHeading === '모든 상품'
-            ? '기업 환경에 필요한 최적의 장비와 가구를 찾아보세요.'
-            : `${pageHeading} 카테고리에서 기업 환경에 필요한 최적의 장비와 가구를 찾아보세요.`,
+            ? '사무가구를 중심으로 기업 운영에 필요한 렌탈 품목을 휴먼파트너에서 확인해보세요.'
+            : `${pageHeading} 카테고리의 기업용 렌탈 품목과 사무환경 구성 상품을 휴먼파트너에서 확인해보세요.`,
     );
     const normalizedCategory = urlCategory?.trim();
     const canonicalPath = normalizedCategory

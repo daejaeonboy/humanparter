@@ -112,7 +112,9 @@ export const ProductDetailPage: React.FC = () => {
     if (!product) return '';
     return product.description || product.short_description || '제품 상세 정보는 견적 문의를 통해 안내해드립니다.';
   }, [product]);
-  const metaDescription = normalizeMetaText(product?.short_description || description) || '제품 상세 정보는 견적 문의를 통해 안내해드립니다.';
+  const metaDescription =
+    normalizeMetaText(product?.short_description || description) ||
+    '기업 환경에 필요한 렌탈 품목입니다. 제품 사양과 구성은 견적 문의를 통해 안내해드립니다.';
 
   if (loading) {
     return (
