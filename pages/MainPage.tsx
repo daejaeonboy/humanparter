@@ -70,7 +70,7 @@ export const MainPage: React.FC = () => {
   return (
     <main className="bg-white text-slate-900">
       <Seo
-        title="휴먼파트너 | 사무가구 렌탈 전문기업"
+        title="휴먼파트너 | 종합렌탈 전문기업"
         description="기업 환경에 맞춘 사무가구 렌탈부터 설치, 운영 지원까지 제공하는 휴먼파트너의 B2B 렌탈 서비스입니다."
         canonicalPath="/"
         structuredData={[buildOrganizationStructuredData(), buildWebsiteStructuredData()]}
@@ -149,7 +149,7 @@ export const MainPage: React.FC = () => {
               <p className="mt-7 max-w-2xl text-[16px] font-medium leading-[1.8] text-white/60 md:text-[18px]">
                 기업 규모와 환경에 맞는 맞춤형 컨설팅부터 설치, 유지관리, 회수까지
                 <br className="hidden md:block" />
-                휴먼파트너가 모든 과정을 책임집니다. 지금 바로 상담을 시작하세요.
+                휴먼파트너가 모든 과정을 책임집니다. 지금 바로 견적 문의를 시작하세요.
               </p>
               
               <div className="mt-12 flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-5">
@@ -157,7 +157,7 @@ export const MainPage: React.FC = () => {
                   to="/quote-request"
                   className="group relative inline-flex items-center justify-center gap-2.5 overflow-hidden rounded-2xl bg-white px-8 py-4 text-[16px] font-bold text-[#001E45] shadow-[0_4px_16px_rgba(255,255,255,0.15),0_0_0_1px_rgba(255,255,255,0.1)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_24px_rgba(255,255,255,0.25),0_0_0_1px_rgba(255,255,255,0.2)] md:text-[17px]"
                 >
-                  <span className="relative z-10">상담 접수하기</span>
+                  <span className="relative z-10">견적 문의하기</span>
                   <ArrowRight size={20} className="relative z-10 transition-transform duration-300 group-hover:translate-x-1.5" />
                   {/* Button Hover Glow Component */}
                   <div className="absolute inset-0 z-0 bg-gradient-to-r from-blue-50 to-white opacity-0 transition-opacity duration-300 group-hover:opacity-100" />

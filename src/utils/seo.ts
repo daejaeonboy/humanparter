@@ -1,6 +1,6 @@
 export const SITE_NAME = '휴먼파트너';
 export const SITE_URL = 'https://humanpartner.kr';
-export const DEFAULT_SOCIAL_IMAGE = '/SNS.png';
+export const DEFAULT_SOCIAL_IMAGE = '/logocard.jpg';
 export const DEFAULT_LOCALE = 'ko_KR';
 
 type RobotsOptions = {

@@ -14,7 +14,7 @@ const gnbLinks: NavLinkItem[] = [
   { label: "고객사례", to: "/cases" },
   { label: "기업소개", to: "/company" },
   { label: "렌탈품목", to: "/products" },
-  { label: "상담문의", to: "/quote-request", cta: true },
+  { label: "견적문의", to: "/quote-request", cta: true },
 ];
 
 export const Header: React.FC = () => {

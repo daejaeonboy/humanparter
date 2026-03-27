@@ -5,12 +5,12 @@ export const siteBrand = {
     supportPhoneDisplay: "1800-1985",
     supportPhoneDial: "18001985",
     searchPlaceholder: "상품 또는 키워드 검색",
-    consultCtaLabel: "상담 문의",
+    consultCtaLabel: "견적 문의",
   },
   footer: {
     topTagline: "HUMAN PARTNER B2B RENTAL",
     topHeading: "기업 운영에 맞춘 렌탈 도입 상담을 지원합니다.",
-    topCtaLabel: "상담 접수하기",
+    topCtaLabel: "견적 문의하기",
     quickLinks: [
       { label: "홈", to: "/" },
       { label: "회사소개", to: "/company" },

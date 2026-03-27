@@ -20,7 +20,7 @@ const footerColumns: FooterLink[][] = [
     { label: "\uD68C\uC0AC\uC18C\uAC1C", to: "/company" },
     { label: "\uC81C\uD488\uC548\uB0B4", to: "/products" },
     { label: "\uACE0\uAC1D\uC0AC\uB840", to: "/cases" },
-    { label: "\uC0C1\uB2F4\uBB38\uC758", to: "/quote-request" },
+    { label: "\uACAC\uC801\uBB38\uC758", to: "/quote-request" },
   ],
 ];
 

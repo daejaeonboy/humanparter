@@ -160,9 +160,9 @@ export const FullMenu: React.FC<FullMenuProps> = ({ onClose, variant = 'mobile',
                                 ) : (
                                     <>
                                         <h3 className="font-bold text-lg text-slate-800 mb-1">환영합니다!</h3>
-                                        <p className="text-sm text-slate-500 mb-4">서비스 소개와 상담 문의를 바로 확인해보세요.</p>
+                                        <p className="text-sm text-slate-500 mb-4">서비스 소개와 견적 문의를 바로 확인해보세요.</p>
                                         <div className="flex gap-3">
-                                            <Link to="/quote-request" onClick={onClose} className="flex-1 py-3 rounded-xl bg-[#001e45] text-white font-bold text-sm hover:bg-[#152b66] transition-colors text-center">상담문의</Link>
+                                            <Link to="/quote-request" onClick={onClose} className="flex-1 py-3 rounded-xl bg-[#001e45] text-white font-bold text-sm hover:bg-[#152b66] transition-colors text-center">견적문의</Link>
                                             <Link to="/company" onClick={onClose} className="flex-1 py-3 rounded-xl bg-slate-100 text-slate-700 font-bold text-sm hover:bg-slate-200 transition-colors text-center">회사소개</Link>
                                         </div>
                                     </>
