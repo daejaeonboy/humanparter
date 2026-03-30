@@ -53,13 +53,13 @@ export function Footer() {
   };
 
   return (
-    <footer className="relative border-t border-slate-200 bg-[#f7f8fb] pb-20 text-slate-800 md:pb-10">
+    <footer className="relative border-t border-gray-100 bg-white pb-20 text-black md:pb-10">
       <Container className="py-8 md:py-9">
         <div className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between md:gap-10">
           <Link
             to="/"
             aria-label={labels.homeAria}
-            className="inline-block leading-none text-[48px] md:text-[64px]"
+            className="inline-block leading-none text-[48px] md:text-[64px] text-black"
             style={{ fontFamily: '"Pacifico", cursive' }}
           >
             H.
@@ -67,10 +67,10 @@ export function Footer() {
 
           <div className="grid w-full max-w-[980px] grid-cols-2 gap-x-10 gap-y-6 md:grid-cols-3 md:gap-x-16">
             {footerColumns.map((column, columnIndex) => (
-              <ul key={`footer-column-${columnIndex}`} className="space-y-2.5 text-[15px] font-medium text-slate-800">
+              <ul key={`footer-column-${columnIndex}`} className="space-y-2.5 text-[15px] font-medium text-black">
                 {column.map((item) => (
                   <li key={`${item.label}-${item.to}`}>
-                    <Link to={item.to || "/"} className="transition-colors hover:text-[#001e45]">
+                    <Link to={item.to || "/"} className="transition-colors hover:text-gray-600 hover:underline">
                       {item.label}
                     </Link>
                   </li>
@@ -78,13 +78,13 @@ export function Footer() {
               </ul>
             ))}
 
-            <ul className="col-span-2 space-y-2.5 text-[15px] font-medium text-slate-800 md:col-span-1">
+            <ul className="col-span-2 space-y-2.5 text-[15px] font-medium text-black md:col-span-1">
               <li>
                 <a
                   href={footer.kakaoChatUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center transition-colors hover:text-[#001e45]"
+                  className="inline-flex items-center transition-colors hover:text-gray-600 hover:underline"
                 >
                   {labels.kakao}
                 </a>
@@ -92,26 +92,26 @@ export function Footer() {
               <li>
                 <a
                   href="tel:18001985"
-                  className="flex flex-col items-start gap-0.5 transition-colors hover:text-[#001e45] md:flex-row md:items-center md:gap-2"
+                  className="flex flex-col items-start gap-0.5 transition-colors hover:text-gray-600 md:flex-row md:items-center md:gap-2"
                 >
-                  <span className="text-[13px] font-semibold text-slate-600 md:text-[15px] md:text-slate-800">{labels.phone}</span>
-                  <span className="text-[15px] font-semibold text-slate-800">1800-1985</span>
+                  <span className="text-[13px] font-semibold text-gray-500 md:text-[15px] md:text-black">{labels.phone}</span>
+                  <span className="text-[15px] font-semibold text-black">1800-1985</span>
                 </a>
               </li>
               <li>
                 <a
                   href="mailto:hm_solution@naver.com"
-                  className="flex flex-col items-start gap-0.5 transition-colors hover:text-[#001e45] md:flex-row md:items-center md:gap-2"
+                  className="flex flex-col items-start gap-0.5 transition-colors hover:text-gray-600 md:flex-row md:items-center md:gap-2"
                 >
-                  <span className="text-[13px] font-semibold text-slate-600 md:text-[15px] md:text-slate-800">{labels.mail}</span>
-                  <span className="break-all text-[14px] font-semibold text-slate-800 md:break-normal">hm_solution@naver.com</span>
+                  <span className="text-[13px] font-semibold text-gray-500 md:text-[15px] md:text-black">{labels.mail}</span>
+                  <span className="break-all text-[14px] font-semibold text-black md:break-normal">hm_solution@naver.com</span>
                 </a>
               </li>
             </ul>
           </div>
         </div>
 
-        <div className="mt-8 border-t border-dashed border-slate-300 pt-4 text-xs leading-relaxed text-slate-600">
+        <div className="mt-8 border-t border-dashed border-gray-200 pt-4 text-xs leading-relaxed text-gray-500">
           <p>{footer.companyInfoLines.join(" | ")}</p>
           <p className="mt-1">Copyright {currentYear}. {footer.copyrightOwner}. All rights reserved.</p>
         </div>
@@ -121,35 +121,31 @@ export function Footer() {
         href="https://367.co.kr"
         target="_blank"
         rel="noopener noreferrer"
-        className="group fixed bottom-8 left-1/2 z-[60] hidden w-[calc(100%-2rem)] max-w-[340px] -translate-x-1/2 items-center justify-center gap-2 rounded-full border border-[#4d6f9f] bg-[#001e45] px-5 py-3.5 text-[14px] font-semibold tracking-[0.01em] text-white transition-all duration-300 hover:-translate-x-1/2 hover:-translate-y-1 hover:border-[#6f8cb0] hover:bg-[#03285d] lg:inline-flex"
+        className="group fixed bottom-8 left-1/2 z-[60] hidden w-[calc(100%-2rem)] max-w-[340px] -translate-x-1/2 items-center justify-center gap-2 rounded-full border border-gray-800 bg-black px-5 py-3.5 text-[14px] font-semibold tracking-[0.01em] text-white transition-all duration-300 hover:-translate-x-1/2 hover:-translate-y-1 hover:bg-gray-900 lg:inline-flex"
         aria-label={labels.remoteAria}
       >
         <MonitorPlay size={16} className="transition-transform duration-300 group-hover:scale-105" />
         <span>{labels.remote}</span>
       </a>
 
-      <div className="fixed bottom-[100px] right-4 z-[60] flex flex-col gap-3 md:bottom-12 md:right-8">
+      <div className="fixed bottom-[100px] right-4 z-[60] flex flex-col gap-2 md:bottom-12 md:right-8">
         <a
           href={footer.kakaoChatUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="group relative flex h-[52px] w-[52px] items-center justify-center overflow-hidden rounded-full border border-black/10 bg-[#fde500] shadow-[0_8px_20px_-8px_rgba(2,6,23,0.45)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_24px_-12px_rgba(253,229,0,0.78)] md:h-14 md:w-14"
+          className="group relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-lg bg-[#fde500] shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-lg md:h-12 md:w-12"
           aria-label={footer.kakaoButtonAriaLabel}
         >
           <img
             src={footer.kakaoImagePath}
             alt={footer.kakaoButtonAriaLabel}
-            className="h-[65%] w-[65%] object-contain transition-transform duration-300 group-hover:scale-110"
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
           />
         </a>
 
         <button
           onClick={scrollToTop}
-          className={`group flex h-[48px] w-[48px] items-center justify-center rounded-full border border-slate-200 bg-white/95 text-slate-700 shadow-[0_8px_20px_-8px_rgba(2,6,23,0.35)] backdrop-blur-sm transition-all duration-500 hover:border-[#001e45] hover:bg-[#001e45] hover:text-white hover:shadow-[0_18px_24px_-12px_rgba(0,30,69,0.5)] md:h-[52px] md:w-[52px] ${
-            showScrollTop
-              ? "translate-y-0 scale-100 opacity-100 blur-0"
-              : "pointer-events-none translate-y-4 scale-90 opacity-0 blur-[2px]"
-          }`}
+          className="group flex h-12 w-12 items-center justify-center rounded-lg bg-black text-white shadow-md transition-all duration-500 hover:bg-gray-800 hover:shadow-lg md:h-12 md:w-12 translate-y-0 scale-100 opacity-100 blur-0"
           aria-label={footer.scrollTopAriaLabel}
         >
           <ArrowUp size={20} className="transition-transform duration-300 group-hover:-translate-y-0.5" />

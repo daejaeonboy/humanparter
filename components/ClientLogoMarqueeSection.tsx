@@ -121,7 +121,7 @@ export const ClientLogoMarqueeSection: React.FC = () => {
   const { topRow, bottomRow } = splitLogosIntoRows(logos);
 
   return (
-    <section className="border-y border-slate-200 bg-white py-14 md:py-20">
+    <section className="bg-white py-10 md:py-14">
       <Container>
         <div className="mb-8 md:mb-14">
           <p className="mb-3 text-[11px] font-bold tracking-[0.15em] text-[#001E45]/80">CLIENTS</p>

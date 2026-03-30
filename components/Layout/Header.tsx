@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { Container } from "../ui/Container";
@@ -21,21 +21,6 @@ export const Header: React.FC = () => {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileMenuMounted, setMobileMenuMounted] = useState(false);
-  const [isTopZone, setIsTopZone] = useState(true);
-
-  const isHome = location.pathname === "/";
-  const useTransparentHeader = isHome && isTopZone && !mobileMenuMounted;
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const current = window.pageYOffset || document.documentElement.scrollTop;
-      setIsTopZone(current < 24);
-    };
-
-    handleScroll();
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [location.pathname]);
 
   useEffect(() => {
     if (!mobileMenuMounted) return;
@@ -68,85 +53,49 @@ export const Header: React.FC = () => {
     setMobileMenuOpen(false);
   };
 
-  const desktopLinkClassName = useMemo(
-    () =>
-      useTransparentHeader
-        ? "text-white hover:text-white/80"
-        : "text-[var(--header-nav-link)] hover:text-[var(--header-nav-link)]/80",
-    [useTransparentHeader],
-  );
+  const desktopLinkClassName = "text-slate-800 hover:text-black";
 
   return (
-    <header className="w-full">
-      <div className={isHome ? "h-0" : "h-[86px] md:h-[94px]"} />
+    <header className="w-full bg-white">
+      <Container size="wide">
+        <div className="flex h-[80px] items-center justify-between">
+          <Link
+            to="/"
+            className="flex items-center text-xl font-medium tracking-tight text-black md:text-2xl"
+          >
+            <img
+              src="/logo.png"
+              alt={siteBrand.header.logoText}
+              className="h-[48px] w-auto object-contain"
+            />
+          </Link>
 
-      <div
-        className={`fixed left-0 right-0 top-0 z-40 border-b border-[var(--header-border)] bg-[var(--header-surface)] backdrop-blur transition-colors duration-300 ${
-          useTransparentHeader ? "header-overlay" : ""
-        }`}
-      >
-        <Container>
-          <div className="flex h-[86px] items-center justify-between md:h-[94px]">
-            <Link
-              to="/"
-              className="flex items-center text-xl font-black tracking-tight text-[var(--header-logo-color)] md:text-2xl"
-            >
-              {useTransparentHeader ? (
-                <span>{siteBrand.header.logoText}</span>
-              ) : (
-                <img
-                  src="/logo.png"
-                  alt={siteBrand.header.logoText}
-                  className="h-[40px] w-auto object-contain transition-all duration-300 md:h-[56px]"
-                />
-              )}
-            </Link>
+          <nav className="hidden items-center gap-10 md:flex">
+            {gnbLinks.map((item) => (
+              <Link
+                key={item.to}
+                to={item.to}
+                className={`text-[16px] font-medium tracking-tight transition ${desktopLinkClassName}`}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
 
-            <nav className="hidden items-center gap-7 md:flex">
-              {gnbLinks.map((item) => {
-                if (item.cta) {
-                  return (
-                    <Link
-                      key={item.to}
-                      to={item.to}
-                      className={`inline-flex h-11 min-w-[112px] items-center justify-center rounded-[10px] px-6 text-center text-[15px] font-bold leading-none tracking-[0.01em] transition-all duration-300 ${
-                        useTransparentHeader
-                          ? "border border-white/55 bg-white/10 text-white backdrop-blur hover:-translate-y-0.5 hover:bg-white/20"
-                          : "border border-[var(--header-cta-bg)] bg-gradient-to-b from-[var(--header-cta-bg)] to-[#001736] text-[var(--header-cta-text)] shadow-[0_10px_20px_-10px_rgba(0,30,69,0.5)] hover:-translate-y-0.5 hover:from-[var(--header-cta-hover)] hover:to-[#002960] hover:shadow-[0_15px_25px_-12px_rgba(0,30,69,0.7)]"
-                      }`}
-                    >
-                      {item.label}
-                    </Link>
-                  );
-                }
-
-                return (
-                  <Link
-                    key={item.to}
-                    to={item.to}
-                    className={`text-[17px] font-semibold tracking-[0.01em] transition ${desktopLinkClassName}`}
-                  >
-                    {item.label}
-                  </Link>
-                );
-              })}
-            </nav>
-
-            <button
-              onClick={openMobileMenu}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[var(--header-search-border)] text-[var(--header-nav-link)] md:hidden"
-              aria-label="모바일 메뉴 열기"
-            >
-              <Menu size={20} />
-            </button>
-          </div>
-        </Container>
-      </div>
+          <button
+            onClick={openMobileMenu}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-none text-black md:hidden"
+            aria-label="모바일 메뉴 열기"
+          >
+            <Menu size={20} />
+          </button>
+        </div>
+      </Container>
 
       {mobileMenuMounted && (
         <div className="fixed inset-0 z-50 md:hidden">
           <button
-            className={`absolute inset-0 bg-[var(--header-mobile-backdrop)] transition-opacity duration-300 ${
+            className={`absolute inset-0 bg-black/50 transition-opacity duration-300 ${
               mobileMenuOpen ? "opacity-100" : "opacity-0"
             }`}
             onClick={closeMobileMenu}
@@ -154,17 +103,17 @@ export const Header: React.FC = () => {
           />
 
           <aside
-            className={`absolute right-0 top-0 flex h-full w-[84%] max-w-sm flex-col bg-[var(--header-mobile-surface)] shadow-2xl transition-transform duration-300 ease-out ${
+            className={`absolute right-0 top-0 flex h-full w-[84%] max-w-sm flex-col bg-white shadow-2xl transition-transform duration-300 ease-out ${
               mobileMenuOpen ? "translate-x-0" : "translate-x-full"
             }`}
           >
-            <div className="flex items-center justify-between border-b border-[var(--header-border)] p-4">
-              <span className="text-lg font-black tracking-tight text-[var(--header-logo-color)]">
+            <div className="flex items-center justify-between border-b border-gray-100 p-4">
+              <span className="text-lg font-medium tracking-tight text-black">
                 <img src="/logo.png" alt={siteBrand.header.logoText} className="h-[36px] w-auto object-contain" />
               </span>
               <button
                 onClick={closeMobileMenu}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--header-search-border)] text-[var(--header-nav-link)]"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-none border border-gray-200 text-black"
                 aria-label="모바일 메뉴 닫기 버튼"
               >
                 <X size={18} />
@@ -178,11 +127,7 @@ export const Header: React.FC = () => {
                     key={item.to}
                     to={item.to}
                     onClick={closeMobileMenu}
-                    className={`block rounded-[10px] px-4 py-3 text-sm font-semibold ${
-                      item.cta
-                        ? "bg-[var(--header-cta-bg)] text-[var(--header-cta-text)]"
-                        : "border border-[var(--header-search-border)] text-[var(--header-nav-link)]"
-                    }`}
+                    className={`block rounded-none border border-gray-100 px-4 py-3 text-sm font-medium text-black`}
                   >
                     {item.label}
                   </Link>

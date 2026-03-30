@@ -7,6 +7,7 @@ import { MainVisualSlider } from "../components/MainVisualSlider";
 import { MainCategoryTabs } from "../components/MainCategoryTabs";
 import { CompanyIntroSection } from "../components/CompanyIntroSection";
 import { InstallationCasesSection } from "../components/InstallationCasesSection";
+import { PromoSection } from "../components/PromoSection";
 import { ClientLogoMarqueeSection } from "../components/ClientLogoMarqueeSection";
 import { PopupManager } from "../components/Layout/PopupManager";
 import { buildOrganizationStructuredData, buildWebsiteStructuredData } from "../src/utils/seo";
@@ -26,49 +27,23 @@ const operationSteps: OperationStep[] = [
   {
     step: "02",
     title: "계약",
-    description: "설치일 조율 협의 및 계약 진행",
+    description: "최적화된 렌탈 플랜 확정 및 간편한 온라인 계약 체결 프로세스 진행",
   },
   {
     step: "03",
     title: "설치",
-    description: "약속된 일정에 현장 설치, 세팅 및 꼼꼼한 테스트 진행",
+    description: "약속된 일정에 맞춰 전문 인력이 직접 방문하여 안전하고 신속하게 설치",
   },
   {
     step: "04",
-    title: "운영 지원 및 회수",
-    description: "사후 유지 보수 및 AS, 기간 만료 후에 회수",
+    title: "관리",
+    description: "사용 기간 중 정기 점검 및 장애 발생 시 즉각적인 A/S와 사후 관리 지원",
   },
 ];
 
 export const MainPage: React.FC = () => {
-  const [isContactVisible, setIsContactVisible] = React.useState(false);
-  const contactSectionRef = React.useRef<HTMLElement | null>(null);
-
-  React.useEffect(() => {
-    const target = contactSectionRef.current;
-    if (!target) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        if (!entry) return;
-        setIsContactVisible(entry.isIntersecting);
-      },
-      {
-        threshold: 0.28,
-        rootMargin: "0px 0px -6% 0px",
-      },
-    );
-
-    observer.observe(target);
-
-    return () => {
-      observer.disconnect();
-    };
-  }, []);
-
   return (
-    <main className="bg-white text-slate-900">
+    <main className="bg-white text-black">
       <Seo
         title="휴먼파트너 | 종합렌탈 전문기업"
         description="기업 환경에 맞춘 사무가구 렌탈부터 설치, 운영 지원까지 제공하는 휴먼파트너의 B2B 렌탈 서비스입니다."
@@ -78,104 +53,43 @@ export const MainPage: React.FC = () => {
       <PopupManager />
 
       <MainVisualSlider />
+      
       <CompanyIntroSection />
-      
-      <MainCategoryTabs />
-      
-      <InstallationCasesSection />
-      
-      <ClientLogoMarqueeSection />
 
-      <section className="bg-slate-50/50 py-16 md:py-24">
+      {/* 체계적인 렌탈 프로세스 섹션 */}
+      <section className="bg-white py-10 md:py-16">
         <Container>
           <div className="mb-10 md:mb-14">
-            <p className="mb-3 text-[11px] font-bold tracking-[0.15em] text-[#001E45]/80">OPERATION FLOW</p>
-            <h2 className="text-3xl font-extrabold leading-tight tracking-tight text-slate-900 md:text-4xl">
+            <p className="mb-4 text-[11px] font-bold tracking-[0.15em] text-black/40 uppercase">OPERATION FLOW</p>
+            <h2 className="text-3xl font-bold leading-tight tracking-tight text-black md:text-4xl">
               체계적인 렌탈 프로세스
             </h2>
           </div>
 
-          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             {operationSteps.map((item) => (
               <article
                 key={item.step}
-                className="group relative overflow-hidden rounded-[20px] border border-slate-200/60 bg-white p-7 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#001E45]/20 hover:shadow-md"
+                className="group relative flex flex-col items-center rounded-2xl border border-gray-100 bg-white p-8 text-center transition-all hover:border-black/5 hover:shadow-xl hover:shadow-black/[0.04] md:items-start md:text-left"
               >
-                <div className="mb-4 flex items-center justify-between">
-                  <p className="text-[12px] font-bold tracking-[0.1em] text-[#001E45]/50 transition-colors group-hover:text-[#001E45]">STEP {item.step}</p>
-                  <ArrowRight size={16} className="text-slate-300 transition-all group-hover:translate-x-1 group-hover:text-[#001E45]" />
-                </div>
-                <h3 className="text-[19px] font-bold tracking-tight text-slate-800">{item.title}</h3>
-                <p className="mt-3 text-[14px] leading-relaxed text-slate-500">{item.description}</p>
+                <span className="mb-6 block text-4xl font-black italic tracking-tighter text-black/5 transition-colors group-hover:text-black/10">
+                  {item.step}
+                </span>
+                <h3 className="mb-4 text-xl font-bold text-black">{item.title}</h3>
+                <p className="text-sm font-medium leading-relaxed text-black/60">{item.description}</p>
               </article>
             ))}
           </div>
         </Container>
       </section>
 
-      <section ref={contactSectionRef} className="relative pb-24 pt-16 md:pb-32 md:pt-24">
-        <Container>
-          <div
-            className={`relative overflow-hidden rounded-[32px] md:rounded-[40px] border border-white/10 bg-[#061026] px-8 py-16 text-white shadow-[0_40px_80px_-40px_rgba(3,7,20,0.8)] transition-all duration-[1000ms] ease-out md:px-20 md:py-24 ${
-              isContactVisible
-                ? "translate-y-0 scale-100 opacity-100 blur-0"
-                : "translate-y-12 scale-[0.97] opacity-0 blur-[4px]"
-            }`}
-          >
-            {/* Dynamic Glassmorphism Background Glows */}
-            <div className="pointer-events-none absolute -right-20 -top-20 h-[500px] w-[500px] rounded-full bg-[#1b4ed8]/10 blur-[100px] transition-transform duration-1000 group-hover:scale-110" />
-            <div className="pointer-events-none absolute -bottom-32 -left-20 h-[400px] w-[400px] rounded-full bg-[#3b82f6]/10 blur-[90px] transition-transform duration-1000 group-hover:scale-110" />
-            <div className="pointer-events-none absolute left-1/2 top-1/2 h-full w-full -translate-x-1/2 -translate-y-1/2 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] mix-blend-overlay" />
+      <MainCategoryTabs />
 
-            {/* Content Wrapper */}
-            <div className="relative z-10 mx-auto flex max-w-4xl flex-col items-center text-center">
-              <span className="inline-flex rounded-full border border-blue-400/30 bg-blue-500/10 px-4 py-1.5 text-[11px] font-bold tracking-[0.2em] text-blue-300 shadow-[0_0_15px_rgba(59,130,246,0.15)] backdrop-blur-md">
-                CONTACT US
-              </span>
-              
-              <h2 className="mt-8 text-[26px] sm:text-[32px] font-extrabold leading-[1.35] tracking-tight md:text-[54px] md:leading-[1.15]">
-                <span className="md:hidden">
-                  성공적인 비즈니스를 위한<br />
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-200 via-white to-blue-200">최적의 렌탈 솔루션을</span><br />
-                  제안합니다.
-                </span>
-                <span className="hidden md:inline">
-                  성공적인 비즈니스를 위한
-                  <br className="hidden md:block" />
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-200 via-white to-blue-200">최적의 렌탈 솔루션을</span> 제안합니다.
-                </span>
-              </h2>
-              
-              <p className="mt-7 max-w-2xl text-[16px] font-medium leading-[1.8] text-white/60 md:text-[18px]">
-                기업 규모와 환경에 맞는 맞춤형 컨설팅부터 설치, 유지관리, 회수까지
-                <br className="hidden md:block" />
-                휴먼파트너가 모든 과정을 책임집니다. 지금 바로 견적 문의를 시작하세요.
-              </p>
-              
-              <div className="mt-12 flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-5">
-                <Link
-                  to="/quote-request"
-                  className="group relative inline-flex items-center justify-center gap-2.5 overflow-hidden rounded-2xl bg-white px-8 py-4 text-[16px] font-bold text-[#001E45] shadow-[0_4px_16px_rgba(255,255,255,0.15),0_0_0_1px_rgba(255,255,255,0.1)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_24px_rgba(255,255,255,0.25),0_0_0_1px_rgba(255,255,255,0.2)] md:text-[17px]"
-                >
-                  <span className="relative z-10">견적 문의하기</span>
-                  <ArrowRight size={20} className="relative z-10 transition-transform duration-300 group-hover:translate-x-1.5" />
-                  {/* Button Hover Glow Component */}
-                  <div className="absolute inset-0 z-0 bg-gradient-to-r from-blue-50 to-white opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-                </Link>
-                
-                <Link
-                  to="/quote-request"
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl border border-blue-200/35 bg-gradient-to-b from-white/16 to-blue-400/10 px-8 py-4 text-[15px] font-semibold text-white backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-blue-100/60 hover:from-white/22 hover:to-blue-400/16 hover:text-white md:text-[16px]"
-                >
-                  제휴 및 대량 견적 문의
-                </Link>
-              </div>
-            </div>
-          </div>
-        </Container>
-      </section>
+      <InstallationCasesSection />
+
+      <ClientLogoMarqueeSection />
+
+      <PromoSection />
     </main>
   );
 };
-
-

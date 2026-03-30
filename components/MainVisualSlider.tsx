@@ -73,31 +73,57 @@ export const MainVisualSlider: React.FC = () => {
     const [activeIndex, setActiveIndex] = useState(0);
     const [paused, setPaused] = useState(false);
 
-    // Touch swipe state
-    const [touchStart, setTouchStart] = useState<number | null>(null);
-    const [touchEnd, setTouchEnd] = useState<number | null>(null);
+    // Drag state for both touch and mouse
+    const [dragStart, setDragStart] = useState<number | null>(null);
+    const [dragEnd, setDragEnd] = useState<number | null>(null);
+    const [isDragging, setIsDragging] = useState(false);
 
     const minSwipeDistance = 50;
 
-    const onTouchStart = (e: React.TouchEvent) => {
-        setTouchEnd(null);
-        setTouchStart(e.targetTouches[0].clientX);
+    const handleStart = (e: React.PointerEvent) => {
+        // Only handle left click
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        
+        setDragStart(e.clientX);
+        setDragEnd(e.clientX);
+        setIsDragging(true);
     };
 
-    const onTouchMove = (e: React.TouchEvent) => {
-        setTouchEnd(e.targetTouches[0].clientX);
+    const handleMove = (e: React.PointerEvent) => {
+        if (!isDragging) return;
+        setDragEnd(e.clientX);
     };
 
-    const onTouchEnd = () => {
-        if (!touchStart || !touchEnd) return;
-        const distance = touchStart - touchEnd;
-        const isLeftSwipe = distance > minSwipeDistance;
-        const isRightSwipe = distance < -minSwipeDistance;
+    const handleEnd = (e: React.PointerEvent) => {
+        if (!isDragging || dragStart === null || dragEnd === null) {
+            setIsDragging(false);
+            return;
+        }
 
-        if (isLeftSwipe) {
-            goNext();
-        } else if (isRightSwipe) {
-            goPrev();
+        const distance = dragStart - dragEnd;
+        const absDistance = Math.abs(distance);
+
+        if (absDistance > minSwipeDistance) {
+            if (distance > 0) {
+                goNext();
+            } else {
+                goPrev();
+            }
+        }
+
+        // Delay resetting isDragging slightly to prevent accidental clicks
+        setTimeout(() => {
+            setIsDragging(false);
+            setDragStart(null);
+            setDragEnd(null);
+        }, 50);
+    };
+
+    // Helper to prevent link navigation during drag
+    const handleClick = (e: React.MouseEvent) => {
+        if (dragStart !== null && dragEnd !== null && Math.abs(dragStart - dragEnd) > 10) {
+            e.preventDefault();
+            e.stopPropagation();
         }
     };
 
@@ -155,102 +181,110 @@ export const MainVisualSlider: React.FC = () => {
     }
 
     return (
-        <section
-            className="relative h-[500px] overflow-hidden bg-slate-900 md:h-[72vh] lg:h-[88vh]"
-            onMouseEnter={() => setPaused(true)}
-            onMouseLeave={() => setPaused(false)}
-            onTouchStart={onTouchStart}
-            onTouchMove={onTouchMove}
-            onTouchEnd={onTouchEnd}
-        >
-            {slides.map((slide, index) => {
-                const visible = safeIndex === index;
-                const overlayContent = (
-                    <>
-                        <div
-                            className="absolute inset-0 bg-cover bg-center transition-transform duration-[7000ms] ease-out"
-                            style={{
-                                backgroundImage: `url(${slide.imageUrl})`,
-                                transform: visible ? 'scale(1.04)' : 'scale(1)',
-                            }}
-                        />
-                        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(0,0,0,0.76)_0%,rgba(0,0,0,0.5)_42%,rgba(0,0,0,0.32)_100%)]" />
-                        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.18)_0%,rgba(0,0,0,0.08)_34%,rgba(0,0,0,0.28)_100%)]" />
-                        <Container className="relative z-10 flex h-full items-center">
-                            <div className="max-w-3xl text-white">
-                                <p className="inline-flex rounded-full border border-white/20 bg-black/30 px-2.5 py-1 md:px-3 md:py-1 text-[10px] md:text-[11px] font-bold tracking-[0.2em] text-white/90">
-                                    {slide.brandText}
-                                </p>
-                                <h1 className="mt-3 md:mt-5 whitespace-pre-wrap break-keep text-2xl sm:text-3xl font-extrabold leading-[1.3] tracking-tight md:text-6xl md:leading-[1.12]">
-                                    {slide.title}
-                                </h1>
-                                <p className="mt-3 md:mt-5 max-w-2xl whitespace-pre-wrap break-keep text-[14px] sm:text-base font-medium leading-relaxed text-white/80 md:text-lg">
-                                    {slide.subtitle}
-                                </p>
-                                <div className="mt-6 md:mt-8">
-                                    <span className="inline-flex rounded-lg md:rounded-xl bg-white px-4 py-2.5 md:px-6 md:py-3.5 text-sm md:text-[15px] font-bold text-[#001E45] shadow-lg transition-transform hover:scale-105">
-                                        {slide.buttonText}
-                                    </span>
+        <section className="bg-white py-0">
+            <Container size="wide">
+                <div
+                    className={`relative h-[400px] overflow-hidden rounded-[8px] bg-slate-900 md:h-[500px] lg:h-[600px] select-none touch-pan-y ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+                    onMouseEnter={() => setPaused(true)}
+                    onMouseLeave={() => {
+                        setPaused(false);
+                        if (isDragging) setIsDragging(false);
+                    }}
+                    onPointerDown={handleStart}
+                    onPointerMove={handleMove}
+                    onPointerUp={handleEnd}
+                    onPointerCancel={handleEnd}
+                    onClickCapture={handleClick}
+                >
+                    {slides.map((slide, index) => {
+                        const visible = safeIndex === index;
+                        const overlayContent = (
+                            <>
+                                <div
+                                    className="absolute inset-0 bg-cover bg-center transition-transform duration-[7000ms] ease-out pointer-events-none"
+                                    draggable="false"
+                                    style={{
+                                        backgroundImage: `url(${slide.imageUrl})`,
+                                        transform: visible ? 'scale(1.04)' : 'scale(1)',
+                                    }}
+                                />
+                                <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(0,0,0,0.55)_0%,rgba(0,0,0,0.3)_42%,rgba(0,0,0,0.1)_100%)] pointer-events-none" />
+                                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.15)_0%,rgba(0,0,0,0.1)_34%,rgba(0,0,0,0.2)_100%)] pointer-events-none" />
+                                <div className="relative z-10 flex h-full items-center justify-center px-6 text-center">
+                                    <div className="max-w-4xl text-white">
+                                        <h1 className="mt-3 md:mt-5 whitespace-pre-wrap break-keep text-2xl sm:text-3xl font-medium leading-[1.2] tracking-tight md:text-[4rem] md:leading-[1.1]">
+                                            {slide.title}
+                                        </h1>
+                                        <p className="mt-4 md:mt-6 mx-auto max-w-3xl whitespace-pre-wrap break-keep text-[15px] sm:text-lg font-medium leading-relaxed text-white/90 md:text-[1.25rem]">
+                                            {slide.subtitle}
+                                        </p>
+                                    </div>
                                 </div>
-                            </div>
-                        </Container>
-                    </>
-                );
+                            </>
+                        );
 
-                const baseClass = `absolute inset-0 transition-opacity duration-700 ${visible ? 'opacity-100' : 'opacity-0 pointer-events-none'
-                    }`;
+                        const baseClass = `absolute inset-0 transition-opacity duration-700 ${visible ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                            }`;
 
-                if (isExternalLink(slide.link)) {
-                    return (
-                        <a
-                            key={slide.id}
-                            href={slide.link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={baseClass}
-                        >
-                            {overlayContent}
-                        </a>
-                    );
-                }
+                        if (isExternalLink(slide.link)) {
+                            return (
+                                <a
+                                    key={slide.id}
+                                    href={slide.link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className={baseClass}
+                                    onDragStart={(e) => e.preventDefault()}
+                                >
+                                    {overlayContent}
+                                </a>
+                            );
+                        }
 
-                return (
-                    <Link key={slide.id} to={slide.link} className={baseClass}>
-                        {overlayContent}
-                    </Link>
-                );
-            })}
+                        return (
+                            <Link 
+                                key={slide.id} 
+                                to={slide.link} 
+                                className={baseClass}
+                                onDragStart={(e) => e.preventDefault()}
+                            >
+                                {overlayContent}
+                            </Link>
+                        );
+                    })}
 
-            {slideCount > 1 && (
-                <>
-                    <button
-                        onClick={goPrev}
-                        className="absolute left-4 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/35 bg-black/30 text-white backdrop-blur hover:bg-black/45 md:flex"
-                        aria-label="Previous slide"
-                    >
-                        <ChevronLeft size={20} />
-                    </button>
-                    <button
-                        onClick={goNext}
-                        className="absolute right-4 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/35 bg-black/30 text-white backdrop-blur hover:bg-black/45 md:flex"
-                        aria-label="Next slide"
-                    >
-                        <ChevronRight size={20} />
-                    </button>
-
-                    <div className="absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 gap-2">
-                        {slides.map((slide, index) => (
+                    {slideCount > 1 && (
+                        <>
                             <button
-                                key={slide.id}
-                                onClick={() => setActiveIndex(index)}
-                                className={`h-2 rounded-full transition-all duration-300 shadow-sm ${safeIndex === index ? 'w-8 bg-[#001e45]' : 'w-2 bg-white/60 hover:bg-white/80'
-                                    }`}
-                                aria-label={`Go to slide ${index + 1}`}
-                            />
-                        ))}
-                    </div>
-                </>
-            )}
+                                onClick={goPrev}
+                                className="absolute left-6 top-1/2 z-20 hidden h-16 w-16 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-black/20 text-white backdrop-blur-sm transition-all hover:bg-black/40 md:flex"
+                                aria-label="Previous slide"
+                            >
+                                <ChevronLeft size={32} />
+                            </button>
+                            <button
+                                onClick={goNext}
+                                className="absolute right-6 top-1/2 z-20 hidden h-16 w-16 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-black/20 text-white backdrop-blur-sm transition-all hover:bg-black/40 md:flex"
+                                aria-label="Next slide"
+                            >
+                                <ChevronRight size={32} />
+                            </button>
+
+                            <div className="absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 gap-2">
+                                {slides.map((slide, index) => (
+                                    <button
+                                        key={slide.id}
+                                        onClick={() => setActiveIndex(index)}
+                                        className={`h-2 rounded-full transition-all duration-300 shadow-sm ${safeIndex === index ? 'w-8 bg-white' : 'w-2 bg-white/40 hover:bg-white/60'
+                                            }`}
+                                        aria-label={`Go to slide ${index + 1}`}
+                                    />
+                                ))}
+                            </div>
+                        </>
+                    )}
+                </div>
+            </Container>
         </section>
     );
 };

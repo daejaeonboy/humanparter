@@ -1,66 +1,48 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  Armchair,
-  LayoutGrid,
-  Monitor,
-  PartyPopper,
-  Printer,
-  Tv,
-} from "lucide-react";
 import { Container } from "./ui/Container";
+import { ArrowRight } from "lucide-react";
 
-interface CategoryTabItem {
+interface CategoryItem {
   name: string;
   to: string;
-  icon: React.ReactNode;
+  imageUrl: string;
 }
 
-const createCategoryLink = (category?: string, title?: string) => {
+const createCategoryLink = (category?: string) => {
   const params = new URLSearchParams();
-
-  if (category) {
+  if (category && category !== "전체") {
     params.set("category", category);
   }
-
-  if (title) {
-    params.set("title", title);
-  }
-
   const query = params.toString();
   return query ? `/products?${query}` : "/products";
 };
 
-const categoryTabs: CategoryTabItem[] = [
-  {
-    name: "전체",
-    to: createCategoryLink(undefined, "전체"),
-    icon: <LayoutGrid size={26} strokeWidth={1.6} />,
-  },
+const categoryItems: CategoryItem[] = [
   {
     name: "IT장비",
-    to: createCategoryLink("IT장비", "IT장비"),
-    icon: <Monitor size={26} strokeWidth={1.6} />,
+    to: createCategoryLink("IT장비"),
+    imageUrl: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=800&q=80",
   },
   {
     name: "사무기기",
-    to: createCategoryLink("사무기기", "사무기기"),
-    icon: <Printer size={26} strokeWidth={1.6} />,
+    to: createCategoryLink("사무기기"),
+    imageUrl: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=800&q=80",
   },
   {
     name: "사무가구",
-    to: createCategoryLink("사무가구", "사무가구"),
-    icon: <Armchair size={26} strokeWidth={1.6} />,
+    to: createCategoryLink("사무가구"),
+    imageUrl: "https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=800&q=80",
   },
   {
     name: "가전제품",
-    to: createCategoryLink("가전제품", "가전제품"),
-    icon: <Tv size={26} strokeWidth={1.6} />,
+    to: createCategoryLink("가전제품"),
+    imageUrl: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=800&q=80",
   },
   {
     name: "행사용품",
-    to: createCategoryLink("행사용품", "행사용품"),
-    icon: <PartyPopper size={26} strokeWidth={1.6} />,
+    to: createCategoryLink("행사용품"),
+    imageUrl: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?auto=format&fit=crop&w=800&q=80",
   },
 ];
 
@@ -69,59 +51,86 @@ interface MainCategoryTabsProps {
 }
 
 export const MainCategoryTabs: React.FC<MainCategoryTabsProps> = ({ variant = "default" }) => {
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(0);
   const isCompact = variant === "compact";
 
-  return (
-    <section className={`${isCompact ? "border-b border-slate-200 bg-slate-50 py-4 md:py-6" : "border-b border-slate-200 bg-white py-10 md:py-14"}`}>
-      <Container>
-        {!isCompact && (
-          <div className="mb-6 text-center md:mb-8 md:text-left">
-            <p className="mb-3 text-[11px] font-bold tracking-[0.1em] text-[#001E45]">
-              PRODUCT CATEGORY
-            </p>
-          </div>
-        )}
-
-        <nav aria-label="메인 카테고리">
-          <div className={`grid grid-cols-3 md:grid-cols-6 ${isCompact ? "gap-2 md:gap-3" : "overflow-hidden rounded-[16px] border border-slate-200 bg-white shadow-sm"}`}>
-            {categoryTabs.map((item, idx) => (
+  if (isCompact) {
+    return (
+      <section className="border-b border-gray-100 bg-white py-6">
+        <Container>
+          <div className="flex flex-wrap gap-2 justify-center">
+            {[{name: "전체", to: "/products"}, ...categoryItems].map((item) => (
               <Link
                 key={item.name}
                 to={item.to}
-                className={`group relative flex items-center justify-center gap-2 overflow-hidden text-center transition-all duration-300
-                  ${isCompact 
-                    ? "flex-row rounded-full border border-slate-200 bg-white px-3 py-2.5 shadow-sm hover:border-[#001E45] md:px-5 md:py-3" 
-                    : `flex-col px-3 py-5 md:px-6 md:py-7 ${idx % 3 !== 0 ? 'border-l border-slate-200/70' : ''} ${idx >= 3 ? 'border-t border-slate-200/70' : ''} md:border-l md:border-t-0 md:first:border-l-0`
-                  }
-                `}
+                className="rounded-full border border-gray-200 bg-white px-5 py-2 text-sm font-semibold text-gray-700 hover:border-black hover:text-black transition-all"
               >
-                {/* Background Fill Hover Effect (Only in default mode) */}
-                {!isCompact && (
-                  <span
-                    className="tab-diagonal-fill absolute inset-0"
-                    style={{ "--tw-fill-color": "#001E45" } as React.CSSProperties}
-                  />
-                )}
-
-                <div className={`relative z-10 transition-colors duration-300 
-                  ${isCompact 
-                    ? "text-[#001E45] group-hover:scale-110" 
-                    : "text-slate-400 group-hover:text-white"
-                  }`}>
-                  {React.cloneElement(item.icon as React.ReactElement<any>, { size: isCompact ? 18 : 26 })}
-                </div>
-
-                <span className={`relative z-10 font-bold tracking-tight transition-colors duration-300 
-                  ${isCompact 
-                    ? "text-[12px] text-slate-700 group-hover:text-[#001E45] md:text-[14px]" 
-                    : "text-[13px] text-slate-600 group-hover:text-white md:text-[15px]"
-                  }`}>
-                  {item.name}
-                </span>
+                {item.name}
               </Link>
             ))}
           </div>
-        </nav>
+        </Container>
+      </section>
+    );
+  }
+
+  return (
+    <section className="bg-white py-12 md:py-16">
+      <Container>
+        <div className="mb-10 flex items-end justify-between">
+          <h2 className="text-2xl font-bold tracking-tight text-black md:text-[32px]">카테고리</h2>
+          <Link to="/products" className="flex items-center gap-1.5 text-sm font-bold text-gray-500 hover:text-black transition-colors">
+            전체보기 <ArrowRight size={16} />
+          </Link>
+        </div>
+
+        {/* 
+          비율 계산: 5개 아이템
+          확대된 아이템 flex-[3.2], 나머지 4개 flex-[1] => 총합 7.2
+          전체 컨테이너 aspect-[3/1] 설정 시
+          확대 아이템 비율: (3.2 / 7.2 * 3) / 1 = 1.333 (정확히 4:3)
+        */}
+        <div className="flex aspect-[4/3] w-full gap-1 overflow-hidden md:aspect-[3/1]">
+          {categoryItems.map((item, index) => {
+            const isHovered = hoveredIndex === index;
+            return (
+              <Link
+                key={item.name}
+                to={item.to}
+                onMouseEnter={() => setHoveredIndex(index)}
+                onMouseLeave={() => setHoveredIndex(index)}
+                className={`relative h-full overflow-hidden rounded-[4px] transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] ${
+                  isHovered ? "flex-[3.2] shadow-2xl" : "flex-1 grayscale opacity-70 hover:opacity-100"
+                }`}
+              >
+                {/* Background Image */}
+                <img
+                  src={item.imageUrl}
+                  alt={item.name}
+                  className="absolute inset-0 h-full w-full object-cover transition-transform duration-700"
+                  style={{ transform: isHovered ? "scale(1.05)" : "scale(1)" }}
+                />
+                
+                {/* Gradient Overlay */}
+                <div className={`absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent transition-opacity duration-500 ${isHovered ? 'opacity-100' : 'opacity-40'}`} />
+
+                {/* Content */}
+                <div className={`absolute bottom-0 left-0 w-full p-4 md:p-8 transition-all duration-500 ${isHovered ? "translate-y-0 opacity-100" : "translate-y-2 opacity-80"}`}>
+                  <span className={`block font-bold tracking-tight text-white transition-all duration-500 ${isHovered ? "text-xl md:text-3xl" : "text-sm md:text-base [writing-mode:vertical-lr] md:[writing-mode:horizontal-tb]"}`}>
+                    {item.name}
+                  </span>
+                  
+                  {isHovered && (
+                    <div className="mt-3 flex items-center gap-2 text-[12px] font-medium text-white/80 md:text-sm">
+                      <span>자세히 보기</span>
+                      <ArrowRight size={14} />
+                    </div>
+                  )}
+                </div>
+              </Link>
+            );
+          })}
+        </div>
       </Container>
     </section>
   );

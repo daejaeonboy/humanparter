@@ -1,81 +1,88 @@
-@import url("https://fonts.googleapis.com/css2?family=Pacifico&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500&family=Pacifico&display=swap");
 
 /* Restored empty file to fix build error. */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  /* Force maximum font weight to 500 for consistency */
+  b, strong, .font-bold, .font-semibold, .font-extrabold, .font-black {
+    font-weight: 500 !important;
+  }
+}
+
 :root {
   --font-base:
-    "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Noto Sans KR",
+    "Noto Sans KR", "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", 
     "Malgun Gothic", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --brand-ink: #0f172a;
-  --brand-ink-soft: #1e293b;
-  --brand-cloud: #eef3fa;
-  --brand-sky: #d7e4f8;
-  --brand-mint: #e4ebf7;
-  --radius-panel: 28px;
-  --radius-card: 18px;
-  --radius-button: 10px;
+  --brand-ink: #000000;
+  --brand-ink-soft: #111111;
+  --brand-cloud: #ffffff;
+  --brand-sky: #f1f5f9;
+  --brand-mint: #f8fafc;
+  --radius-panel: 8px;
+  --radius-card: 8px;
+  --radius-button: 8px;
 }
 
 :root,
 html[data-theme="light"] {
   /* Header theme tokens */
-  --header-surface: rgba(255, 255, 255, 0.92);
+  --header-surface: #ffffff;
   --header-surface-solid: #ffffff;
-  --header-border: #e2e8f0;
-  --header-logo-color: #0f172a;
+  --header-border: #eeeeee;
+  --header-logo-color: #000000;
 
-  --header-utility-bg: #0f172a;
-  --header-utility-text: #f8fafc;
-  --header-utility-muted: rgba(248, 250, 252, 0.74);
-  --header-utility-link: rgba(248, 250, 252, 0.86);
+  --header-utility-bg: #000000;
+  --header-utility-text: #ffffff;
+  --header-utility-muted: rgba(255, 255, 255, 0.7);
+  --header-utility-link: rgba(255, 255, 255, 0.9);
   --header-utility-link-hover: #ffffff;
 
-  --header-search-bg: #f8fafc;
-  --header-search-border: #e2e8f0;
-  --header-search-text: #334155;
-  --header-search-placeholder: #94a3b8;
+  --header-search-bg: #ffffff;
+  --header-search-border: #eeeeee;
+  --header-search-text: #000000;
+  --header-search-placeholder: #999999;
 
-  --header-cta-bg: #001e45;
-  --header-cta-hover: #001430;
+  --header-cta-bg: #000000;
+  --header-cta-hover: #222222;
   --header-cta-text: #ffffff;
 
-  --header-nav-link: #334155;
-  --header-nav-link-hover-bg: #f1f5f9;
-  --header-nav-active-bg: #e2e8f0;
-  --header-nav-active-text: #001e45;
+  --header-nav-link: #000000;
+  --header-nav-link-hover-bg: #f5f5f5;
+  --header-nav-active-bg: #eeeeee;
+  --header-nav-active-text: #000000;
 
   --header-dropdown-surface: #ffffff;
-  --header-dropdown-card-bg: #f8fafc;
-  --header-dropdown-title: #0f172a;
-  --header-dropdown-label: #001e45;
+  --header-dropdown-card-bg: #fafafa;
+  --header-dropdown-title: #000000;
+  --header-dropdown-label: #111111;
 
   --header-chip-bg: #ffffff;
-  --header-chip-border: #e2e8f0;
-  --header-chip-text: #334155;
-  --header-chip-hover-border: #94a3b8;
-  --header-chip-hover-bg: #f8fafc;
+  --header-chip-border: #eeeeee;
+  --header-chip-text: #333333;
+  --header-chip-hover-border: #666666;
+  --header-chip-hover-bg: #f5f5f5;
 
-  --header-mobile-backdrop: rgba(15, 23, 42, 0.45);
+  --header-mobile-backdrop: rgba(0, 0, 0, 0.5);
   --header-mobile-surface: #ffffff;
 
   /* Footer theme tokens */
   --footer-bg: #ffffff;
-  --footer-sub-bg: #f8fafc;
-  --footer-border: #e2e8f0;
-  --footer-text: #475569;
-  --footer-muted: #94a3b8;
-  --footer-heading: #0f172a;
-  --footer-divider: #cbd5e1;
+  --footer-sub-bg: #ffffff;
+  --footer-border: #eeeeee;
+  --footer-text: #333333;
+  --footer-muted: #888888;
+  --footer-heading: #000000;
+  --footer-divider: #dddddd;
   --footer-card-bg: #ffffff;
-  --footer-card-border: #e2e8f0;
-  --footer-cta-bg: #001e45;
-  --footer-cta-hover: #001430;
+  --footer-card-border: #eeeeee;
+  --footer-cta-bg: #000000;
+  --footer-cta-hover: #222222;
   --footer-cta-text: #ffffff;
-  --footer-floating-bg: rgba(255, 255, 255, 0.95);
-  --footer-floating-border: #e2e8f0;
+  --footer-floating-bg: rgba(255, 255, 255, 0.98);
+  --footer-floating-border: #eeeeee;
 }
 
 html[data-theme="dark"] {
@@ -279,6 +286,7 @@ html[data-theme="dark"] {
     background-color: var(--brand-cloud);
     color: var(--brand-ink);
     line-height: 1.6;
+    letter-spacing: -0.02em;
     transition:
       background-color 0.25s ease,
       color 0.25s ease;
