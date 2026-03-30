@@ -21,6 +21,8 @@ import {
     deleteProduct,
     Product,
     isProductDisplayOrderSupported,
+    isProductExternalLinkSupported,
+    normalizeExternalLinkUrl,
     updateProductsDisplayOrder,
     updateProductsCategoryBatch,
 } from '../../src/api/productApi';
@@ -87,6 +89,7 @@ const SimpleEditor = ({ initialValue, onChange }: { initialValue: string; onChan
 type ProductFormData = {
     name: string;
     category: string;
+    external_link_url: string;
     price: number;
     description: string;
     short_description: string;
@@ -104,6 +107,7 @@ type ProductFormData = {
 const createInitialFormData = (productType: any = 'basic'): ProductFormData => ({
     name: '',
     category: '',
+    external_link_url: '',
     price: 0,
     description: '',
     short_description: '',
@@ -175,6 +179,7 @@ export const ProductManager = () => {
     const [selectedParentCategory, setSelectedParentCategory] = useState('');
     const [useCooperative, setUseCooperative] = useState(false);
     const [useAdditional, setUseAdditional] = useState(false);
+    const [isExternalLinkSupported, setIsExternalLinkSupported] = useState(true);
 
     const parentMenuItems = menuItems
         .filter((item) => !normalizeCategory(item.category))
@@ -187,14 +192,16 @@ export const ProductManager = () => {
     const loadData = async () => {
         try {
             setLoading(true);
-            const [productData, navData, orderingSupported] = await Promise.all([
+            const [productData, navData, orderingSupported, externalLinkSupported] = await Promise.all([
                 getProducts(),
                 getAllNavMenuItems(),
                 isProductDisplayOrderSupported(),
+                isProductExternalLinkSupported(),
             ]);
             setProducts(productData);
             setMenuItems(navData);
             setIsOrdering(orderingSupported);
+            setIsExternalLinkSupported(externalLinkSupported);
         } catch (error) {
             console.error(error);
         } finally {
@@ -417,6 +424,7 @@ export const ProductManager = () => {
             ...createInitialFormData('basic'),
             name: product.name,
             category: normalized,
+            external_link_url: product.external_link_url || '',
             price: Number(product.price || 0),
             description: product.description || '',
             short_description: product.short_description || '',
@@ -461,6 +469,7 @@ export const ProductManager = () => {
             const data = {
                 ...formData,
                 category: normalizedCategory,
+                external_link_url: normalizeExternalLinkUrl(formData.external_link_url),
                 product_type: 'basic',
                 basic_components: clean(formData.basic_components),
                 cooperative_components: clean(formData.cooperative_components),
@@ -1012,6 +1021,7 @@ export const ProductManager = () => {
             </div>
 
             {!isOrdering && <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">드래그 순서 저장을 사용하려면 `products.display_order` 컬럼이 필요합니다. `add_products_display_order.sql`을 Supabase SQL Editor에서 1회 실행해주세요.</div>}
+            {!isExternalLinkSupported && <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">상품 외부 링크 기능을 사용하려면 `products.external_link_url` 컬럼이 필요합니다. `add_products_external_link_url.sql`을 Supabase SQL Editor에서 1회 실행해주세요.</div>}
             {isOrdering && <div className="mb-4 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">행 왼쪽 핸들을 드래그해서 상품 노출 순서를 변경할 수 있습니다. <span className="ml-1 font-semibold text-[#001e45]">현재 범위: {currentOrderScopeLabel}</span> {isSavingOrder && <span className="ml-2 font-semibold text-[#001e45]">순서 저장 중...</span>}</div>}
 
             {parentMenusForFilter.length > 0 && (
@@ -1101,6 +1111,18 @@ export const ProductManager = () => {
                                                 );
                                             })()}
                                         </div>
+                                    </div>
+                                    <div>
+                                        <label className="mb-1 block text-sm font-bold text-slate-700">외부 이동 링크</label>
+                                        <input
+                                            type="url"
+                                            placeholder="https://example.com/product"
+                                            value={formData.external_link_url}
+                                            disabled={!isExternalLinkSupported}
+                                            onChange={(e) => setFormData({ ...formData, external_link_url: e.target.value })}
+                                            className="w-full rounded-lg border px-4 py-2 outline-none focus:ring-2 focus:ring-[#001e45] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                                        />
+                                        <p className="mt-1 text-xs text-slate-500">주소를 입력하면 상품 목록, 검색 결과, 관련 상품 클릭 시 해당 사이트로 이동합니다.</p>
                                     </div>
                                 </div>
 

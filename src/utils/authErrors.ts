@@ -12,6 +12,8 @@ export const getAuthErrorMessage = (errorCode: string): string => {
             return '유효하지 않은 이메일 형식입니다.';
         case 'auth/user-disabled':
             return '비활성화된 계정입니다. 관리자에게 문의하세요.';
+        case 'auth/account-exists-with-different-credential':
+            return '이 이메일은 다른 로그인 방식으로 가입되어 있습니다. 기존 로그인 방식으로 먼저 로그인해주세요.';
 
         // 회원가입 관련
         case 'auth/email-already-in-use':
@@ -28,6 +30,14 @@ export const getAuthErrorMessage = (errorCode: string): string => {
             return '이메일/비밀번호 로그인이 활성화되지 않았습니다.';
         case 'auth/requires-recent-login':
             return '보안을 위해 다시 로그인한 후 시도해주세요.';
+        case 'auth/popup-closed-by-user':
+            return '구글 로그인 창이 닫혔습니다. 다시 시도해주세요.';
+        case 'auth/popup-blocked':
+            return '브라우저가 로그인 팝업을 차단했습니다. 팝업 허용 후 다시 시도해주세요.';
+        case 'auth/cancelled-popup-request':
+            return '이전 로그인 요청이 취소되었습니다. 다시 시도해주세요.';
+        case 'auth/unauthorized-domain':
+            return '현재 도메인이 Firebase 인증 허용 도메인에 등록되어 있지 않습니다.';
 
         default:
             return '인증 처리 중 오류가 발생했습니다. 다시 시도해주세요.';

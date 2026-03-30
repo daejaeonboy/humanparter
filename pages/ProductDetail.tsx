@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, Boxes, CheckCircle2, Loader2, Package, Phone } from 'lucide-react';
 import { Seo } from '../components/Seo';
 import { Container } from '../components/ui/Container';
-import { getProductById, getProducts, Product } from '../src/api/productApi';
+import { getProductById, getProductNavigationTarget, getProducts, normalizeExternalLinkUrl, Product } from '../src/api/productApi';
 import { usePrerenderData } from '../src/prerender/context';
 import { buildBreadcrumbStructuredData, normalizeMetaText, toAbsoluteUrl } from '../src/utils/seo';
 
@@ -112,6 +112,7 @@ export const ProductDetailPage: React.FC = () => {
     if (!product) return '';
     return product.description || product.short_description || '제품 상세 정보는 견적 문의를 통해 안내해드립니다.';
   }, [product]);
+  const externalProductUrl = normalizeExternalLinkUrl(product?.external_link_url);
   const metaDescription =
     normalizeMetaText(product?.short_description || description) ||
     '기업 환경에 필요한 렌탈 품목입니다. 제품 사양과 구성은 견적 문의를 통해 안내해드립니다.';
@@ -228,6 +229,14 @@ export const ProductDetailPage: React.FC = () => {
             </div>
 
             <div className="mt-8 grid gap-3">
+              {externalProductUrl && (
+                <a
+                  href={externalProductUrl}
+                  className="inline-flex items-center justify-center rounded-2xl border border-[#001e45] bg-white px-6 py-4 text-sm font-bold text-[#001e45] transition hover:bg-[#001e45]/5"
+                >
+                  외부 사이트로 이동
+                </a>
+              )}
               <Link
                 to="/quote-request"
                 className="inline-flex items-center justify-center rounded-2xl bg-[#001e45] px-6 py-4 text-sm font-bold text-white transition hover:bg-[#132f66]"
@@ -289,23 +298,40 @@ export const ProductDetailPage: React.FC = () => {
               <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
                 <h2 className="text-lg font-bold text-slate-900">같은 카테고리 상품</h2>
                 <div className="mt-5 space-y-4">
-                  {relatedProducts.map((related) => (
-                    <Link
-                      key={related.id}
-                      to={`/products/${related.id}`}
-                      className="flex items-center gap-3 rounded-2xl border border-slate-100 p-3 transition hover:border-slate-200 hover:bg-slate-50"
-                    >
-                      <img
-                        src={related.image_url || fallbackImage}
-                        alt={related.name}
-                        className="h-16 w-16 rounded-xl object-cover"
-                      />
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-bold text-slate-900">{related.name}</p>
-                        <p className="mt-1 text-xs text-slate-500">{related.category || '기본 상품'}</p>
-                      </div>
-                    </Link>
-                  ))}
+                  {relatedProducts.map((related) => {
+                    const navigation = getProductNavigationTarget(related);
+                    const itemContent = (
+                      <>
+                        <img
+                          src={related.image_url || fallbackImage}
+                          alt={related.name}
+                          className="h-16 w-16 rounded-xl object-cover"
+                        />
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-bold text-slate-900">{related.name}</p>
+                          <p className="mt-1 text-xs text-slate-500">{related.category || '기본 상품'}</p>
+                        </div>
+                      </>
+                    );
+
+                    return navigation.external ? (
+                      <a
+                        key={related.id}
+                        href={navigation.href}
+                        className="flex items-center gap-3 rounded-2xl border border-slate-100 p-3 transition hover:border-slate-200 hover:bg-slate-50"
+                      >
+                        {itemContent}
+                      </a>
+                    ) : (
+                      <Link
+                        key={related.id}
+                        to={navigation.href}
+                        className="flex items-center gap-3 rounded-2xl border border-slate-100 p-3 transition hover:border-slate-200 hover:bg-slate-50"
+                      >
+                        {itemContent}
+                      </Link>
+                    );
+                  })}
                 </div>
               </section>
             )}

@@ -6,6 +6,7 @@ export interface Product {
     category?: string;
     _parent_category?: string;
     display_order?: number;
+    external_link_url?: string | null;
     price: number;
     description?: string;
     short_description?: string;
@@ -24,11 +25,42 @@ export interface Product {
 }
 
 let productDisplayOrderSupportedCache: boolean | null = null;
+let productExternalLinkSupportedCache: boolean | null = null;
 
 const isDisplayOrderMissingError = (error: any): boolean => {
     const code = String(error?.code || '');
     const message = String(error?.message || '');
     return code === '42703' || message.includes('products.display_order');
+};
+
+const isExternalLinkMissingError = (error: any): boolean => {
+    const code = String(error?.code || '');
+    const message = String(error?.message || '');
+    return code === '42703' || message.includes('products.external_link_url');
+};
+
+export const normalizeExternalLinkUrl = (value?: string | null): string => {
+    const trimmed = (value || '').trim();
+    if (!trimmed) return '';
+    if (/^https?:\/\//i.test(trimmed)) return trimmed;
+    return `https://${trimmed}`;
+};
+
+const sanitizeExternalLinkUrl = (value?: string | null): string | null => {
+    const normalized = normalizeExternalLinkUrl(value);
+    return normalized || null;
+};
+
+export const getProductNavigationTarget = (product: Pick<Product, 'id' | 'external_link_url'>) => {
+    const externalUrl = sanitizeExternalLinkUrl(product.external_link_url);
+    if (externalUrl) {
+        return { href: externalUrl, external: true };
+    }
+
+    return {
+        href: product.id ? `/products/${product.id}` : '/products',
+        external: false,
+    };
 };
 
 const sortProductsByDisplayOrder = (items: Product[]): Product[] => {
@@ -62,6 +94,28 @@ export const isProductDisplayOrderSupported = async (): Promise<boolean> => {
     }
 
     productDisplayOrderSupportedCache = true;
+    return true;
+};
+
+export const isProductExternalLinkSupported = async (): Promise<boolean> => {
+    if (productExternalLinkSupportedCache !== null) {
+        return productExternalLinkSupportedCache;
+    }
+
+    const { error } = await supabase
+        .from('products')
+        .select('id,external_link_url')
+        .limit(1);
+
+    if (error) {
+        if (isExternalLinkMissingError(error)) {
+            productExternalLinkSupportedCache = false;
+            return false;
+        }
+        throw error;
+    }
+
+    productExternalLinkSupportedCache = true;
     return true;
 };
 
@@ -163,6 +217,7 @@ export const getProductById = async (id: string): Promise<Product | null> => {
 export const addProduct = async (product: Omit<Product, 'id' | 'created_at'>): Promise<Product> => {
     const userData = { ...product };
     const supportsDisplayOrder = await isProductDisplayOrderSupported();
+    const supportsExternalLink = await isProductExternalLinkSupported();
 
     if (supportsDisplayOrder && typeof userData.display_order !== 'number') {
         const { data: firstByOrder, error: firstByOrderError } = await supabase
@@ -173,6 +228,12 @@ export const addProduct = async (product: Omit<Product, 'id' | 'created_at'>): P
 
         if (firstByOrderError) throw firstByOrderError;
         userData.display_order = (firstByOrder?.[0]?.display_order || 0) - 1;
+    }
+
+    if (supportsExternalLink) {
+        userData.external_link_url = sanitizeExternalLinkUrl(userData.external_link_url);
+    } else {
+        delete userData.external_link_url;
     }
 
     const { data, error } = await supabase
@@ -188,10 +249,19 @@ export const addProduct = async (product: Omit<Product, 'id' | 'created_at'>): P
 // Update product
 export const updateProduct = async (id: string, updates: Partial<Product>): Promise<Product> => {
     const supportsDisplayOrder = await isProductDisplayOrderSupported();
+    const supportsExternalLink = await isProductExternalLinkSupported();
     const safeUpdates = { ...updates };
 
     if (!supportsDisplayOrder) {
         delete safeUpdates.display_order;
+    }
+
+    if (supportsExternalLink) {
+        if ('external_link_url' in safeUpdates) {
+            safeUpdates.external_link_url = sanitizeExternalLinkUrl(safeUpdates.external_link_url);
+        }
+    } else {
+        delete safeUpdates.external_link_url;
     }
 
     if (Object.keys(safeUpdates).length === 0) {

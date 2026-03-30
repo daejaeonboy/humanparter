@@ -5,7 +5,6 @@ const BUCKET_CANDIDATES = [
     'Humanpartner',
     'HumanPartner',
     'humanpartner',
-    'human-partner',
     'products',
     'public',
     'uploads',

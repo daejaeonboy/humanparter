@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getProductByCode, getProductById } from '../src/api/productApi';
+import { getProductByCode, getProductById, getProductNavigationTarget } from '../src/api/productApi';
 
 export const RedirectToProduct = () => {
     const { code } = useParams();
@@ -29,7 +29,12 @@ export const RedirectToProduct = () => {
                 }
 
                 if (product) {
-                    navigate(`/products/${product.id}`, { replace: true });
+                    const navigationTarget = getProductNavigationTarget(product);
+                    if (navigationTarget.external) {
+                        window.location.replace(navigationTarget.href);
+                        return;
+                    }
+                    navigate(navigationTarget.href, { replace: true });
                 } else {
                     // Product not found
                     console.warn(`Product not found for code/id: ${code}`);

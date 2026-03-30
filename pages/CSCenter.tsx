@@ -5,6 +5,7 @@ import { Seo } from '../components/Seo';
 import { getFAQs, FAQ, getFAQCategories } from '../src/api/faqApi';
 import { buildBreadcrumbStructuredData } from '../src/utils/seo';
 
+const DEFAULT_FAQ_CATEGORIES = ['자주 묻는 질문', '공통', '이용문의', '견적/결제', '취소/환불', '상품문의', '기타'];
 
 export const CSCenter: React.FC = () => {
     const [faqs, setFaqs] = useState<FAQ[]>([]);
@@ -16,19 +17,33 @@ export const CSCenter: React.FC = () => {
     useEffect(() => {
         const loadData = async () => {
             try {
-                const [faqData, catData] = await Promise.all([
-                    getFAQs(),
-                    getFAQCategories()
-                ]);
-                setFaqs(faqData);
-                if (catData.length > 0) {
-                    setCategories(catData.map(c => c.name));
-                } else {
-                    setCategories(['자주 묻는 질문', '공통', '이용문의', '견적/결제', '취소/환불', '상품문의', '기타']);
+                const faqData = await getFAQs();
+                let catData: Array<{ name: string }> = [];
+
+                try {
+                    catData = await getFAQCategories();
+                } catch (categoryError) {
+                    console.warn('Failed to load FAQ categories, falling back to FAQ-derived categories:', categoryError);
                 }
+
+                const faqCategories = Array.from(new Set(faqData.map((item) => item.category).filter(Boolean)));
+                const resolvedCategories = catData.length > 0
+                    ? catData.map((c) => c.name)
+                    : Array.from(new Set([...DEFAULT_FAQ_CATEGORIES, ...faqCategories]));
+
+                setFaqs(faqData);
+                setCategories(resolvedCategories);
+                setActiveCategory((current) => {
+                    const currentHasFaq = faqData.some((item) => item.category === current);
+                    if (currentHasFaq) return current;
+
+                    return resolvedCategories.find((category) => faqData.some((item) => item.category === category))
+                        ?? resolvedCategories[0]
+                        ?? '자주 묻는 질문';
+                });
             } catch (error) {
                 console.error('Failed to load data:', error);
-                setCategories(['자주 묻는 질문', '공통', '이용문의', '견적/결제', '취소/환불', '상품문의', '기타']);
+                setCategories(DEFAULT_FAQ_CATEGORIES);
             } finally {
                 setLoading(false);
             }

@@ -3,7 +3,7 @@ import { Container } from '../components/ui/Container';
 import { Loader2 } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Seo } from '../components/Seo';
-import { getProducts, Product } from '../src/api/productApi';
+import { getProductNavigationTarget, getProducts, Product } from '../src/api/productApi';
 import { getAllNavMenuItems } from '../src/api/cmsApi';
 import { usePrerenderData } from '../src/prerender/context';
 import { supabase } from '../src/lib/supabase';
@@ -346,36 +346,47 @@ export const ProductListPage: React.FC = () => {
                 ) : (
                     <>
                         <div className="grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-3 lg:gap-x-8 lg:gap-y-12 xl:grid-cols-4">
-                            {pagedProducts.map((product) => (
-                                <Link to={`/products/${product.id}`} key={product.id} className="group flex flex-col">
-                                    {/* Image Container */}
-                                    <div className="relative aspect-[4/3] w-full overflow-hidden rounded-[20px] bg-white shadow-sm ring-1 ring-slate-900/5 transition-all duration-300 group-hover:shadow-md">
-                                        <img
-                                            src={product.image_url || 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80'}
-                                            alt={product.name}
-                                            className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                                        />
-                                        <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/5" />
-                                        
-                                        {product.stock === 0 && (
-                                            <div className="absolute inset-0 flex items-center justify-center bg-white/60 backdrop-blur-[2px]">
-                                                <span className="rounded-full border border-slate-200 bg-white/90 px-4 py-1.5 text-sm font-extrabold text-[#001e45] shadow-sm">품절</span>
-                                            </div>
-                                        )}
-                                    </div>
+                            {pagedProducts.map((product) => {
+                                const navigation = getProductNavigationTarget(product);
+                                const cardContent = (
+                                    <>
+                                        <div className="relative aspect-[4/3] w-full overflow-hidden rounded-[20px] bg-white shadow-sm ring-1 ring-slate-900/5 transition-all duration-300 group-hover:shadow-md">
+                                            <img
+                                                src={product.image_url || 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80'}
+                                                alt={product.name}
+                                                className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                                            />
+                                            <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/5" />
+                                            
+                                            {product.stock === 0 && (
+                                                <div className="absolute inset-0 flex items-center justify-center bg-white/60 backdrop-blur-[2px]">
+                                                    <span className="rounded-full border border-slate-200 bg-white/90 px-4 py-1.5 text-sm font-extrabold text-[#001e45] shadow-sm">품절</span>
+                                                </div>
+                                            )}
+                                        </div>
 
-                                    {/* Content */}
-                                    <div className="mt-5 flex flex-col px-1">
-                                        <span className="mb-2 text-[11px] font-extrabold tracking-wider text-slate-400 uppercase">
-                                            {product.category || '기본 상품'}
-                                        </span>
-                                         
-                                        <h3 className="line-clamp-2 text-[16px] font-bold leading-snug text-slate-900 transition-colors group-hover:text-[#001e45]">
-                                            {product.name}
-                                        </h3>
-                                    </div>
-                                </Link>
-                            ))}
+                                        <div className="mt-5 flex flex-col px-1">
+                                            <span className="mb-2 text-[11px] font-extrabold tracking-wider text-slate-400 uppercase">
+                                                {product.category || '기본 상품'}
+                                            </span>
+                                             
+                                            <h3 className="line-clamp-2 text-[16px] font-bold leading-snug text-slate-900 transition-colors group-hover:text-[#001e45]">
+                                                {product.name}
+                                            </h3>
+                                        </div>
+                                    </>
+                                );
+
+                                return navigation.external ? (
+                                    <a href={navigation.href} key={product.id} className="group flex flex-col">
+                                        {cardContent}
+                                    </a>
+                                ) : (
+                                    <Link to={navigation.href} key={product.id} className="group flex flex-col">
+                                        {cardContent}
+                                    </Link>
+                                );
+                            })}
                         </div>
 
                         {totalPages > 1 && (

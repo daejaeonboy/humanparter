@@ -1,12 +1,12 @@
 ---
-description: 홈페이지 배포 방법 및 자동 배포 규칙
+description: 홈페이지 수동 배포 방법
 ---
 
-# 자동 배포 규칙
+# 수동 배포 규칙
 
-**중요: 코드 수정 후 항상 자동으로 홈페이지에 배포해야 합니다.**
+**중요: GitHub Actions를 통한 Firebase 자동 배포는 사용하지 않습니다.**
 
-수정이 완료되면 다음 단계를 자동으로 실행합니다:
+수정이 완료되면 아래 단계를 수동으로 실행합니다:
 
 ## 배포 단계
 
@@ -16,14 +16,16 @@ description: 홈페이지 배포 방법 및 자동 배포 규칙
 npm run build
 ```
 
-2. Firebase 배포
+2. 필요 시 Firebase Hosting 수동 배포
 ```bash
 firebase deploy --only hosting
 ```
 
 ## 배포 URL
-- 홈페이지: https://human-partner.web.app
+- Firebase 프로젝트: `humanpartner-77b4c`
+- Hosting 사이트: https://humanpartner-ent.web.app
 
 ## 주의사항
 - 빌드 에러가 없는지 확인
 - 배포 후 사이트 접속 확인
+- GitHub Actions 기반 Firebase 자동 배포는 비활성화 상태를 유지

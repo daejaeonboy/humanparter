@@ -23,6 +23,13 @@ export interface UserProfile {
     created_at?: string;
 }
 
+interface AuthIdentity {
+    uid: string;
+    email?: string | null;
+    displayName?: string | null;
+    providerIds?: string[];
+}
+
 // 사용자 프로필 생성
 export const createUserProfile = async (profile: Omit<UserProfile, 'id' | 'created_at' | 'is_admin'>): Promise<UserProfile> => {
     const { data, error } = await supabase
@@ -44,6 +51,18 @@ export const getUserProfileByFirebaseUid = async (firebaseUid: string): Promise<
         .single();
 
     if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows
+    return data;
+};
+
+export const getUserProfileByEmail = async (email: string): Promise<UserProfile | null> => {
+    const normalizedEmail = email.trim().toLowerCase();
+    const { data, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .ilike('email', normalizedEmail)
+        .single();
+
+    if (error && error.code !== 'PGRST116') throw error;
     return data;
 };
 
@@ -69,6 +88,38 @@ export const updateUserProfile = async (id: string, updates: Partial<UserProfile
 
     if (error) throw error;
     return data;
+};
+
+export const resolveUserProfileForAuthIdentity = async ({
+    uid,
+    email,
+    displayName,
+    providerIds = [],
+}: AuthIdentity): Promise<UserProfile | null> => {
+    const profileByUid = await getUserProfileByFirebaseUid(uid);
+    if (profileByUid) {
+        return profileByUid;
+    }
+
+    const canMatchByEmail = Boolean(email && providerIds.includes('google.com'));
+    if (!canMatchByEmail || !email) {
+        return null;
+    }
+
+    const profileByEmail = await getUserProfileByEmail(email);
+    if (!profileByEmail || !profileByEmail.id) {
+        return null;
+    }
+
+    if (profileByEmail.firebase_uid === uid) {
+        return profileByEmail;
+    }
+
+    return updateUserProfile(profileByEmail.id, {
+        firebase_uid: uid,
+        email: email.trim().toLowerCase(),
+        name: displayName?.trim() || profileByEmail.name,
+    });
 };
 
 // 사용자 삭제

@@ -1,7 +1,7 @@
 import type { QuoteInquiryPayload } from "../api/inquiryApi";
 
 const DEFAULT_SITE_EMAIL_API_URL =
-    "https://us-central1-human-partner.cloudfunctions.net/sendSiteEmail";
+    "https://us-central1-humanpartner-77b4c.cloudfunctions.net/sendSiteEmail";
 const configuredSiteEmailApiUrl = (import.meta.env.VITE_SITE_EMAIL_API_URL || "").trim();
 const QUOTE_REQUEST_RECEIVER_EMAIL = "hm_solution@naver.com";
 

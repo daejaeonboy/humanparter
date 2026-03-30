@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { searchProducts, Product } from '../src/api/productApi';
+import { searchProducts, Product, getProductNavigationTarget } from '../src/api/productApi';
 import { Seo } from '../components/Seo';
 import { Container } from '../components/ui/Container';
 import { Loader2, Search } from 'lucide-react';
@@ -80,42 +80,58 @@ export const ProductSearchResult: React.FC = () => {
                 {/* Results Grid */}
                 {!loading && products.length > 0 && (
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-                        {products.map((product) => (
-                            <Link
-                                key={product.id}
-                                to={`/products/${product.id}`}
-                                className="group block bg-white border border-slate-100 rounded-2xl overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
-                            >
-                                <div className="aspect-[16/10] relative overflow-hidden bg-slate-100">
-                                    {product.image_url ? (
-                                        <img
-                                            src={product.image_url}
-                                            alt={product.name}
-                                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                                        />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-slate-400">
-                                            <span>No Image</span>
-                                        </div>
-                                    )}
-                                    {/* Overlay */}
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                                </div>
-                                <div className="p-4">
-                                    <h3 className="font-bold text-slate-800 mb-1 truncate group-hover:text-[#001e45] transition-colors">
-                                        {product.name}
-                                    </h3>
-                                    <p className="text-xs text-slate-500 mb-2 line-clamp-1 h-4">
-                                        {product.short_description || ''}
-                                    </p>
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-lg font-extrabold text-[#001e45]">
-                                            {product.price?.toLocaleString()}<span className="text-xs font-medium ml-0.5">원</span>
-                                        </span>
+                        {products.map((product) => {
+                            const navigation = getProductNavigationTarget(product);
+                            const cardContent = (
+                                <>
+                                    <div className="aspect-[16/10] relative overflow-hidden bg-slate-100">
+                                        {product.image_url ? (
+                                            <img
+                                                src={product.image_url}
+                                                alt={product.name}
+                                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-slate-400">
+                                                <span>No Image</span>
+                                            </div>
+                                        )}
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                                     </div>
-                                </div>
-                            </Link>
-                        ))}
+                                    <div className="p-4">
+                                        <h3 className="font-bold text-slate-800 mb-1 truncate group-hover:text-[#001e45] transition-colors">
+                                            {product.name}
+                                        </h3>
+                                        <p className="text-xs text-slate-500 mb-2 line-clamp-1 h-4">
+                                            {product.short_description || ''}
+                                        </p>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-lg font-extrabold text-[#001e45]">
+                                                {product.price?.toLocaleString()}<span className="text-xs font-medium ml-0.5">원</span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </>
+                            );
+
+                            return navigation.external ? (
+                                <a
+                                    key={product.id}
+                                    href={navigation.href}
+                                    className="group block bg-white border border-slate-100 rounded-2xl overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
+                                >
+                                    {cardContent}
+                                </a>
+                            ) : (
+                                <Link
+                                    key={product.id}
+                                    to={navigation.href}
+                                    className="group block bg-white border border-slate-100 rounded-2xl overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
+                                >
+                                    {cardContent}
+                                </Link>
+                            );
+                        })}
                     </div>
                 )}
             </Container>
