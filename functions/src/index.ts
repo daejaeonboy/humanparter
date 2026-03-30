@@ -1,9 +1,7 @@
-import * as functions from "firebase-functions";
 import * as nodemailer from "nodemailer";
-import * as cors from "cors";
 import * as dotenv from "dotenv";
+import { onRequest } from "firebase-functions/v2/https";
 
-const corsHandler = cors({ origin: true });
 dotenv.config();
 
 const normalizeEnvValue = (value?: string) => {
@@ -13,16 +11,40 @@ const normalizeEnvValue = (value?: string) => {
     return value.trim().replace(/^['"]|['"]$/g, "");
 };
 
-export const sendSiteEmail = functions.https.onRequest((req, res) => {
-    corsHandler(req, res, async () => {
+const normalizeRecipientList = (value: unknown): string[] => {
+    if (Array.isArray(value)) {
+        return value
+            .map((item) => (typeof item === "string" ? normalizeEnvValue(item) : ""))
+            .filter(Boolean);
+    }
+
+    if (typeof value === "string") {
+        return value
+            .split(",")
+            .map((item) => normalizeEnvValue(item))
+            .filter(Boolean);
+    }
+
+    return [];
+};
+
+export const sendSiteEmailV2 = onRequest(
+    {
+        region: "us-central1",
+        cors: true,
+        invoker: "public",
+    },
+    async (req, res) => {
         if (req.method !== "POST") {
             res.status(405).send("Method Not Allowed");
             return;
         }
 
-        const { to, subject, html } = req.body;
+        const { to, subject, html, replyTo } = req.body || {};
+        const recipientList = normalizeRecipientList(to);
+        const normalizedReplyTo = typeof replyTo === "string" ? normalizeEnvValue(replyTo) : "";
 
-        if (!to || !subject || !html) {
+        if (recipientList.length === 0 || !subject || !html) {
             res.status(400).json({ error: "Missing required fields (to, subject, html)" });
             return;
         }
@@ -62,9 +84,10 @@ export const sendSiteEmail = functions.https.onRequest((req, res) => {
 
         const mailOptions = {
             from: `"${emailFromName}" <${emailUser}>`,
-            to,
+            to: recipientList.join(", "),
             subject,
             html,
+            replyTo: normalizedReplyTo || undefined,
         };
 
         try {
@@ -75,6 +98,6 @@ export const sendSiteEmail = functions.https.onRequest((req, res) => {
             console.error("Error sending email:", error);
             res.status(500).json({ error: "Failed to send email", details: error.message });
         }
-    });
-});
+    },
+);
 

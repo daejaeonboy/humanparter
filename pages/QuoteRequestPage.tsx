@@ -26,8 +26,9 @@ import {
   isInquiriesTableMissingError,
   QuoteInquiryPayload,
 } from "../src/api/inquiryApi";
+import { getQuoteNotificationRecipientEmails } from "../src/api/quoteNotificationApi";
 import { getAllNavMenuItems } from "../src/api/cmsApi";
-import { sendQuoteInquiryFallbackEmail } from "../src/utils/email";
+import { sendQuoteInquiryNotificationEmail } from "../src/utils/email";
 import { buildBreadcrumbStructuredData, toAbsoluteUrl } from "../src/utils/seo";
 
 type CategoryGroup = {
@@ -297,36 +298,42 @@ export const QuoteRequestPage: React.FC = () => {
       ),
       notes: formData.notes.trim(),
     };
-
-    setSubmitting(true);
-    try {
-      await createQuoteInquiry(payload, {
-        userId: user?.uid,
-        userName: userProfile?.name || payload.contactName,
-        userEmail: userProfile?.email || payload.email,
-      });
-
+    const requester = {
+      userId: user?.uid,
+      userName: userProfile?.name || payload.contactName,
+      userEmail: userProfile?.email || payload.email,
+    };
+    const resetAfterSuccess = () => {
       setSubmitted(true);
       setFormData(initialForm);
       setEtcProduct("");
       setPrivacyAgreed(false);
       setShowCategoryModal(false);
+    };
+
+    setSubmitting(true);
+    try {
+      await createQuoteInquiry(payload, requester);
+
+      try {
+        const recipientEmails = await getQuoteNotificationRecipientEmails();
+        await sendQuoteInquiryNotificationEmail(payload, recipientEmails, requester);
+      } catch (notificationError) {
+        console.error("Failed to send quote inquiry notification email:", notificationError);
+      }
+
+      resetAfterSuccess();
     } catch (error) {
       console.error("Failed to submit quote inquiry:", error);
 
       if (isInquiriesTableMissingError(error)) {
         try {
-          await sendQuoteInquiryFallbackEmail(payload, {
-            userId: user?.uid,
-            userName: userProfile?.name || payload.contactName,
-            userEmail: userProfile?.email || payload.email,
+          const recipientEmails = await getQuoteNotificationRecipientEmails();
+          await sendQuoteInquiryNotificationEmail(payload, recipientEmails, requester, {
+            variant: "fallback",
           });
 
-          setSubmitted(true);
-          setFormData(initialForm);
-          setEtcProduct("");
-          setPrivacyAgreed(false);
-          setShowCategoryModal(false);
+          resetAfterSuccess();
           return;
         } catch (fallbackError) {
           console.error("Quote inquiry email fallback failed:", fallbackError);

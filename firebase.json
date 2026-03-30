@@ -20,7 +20,11 @@
       "rewrites": [
         {
           "source": "/api/email/send",
-          "function": "sendSiteEmail"
+          "function": {
+            "functionId": "sendSiteEmailV2",
+            "region": "us-central1",
+            "pinTag": true
+          }
         },
         {
           "source": "**",
