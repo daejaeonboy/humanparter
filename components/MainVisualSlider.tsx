@@ -184,7 +184,7 @@ export const MainVisualSlider: React.FC = () => {
         <section className="bg-white py-0">
             <Container size="wide">
                 <div
-                    className={`relative h-[400px] overflow-hidden rounded-[8px] bg-slate-900 md:h-[500px] lg:h-[600px] select-none touch-pan-y ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+                    className={`relative h-[400px] overflow-hidden rounded-2xl bg-slate-900 md:h-[500px] lg:h-[600px] select-none touch-pan-y ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
                     onMouseEnter={() => setPaused(true)}
                     onMouseLeave={() => {
                         setPaused(false);

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, Boxes, CheckCircle2, Loader2, Package, Phone } from 'lucide-react';
+import { PublicPageEditButton } from '../components/admin/PublicPageEditButton';
 import { Seo } from '../components/Seo';
 import { Container } from '../components/ui/Container';
 import { getProductById, getProductNavigationTarget, getProducts, normalizeExternalLinkUrl, Product } from '../src/api/productApi';
@@ -188,6 +189,7 @@ export const ProductDetailPage: React.FC = () => {
       />
 
       <Container className="space-y-8">
+        <PublicPageEditButton to="/admin/products" />
         <Link to="/products" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-[#001e45]">
           <ArrowLeft size={16} />
           상품 목록으로 돌아가기

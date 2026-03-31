@@ -53,7 +53,7 @@ export const InstallationCasesSection: React.FC = () => {
 
   if (loading) {
     return (
-      <section className="bg-white py-12 md:py-16">
+      <section className="bg-white py-16 md:py-24">
         <Container>
           <div className="flex items-center justify-center py-20">
             <Loader2 className="animate-spin text-gray-400" size={38} />
@@ -64,17 +64,12 @@ export const InstallationCasesSection: React.FC = () => {
   }
 
   return (
-    <section className="bg-white py-12 md:py-16">
+    <section className="bg-white py-16 md:py-24">
       <Container>
-        <div className="mb-8 flex items-end justify-between">
-          <div className="flex items-end gap-6">
-            <h2 className="text-[28px] font-bold leading-tight text-black md:text-[32px]">
-              고객 사례
-            </h2>
-            <p className="mb-1 hidden text-[14px] font-medium text-black/40 md:block">
-              휴먼파트너와 만드는 혁신
-            </p>
-          </div>
+        <div className="mb-10 flex items-end justify-between md:mb-12">
+          <h2 className="text-[28px] font-medium leading-tight text-black md:text-[32px]">
+            고객 사례
+          </h2>
           <Link
             to="/cases"
             className="text-[13px] font-semibold text-black/60 transition hover:text-black"
@@ -83,12 +78,11 @@ export const InstallationCasesSection: React.FC = () => {
           </Link>
         </div>
 
-        {/* 3단 구성 및 Gap 4px(Tailwind gap-1) 설정 */}
-        <div className="grid grid-cols-1 gap-1 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           {cases.map((item) => (
             <Link key={item.id} to={item.link || `/cases/${item.id}`} className="group">
-              <div className="mb-4 overflow-hidden bg-gray-100">
-                <div className="aspect-video w-full transition-transform duration-500 group-hover:scale-105">
+              <div className="mb-4 overflow-hidden rounded-2xl bg-gray-100">
+                <div className="aspect-[4/3] w-full transition-transform duration-500 group-hover:scale-105">
                   <img
                     src={item.image_url}
                     alt={item.title}
@@ -97,10 +91,7 @@ export const InstallationCasesSection: React.FC = () => {
                 </div>
               </div>
               <div className="px-1">
-                <span className="mb-1 block text-[11px] font-bold tracking-tight text-black/30">
-                  고객사례
-                </span>
-                <h3 className="text-[16px] font-bold text-black transition-colors group-hover:text-black/70">
+                <h3 className="text-[16px] font-medium text-black transition-colors group-hover:text-black/70">
                   {item.title}
                 </h3>
               </div>

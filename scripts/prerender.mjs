@@ -30,11 +30,31 @@ const STATIC_ROUTES = [
     sitemap: { changefreq: 'monthly', priority: '0.8' },
   },
   {
+    route: '/company/business',
+    sitemap: { changefreq: 'monthly', priority: '0.7' },
+  },
+  {
+    route: '/company/vision',
+    sitemap: { changefreq: 'monthly', priority: '0.7' },
+  },
+  {
+    route: '/company/location',
+    sitemap: { changefreq: 'monthly', priority: '0.7' },
+  },
+  {
     route: '/quote-request',
     sitemap: { changefreq: 'monthly', priority: '0.9' },
   },
   {
+    route: '/notice',
+    sitemap: { changefreq: 'weekly', priority: '0.7' },
+  },
+  {
     route: '/cs',
+    sitemap: { changefreq: 'weekly', priority: '0.7' },
+  },
+  {
+    route: '/cs/as-guide',
     sitemap: { changefreq: 'weekly', priority: '0.7' },
   },
   {
@@ -48,6 +68,33 @@ const STATIC_ROUTES = [
   {
     route: '/privacy',
     sitemap: { changefreq: 'yearly', priority: '0.3' },
+  },
+];
+
+const NOTICE_DETAIL_ROUTES = [
+  {
+    route: '/notice/notice-2026-office-rental-guide',
+    sitemap: { changefreq: 'monthly', priority: '0.6', lastmod: '2026-03-31T00:00:00.000Z' },
+  },
+  {
+    route: '/notice/notice-2026-installation-schedule-guide',
+    sitemap: { changefreq: 'monthly', priority: '0.6', lastmod: '2026-03-28T00:00:00.000Z' },
+  },
+  {
+    route: '/notice/notice-2026-it-package-update',
+    sitemap: { changefreq: 'monthly', priority: '0.6', lastmod: '2026-03-24T00:00:00.000Z' },
+  },
+  {
+    route: '/notice/notice-2026-customer-hours',
+    sitemap: { changefreq: 'monthly', priority: '0.6', lastmod: '2026-03-21T00:00:00.000Z' },
+  },
+  {
+    route: '/notice/notice-2026-large-project-support',
+    sitemap: { changefreq: 'monthly', priority: '0.6', lastmod: '2026-03-18T00:00:00.000Z' },
+  },
+  {
+    route: '/notice/notice-2026-site-checklist',
+    sitemap: { changefreq: 'monthly', priority: '0.6', lastmod: '2026-03-15T00:00:00.000Z' },
   },
 ];
 
@@ -160,6 +207,17 @@ const buildPrerenderEntries = (datasets) => {
       ...item.sitemap,
     },
   }));
+
+  NOTICE_DETAIL_ROUTES.forEach((item) => {
+    entries.push({
+      route: item.route,
+      data: null,
+      sitemap: {
+        route: item.route,
+        ...item.sitemap,
+      },
+    });
+  });
 
   if (!datasets) {
     return entries;

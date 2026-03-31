@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { Container } from "./ui/Container";
 import { AllianceMember, getAllianceMembers } from "../src/api/cmsApi";
 
 interface LogoItem {
@@ -10,12 +9,10 @@ interface LogoItem {
 
 interface MarqueeRowProps {
   logos: LogoItem[];
-  direction: "left" | "right";
 }
 
-const SECTION_TITLE = "\uD568\uAED8 \uC131\uC7A5\uD558\uB294 \uD30C\uD2B8\uB108";
 const logoFrameClass =
-  "flex h-16 w-[180px] shrink-0 items-center justify-center rounded-2xl border border-transparent px-4 md:h-20 md:w-[260px]";
+  "flex h-14 w-[150px] shrink-0 items-center justify-center rounded-2xl border border-transparent px-3 md:h-16 md:w-[210px]";
 
 const fallbackLogos: LogoItem[] = [
   { name: "KOREA NATIONAL UNIVERSITY" },
@@ -42,33 +39,14 @@ const ensureMinimumRowLength = (items: LogoItem[], minimum: number) => {
   return repeated;
 };
 
-const splitLogosIntoRows = (items: LogoItem[]) => {
-  if (items.length === 0) {
-    return {
-      topRow: fallbackLogos.slice(0, 5),
-      bottomRow: fallbackLogos.slice(5),
-    };
-  }
-
-  const topRow = items.filter((_, index) => index % 2 === 0);
-  const bottomRow = items.filter((_, index) => index % 2 === 1);
-
-  return {
-    topRow: ensureMinimumRowLength(topRow.length > 0 ? topRow : items, 6),
-    bottomRow: ensureMinimumRowLength(bottomRow.length > 0 ? bottomRow : items, 6),
-  };
-};
-
-const MarqueeRow: React.FC<MarqueeRowProps> = ({ logos, direction }) => {
+const MarqueeRow: React.FC<MarqueeRowProps> = ({ logos }) => {
   const repeated = [...logos, ...logos];
   const animationDuration = `${Math.max(24, logos.length * 5)}s`;
 
   return (
     <div className="w-full overflow-hidden">
       <div
-        className={`flex w-max items-center gap-6 py-4 will-change-transform md:gap-10 md:py-5 ${
-          direction === "left" ? "animate-marquee-left" : "animate-marquee-right"
-        }`}
+        className="animate-marquee-left flex w-max items-center gap-6 py-4 will-change-transform md:gap-10 md:py-5"
         style={{ animationDuration }}
       >
         {repeated.map((item, index) => (
@@ -77,11 +55,11 @@ const MarqueeRow: React.FC<MarqueeRowProps> = ({ logos, direction }) => {
               <img
                 src={item.imageSrc}
                 alt={item.name}
-                className="h-full w-full object-contain"
+                className="max-h-9 w-auto max-w-full object-contain md:max-h-11"
                 loading="lazy"
               />
             ) : (
-              <span className="text-center text-[22px] font-black tracking-[-0.02em] text-slate-500/80 md:text-[34px]">
+              <span className="text-center text-lg font-black tracking-[-0.02em] text-slate-500/80 md:text-[28px]">
                 {item.name}
               </span>
             )}
@@ -117,25 +95,12 @@ export const ClientLogoMarqueeSection: React.FC = () => {
 
     loadLogos();
   }, []);
-
-  const { topRow, bottomRow } = splitLogosIntoRows(logos);
+  const marqueeLogos = ensureMinimumRowLength(logos.length > 0 ? logos : fallbackLogos, 6);
 
   return (
-    <section className="bg-white py-10 md:py-14">
-      <Container>
-        <div className="mb-8 md:mb-14">
-          <p className="mb-3 text-[11px] font-bold tracking-[0.15em] text-[#001E45]/80">CLIENTS</p>
-          <h2 className="text-3xl font-extrabold leading-tight tracking-tight text-slate-900 md:text-4xl">
-            {SECTION_TITLE}
-          </h2>
-        </div>
-      </Container>
-
+    <section className="bg-white py-12 md:py-16">
       <div className="w-full overflow-x-hidden">
-        <div className="space-y-5 md:space-y-7">
-          <MarqueeRow logos={topRow} direction="left" />
-          <MarqueeRow logos={bottomRow} direction="right" />
-        </div>
+        <MarqueeRow logos={marqueeLogos} />
       </div>
     </section>
   );

@@ -6,9 +6,12 @@ export default {
     ],
     theme: {
         extend: {
+            fontFamily: {
+                sans: ['Pretendard', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'Roboto', 'sans-serif'],
+            },
             colors: {
                 brand: {
-                    DEFAULT: '#001E45', // Primary Brand Color
+                    DEFAULT: '#001E45', // Primary Brand Color (Navy)
                     50: '#f0f5fa',
                     100: '#dfeaef',
                     200: '#c5d7e5',
@@ -20,6 +23,15 @@ export default {
                     800: '#1d4261',
                     900: '#001E45', // Core Navy
                     950: '#00112b',
+                },
+                ink: {
+                    primary: '#0f172a', // slate-900
+                    secondary: '#475569', // slate-600
+                    muted: '#94a3b8', // slate-400
+                },
+                surface: {
+                    base: '#ffffff',
+                    soft: '#f8fafc', // slate-50
                 }
             },
             keyframes: {

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Edit2,
   Eye,
@@ -33,6 +34,8 @@ import {
   updateQuickMenuItem,
 } from '../../src/api/cmsApi';
 import { uploadImage } from '../../src/api/storageApi';
+import { CompanyContentManager } from './CompanyContentManager';
+import { NoticeManager } from './NoticeManager';
 
 type TabType = 'alliance' | 'banners' | 'quickmenu' | 'popups';
 
@@ -133,7 +136,7 @@ const getDefaultFormData = (
   };
 };
 
-export const CMSManager: React.FC = () => {
+const CMSManagerInternal: React.FC = () => {
   const [tab, setTab] = useState<TabType>('alliance');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -657,4 +660,15 @@ export const CMSManager: React.FC = () => {
       )}
     </div>
   );
+};
+
+export const CMSManager: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const contentMode = searchParams.get('content');
+
+  if (contentMode === 'company' || contentMode === 'notice') {
+    return contentMode === 'company' ? <CompanyContentManager /> : <NoticeManager />;
+  }
+
+  return <CMSManagerInternal />;
 };

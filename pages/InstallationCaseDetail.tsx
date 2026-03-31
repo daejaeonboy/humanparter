@@ -1,6 +1,7 @@
-﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { PublicPageEditButton } from '../components/admin/PublicPageEditButton';
 import { Seo } from '../components/Seo';
 import { Container } from '../components/ui/Container';
 import { getAllInstallationCases, InstallationCase } from '../src/api/cmsApi';
@@ -12,17 +13,19 @@ const TEXT = {
   notFoundTitle: '게시글을 찾을 수 없습니다.',
   notFoundDescription: '삭제되었거나 비공개 처리된 설치사례입니다.',
   backToList: '목록으로 돌아가기',
-  breadcrumbHome: '홈',
-  breadcrumbCases: '고객사례',
+  backToCasesList: '설치사례 목록으로',
   emptyContent: '상세 내용이 아직 등록되지 않았습니다.',
-  otherCasesEyebrow: 'MORE CASES',
-  otherCasesTitle: '다른 설치 사례도 함께 보세요',
-  otherCasesDescription: '비슷한 규모의 프로젝트와 다양한 렌탈 구성을 한 번에 비교해볼 수 있습니다.',
-  prevSlide: '이전 사례 보기',
-  nextSlide: '다음 사례 보기',
-  viewCase: '사례 보기',
+  prevPost: '이전글',
+  nextPost: '다음글',
   pageTitleSuffix: '휴먼파트너 설치 사례',
   pageDescriptionFallback: '휴먼파트너 맞춤 렌탈 솔루션 설치 사례입니다.',
+};
+
+const formatDisplayDate = (value?: string) => {
+  if (!value) return '';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return '';
+  return `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, '0')}-${String(parsed.getDate()).padStart(2, '0')}`;
 };
 
 export const InstallationCaseDetail: React.FC = () => {
@@ -31,7 +34,6 @@ export const InstallationCaseDetail: React.FC = () => {
   const prerenderData = usePrerenderData();
   const preloadedDetail = prerenderData?.installationCaseDetail;
   const hasPreloadedDetail = !!(id && preloadedDetail?.post?.id === id);
-  const sliderRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(!hasPreloadedDetail);
   const [post, setPost] = useState<InstallationCase | null>(hasPreloadedDetail ? preloadedDetail?.post || null : null);
   const [allCases, setAllCases] = useState<InstallationCase[]>(hasPreloadedDetail ? preloadedDetail?.allCases || [] : []);
@@ -76,22 +78,16 @@ export const InstallationCaseDetail: React.FC = () => {
         .join(' '),
     ) || TEXT.pageDescriptionFallback;
 
-  const otherCases = useMemo(() => allCases.filter((item) => item.id !== post?.id).slice(0, 8), [allCases, post?.id]);
-
-  const scrollOtherCases = (direction: 'prev' | 'next') => {
-    const slider = sliderRef.current;
-    if (!slider) return;
-
-    const distance = Math.max(slider.clientWidth * 0.82, 260);
-    slider.scrollBy({
-      left: direction === 'next' ? distance : -distance,
-      behavior: 'smooth',
-    });
-  };
+  const currentIndex = useMemo(
+    () => allCases.findIndex((item) => item.id === post?.id),
+    [allCases, post?.id],
+  );
+  const previousCase = currentIndex > 0 ? allCases[currentIndex - 1] : null;
+  const nextCase = currentIndex >= 0 && currentIndex < allCases.length - 1 ? allCases[currentIndex + 1] : null;
 
   if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#f8f9fa] pb-20 pt-10">
+      <main className="flex min-h-screen items-center justify-center bg-white pb-20 pt-10">
         <Loader2 className="animate-spin text-[#001e45]" size={40} />
       </main>
     );
@@ -99,7 +95,7 @@ export const InstallationCaseDetail: React.FC = () => {
 
   if (!post) {
     return (
-      <main className="min-h-screen bg-[#f8f9fa] pb-20 pt-20 text-center">
+      <main className="min-h-screen bg-white pb-20 pt-20 text-center">
         <h1 className="text-2xl font-bold text-slate-800">{TEXT.notFoundTitle}</h1>
         <p className="mt-4 text-slate-500">{TEXT.notFoundDescription}</p>
         <button
@@ -113,7 +109,7 @@ export const InstallationCaseDetail: React.FC = () => {
   }
 
   return (
-    <main className="min-h-screen bg-[#f8f9fa] pb-20 pt-10">
+    <main className="min-h-screen bg-white pb-20 pt-10">
       <Seo
         title={`${post.title} | ${TEXT.pageTitleSuffix}`}
         description={pageDescription}
@@ -146,41 +142,46 @@ export const InstallationCaseDetail: React.FC = () => {
       />
 
       <Container className="max-w-[1000px]">
-        <nav className="mb-6 flex items-center text-sm text-slate-500">
-          <Link to="/" className="hover:text-slate-900">{TEXT.breadcrumbHome}</Link>
-          <ChevronRight size={14} className="mx-2" />
-          <Link to="/cases" className="hover:text-slate-900">{TEXT.breadcrumbCases}</Link>
-          <ChevronRight size={14} className="mx-2" />
-          <span className="max-w-[200px] truncate font-medium text-slate-900 sm:max-w-[400px]">{post.title}</span>
-        </nav>
+        <div className="mb-8 flex items-center justify-between gap-4">
+          <Link
+            to="/cases"
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 transition hover:text-slate-900"
+          >
+            <ChevronLeft size={16} />
+            <span>{TEXT.backToCasesList}</span>
+          </Link>
+          <PublicPageEditButton to="/admin/cases" className="mb-0" />
+        </div>
 
-        <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm md:p-12">
-          <div className="mb-10 border-b border-slate-100 pb-8 text-center">
-            <h1 className="text-[30px] font-extrabold leading-[1.2] tracking-[-0.02em] text-slate-900 md:text-[38px]">
+        <article>
+          <header className="border-b border-slate-200 pb-8 md:pb-10">
+            <h1 className="max-w-5xl text-[30px] font-bold leading-[1.18] tracking-[-0.04em] text-slate-950 md:text-[44px]">
               {post.title}
             </h1>
             {post.subtitle && (
-              <p className="mt-4 text-base font-medium leading-7 text-slate-500 md:text-[17px]">
+              <p className="mt-5 max-w-3xl text-base leading-7 text-slate-600 md:text-[17px]">
                 {post.subtitle}
               </p>
             )}
             {post.created_at && (
-              <p className="mt-6 text-sm text-slate-400">{new Date(post.created_at).toLocaleDateString('ko-KR')}</p>
+              <p className="mt-5 text-sm font-semibold text-slate-400">{formatDisplayDate(post.created_at)}</p>
             )}
-          </div>
+          </header>
 
-          <div className="overflow-hidden rounded-2xl bg-slate-50">
-            <img src={post.image_url} alt={post.title} className="h-auto max-h-[700px] w-full rounded-2xl object-cover" />
-          </div>
+          {post.image_url && (
+            <div className="mt-8">
+              <img src={post.image_url} alt={post.title} className="h-auto max-h-[760px] w-full object-cover" />
+            </div>
+          )}
 
-          <div className="mt-12 space-y-8">
+          <div className="mt-10 space-y-8 md:mt-12">
             {parsedContent.blocks.length > 0 ? (
               parsedContent.blocks.map((block) => {
                 if (block.type === 'heading') {
                   return (
                     <h2
                       key={block.id}
-                      className="text-[24px] font-extrabold leading-[1.35] tracking-[-0.02em] text-slate-900 md:text-[30px]"
+                      className="text-[24px] font-bold leading-[1.35] tracking-[-0.03em] text-slate-900 md:text-[30px]"
                     >
                       {block.text}
                     </h2>
@@ -189,13 +190,9 @@ export const InstallationCaseDetail: React.FC = () => {
 
                 if (block.type === 'image' && block.imageUrl) {
                   return (
-                    <figure key={block.id} className="overflow-hidden rounded-[28px] border border-slate-200 bg-slate-50 shadow-sm">
-                      <img src={block.imageUrl} alt={block.caption || post.title} className="aspect-[4/3] w-full object-cover" loading="lazy" />
-                      {block.caption && (
-                        <figcaption className="border-t border-slate-200 bg-white px-5 py-4 text-sm leading-6 text-slate-500">
-                          {block.caption}
-                        </figcaption>
-                      )}
+                    <figure key={block.id} className="space-y-4">
+                      <img src={block.imageUrl} alt={block.caption || post.title} className="w-full object-cover" loading="lazy" />
+                      {block.caption && <figcaption className="text-sm leading-6 text-slate-500">{block.caption}</figcaption>}
                     </figure>
                   );
                 }
@@ -208,82 +205,54 @@ export const InstallationCaseDetail: React.FC = () => {
               })
             ) : parsedContent.bodyContent ? (
               <div
-                className="prose prose-lg mx-auto max-w-none prose-slate prose-img:rounded-2xl prose-img:shadow-sm"
+                className="prose prose-lg max-w-none prose-slate [&_img]:rounded-none [&_img]:shadow-none"
                 dangerouslySetInnerHTML={{ __html: parsedContent.bodyContent }}
               />
             ) : (
-              <div className="py-16 text-center text-lg text-slate-500">{TEXT.emptyContent}</div>
+              <div className="py-16 text-left text-lg text-slate-500">{TEXT.emptyContent}</div>
             )}
           </div>
-        </div>
+        </article>
 
-        {otherCases.length > 0 && (
-          <section className="mt-12 overflow-hidden rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm md:p-8">
-            <div className="mb-6 flex flex-col gap-4 md:mb-8 md:flex-row md:items-end md:justify-between">
-              <div>
-                <p className="mb-3 text-[11px] font-bold tracking-[0.18em] text-[#001e45]/75">{TEXT.otherCasesEyebrow}</p>
-                <h2 className="text-[24px] font-extrabold tracking-[-0.02em] text-slate-900 md:text-[30px]">
-                  {TEXT.otherCasesTitle}
-                </h2>
-                <p className="mt-3 text-sm leading-relaxed text-slate-500 md:text-[15px]">{TEXT.otherCasesDescription}</p>
-              </div>
-              <div className="hidden items-center gap-3 md:flex">
-                <button
-                  type="button"
-                  onClick={() => scrollOtherCases('prev')}
-                  className="group flex h-11 w-11 items-center justify-center rounded-full border border-slate-300 transition hover:border-slate-900 hover:bg-slate-900"
-                  aria-label={TEXT.prevSlide}
-                >
-                  <ChevronLeft size={18} className="text-slate-700 transition group-hover:text-white" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => scrollOtherCases('next')}
-                  className="group flex h-11 w-11 items-center justify-center rounded-full border border-slate-300 transition hover:border-slate-900 hover:bg-slate-900"
-                  aria-label={TEXT.nextSlide}
-                >
-                  <ChevronRight size={18} className="text-slate-700 transition group-hover:text-white" />
-                </button>
-              </div>
-            </div>
+        <div className="mt-16 border-t border-slate-200 pt-8 md:mt-20 md:pt-10">
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 md:gap-6">
+            {previousCase ? (
+              <Link
+                to={`/cases/${previousCase.id}`}
+                className="inline-flex items-center gap-1.5 justify-self-start text-sm font-semibold text-slate-500 transition hover:text-slate-900 md:text-base"
+              >
+                <ChevronLeft size={18} />
+                <span>{TEXT.prevPost}</span>
+              </Link>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 justify-self-start text-sm font-semibold text-slate-300 md:text-base">
+                <ChevronLeft size={18} />
+                <span>{TEXT.prevPost}</span>
+              </span>
+            )}
 
-            <div ref={sliderRef} className="no-scrollbar flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 md:gap-5">
-              {otherCases.map((item) => (
-                <article
-                  key={item.id}
-                  className="group w-[82vw] shrink-0 snap-start overflow-hidden rounded-[24px] border border-slate-200 bg-slate-50 sm:w-[56vw] md:w-[340px]"
-                >
-                  <Link to={`/cases/${item.id}`} className="block">
-                    <div className="aspect-[4/3] overflow-hidden bg-slate-200">
-                      <img
-                        src={item.image_url}
-                        alt={item.title}
-                        className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                        loading="lazy"
-                      />
-                    </div>
-                    <div className="space-y-3 p-5">
-                      <h3 className="line-clamp-2 text-lg font-bold tracking-tight text-slate-900">{item.title}</h3>
-                      {item.subtitle && <p className="line-clamp-2 text-sm leading-relaxed text-slate-500">{item.subtitle}</p>}
-                      <div className="inline-flex items-center gap-1 text-sm font-semibold text-[#001e45]">
-                        <span>{TEXT.viewCase}</span>
-                        <ChevronRight size={15} />
-                      </div>
-                    </div>
-                  </Link>
-                </article>
-              ))}
-            </div>
-          </section>
-        )}
+            <Link
+              to="/cases"
+              className="inline-flex min-w-[170px] items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-3 font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900 md:min-w-[220px] md:px-8"
+            >
+              {TEXT.backToList}
+            </Link>
 
-        <div className="mt-10 flex justify-center">
-          <Link
-            to="/cases"
-            className="rounded-xl border border-slate-300 bg-white px-8 py-3 font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
-          >
-            {TEXT.backToList}
-          </Link>
+            {nextCase ? (
+              <Link
+                to={`/cases/${nextCase.id}`}
+                className="inline-flex items-center gap-1.5 justify-self-end text-sm font-semibold text-slate-500 transition hover:text-slate-900 md:text-base"
+              >
+                <span>{TEXT.nextPost}</span>
+                <ChevronRight size={18} />
+              </Link>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 justify-self-end text-sm font-semibold text-slate-300 md:text-base">
+                <span>{TEXT.nextPost}</span>
+                <ChevronRight size={18} />
+              </span>
+            )}
+          </div>
         </div>
       </Container>
     </main>

@@ -1,58 +1,48 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Container } from "./ui/Container";
 import { ArrowRight } from "lucide-react";
-
-interface CategoryItem {
-  name: string;
-  to: string;
-  imageUrl: string;
-}
-
-const createCategoryLink = (category?: string) => {
-  const params = new URLSearchParams();
-  if (category && category !== "전체") {
-    params.set("category", category);
-  }
-  const query = params.toString();
-  return query ? `/products?${query}` : "/products";
-};
-
-const categoryItems: CategoryItem[] = [
-  {
-    name: "IT장비",
-    to: createCategoryLink("IT장비"),
-    imageUrl: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=800&q=80",
-  },
-  {
-    name: "사무기기",
-    to: createCategoryLink("사무기기"),
-    imageUrl: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=800&q=80",
-  },
-  {
-    name: "사무가구",
-    to: createCategoryLink("사무가구"),
-    imageUrl: "https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=800&q=80",
-  },
-  {
-    name: "가전제품",
-    to: createCategoryLink("가전제품"),
-    imageUrl: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=800&q=80",
-  },
-  {
-    name: "행사용품",
-    to: createCategoryLink("행사용품"),
-    imageUrl: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?auto=format&fit=crop&w=800&q=80",
-  },
-];
+import { getNavMenuItems } from "../src/api/cmsApi";
+import { buildCategoryTabItems, FALLBACK_CATEGORY_TAB_ITEMS } from "../src/config/categoryTabs";
 
 interface MainCategoryTabsProps {
   variant?: "default" | "compact";
 }
 
 export const MainCategoryTabs: React.FC<MainCategoryTabsProps> = ({ variant = "default" }) => {
+  const [categoryItems, setCategoryItems] = useState(FALLBACK_CATEGORY_TAB_ITEMS);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(0);
   const isCompact = variant === "compact";
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadCategoryTabs = async () => {
+      try {
+        const navItems = await getNavMenuItems();
+        const nextItems = buildCategoryTabItems(navItems);
+        if (isMounted) {
+          setCategoryItems(nextItems);
+        }
+      } catch (error) {
+        console.error("Failed to load category tabs:", error);
+      }
+    };
+
+    void loadCategoryTabs();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    setHoveredIndex((current) => {
+      if (categoryItems.length === 0) return null;
+      if (current === null || current >= categoryItems.length) return 0;
+      return current;
+    });
+  }, [categoryItems.length]);
 
   if (isCompact) {
     return (
@@ -75,9 +65,9 @@ export const MainCategoryTabs: React.FC<MainCategoryTabsProps> = ({ variant = "d
   }
 
   return (
-    <section className="bg-white py-12 md:py-16">
+    <section className="bg-white py-16 md:py-24">
       <Container>
-        <div className="mb-10 flex items-end justify-between">
+        <div className="mb-12 flex items-end justify-between md:mb-14">
           <h2 className="text-2xl font-bold tracking-tight text-black md:text-[32px]">카테고리</h2>
           <Link to="/products" className="flex items-center gap-1.5 text-sm font-bold text-gray-500 hover:text-black transition-colors">
             전체보기 <ArrowRight size={16} />
@@ -90,7 +80,7 @@ export const MainCategoryTabs: React.FC<MainCategoryTabsProps> = ({ variant = "d
           전체 컨테이너 aspect-[3/1] 설정 시
           확대 아이템 비율: (3.2 / 7.2 * 3) / 1 = 1.333 (정확히 4:3)
         */}
-        <div className="flex aspect-[4/3] w-full gap-1 overflow-hidden md:aspect-[3/1]">
+        <div className="flex aspect-[4/3] w-full gap-4 overflow-hidden md:aspect-[3/1]">
           {categoryItems.map((item, index) => {
             const isHovered = hoveredIndex === index;
             return (
@@ -98,8 +88,7 @@ export const MainCategoryTabs: React.FC<MainCategoryTabsProps> = ({ variant = "d
                 key={item.name}
                 to={item.to}
                 onMouseEnter={() => setHoveredIndex(index)}
-                onMouseLeave={() => setHoveredIndex(index)}
-                className={`relative h-full overflow-hidden rounded-[4px] transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] ${
+                className={`relative h-full overflow-hidden rounded-2xl transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] ${
                   isHovered ? "flex-[3.2] shadow-2xl" : "flex-1 grayscale opacity-70 hover:opacity-100"
                 }`}
               >

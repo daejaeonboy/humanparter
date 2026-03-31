@@ -6,22 +6,28 @@ import { siteBrand } from "../../src/config/siteBrand";
 
 type FooterLink = {
   label: string;
-  to?: string;
+  to: string;
 };
 
 const footerColumns: FooterLink[][] = [
   [
     { label: "\uD648", to: "/" },
-    { label: "\uC774\uC6A9\uC57D\uAD00", to: "/terms" },
-    { label: "\uAC1C\uC778\uC815\uBCF4\uCC98\uB9AC\uBC29\uCE68", to: "/privacy" },
-    { label: "\uACE0\uAC1D\uC13C\uD130", to: "/cs" },
+    { label: "\uD68C\uC0AC\uC18C\uAC1C", to: "/company" },
   ],
   [
-    { label: "\uD68C\uC0AC\uC18C\uAC1C", to: "/company" },
     { label: "\uC81C\uD488\uC548\uB0B4", to: "/products" },
     { label: "\uACE0\uAC1D\uC0AC\uB840", to: "/cases" },
-    { label: "\uACAC\uC801\uBB38\uC758", to: "/quote-request" },
   ],
+  [
+    { label: "\uACAC\uC801\uBB38\uC758", to: "/quote-request" },
+    { label: "\uACE0\uAC1D\uC13C\uD130", to: "/cs" },
+    { label: "\uACF5\uC9C0\uC0AC\uD56D", to: "/notice" },
+  ],
+];
+
+const policyLinks: FooterLink[] = [
+  { label: "\uC774\uC6A9\uC57D\uAD00", to: "/terms" },
+  { label: "\uAC1C\uC778\uC815\uBCF4\uCC98\uB9AC\uBC29\uCE68", to: "/privacy" },
 ];
 
 const labels = {
@@ -53,24 +59,23 @@ export function Footer() {
   };
 
   return (
-    <footer className="relative border-t border-gray-100 bg-white pb-20 text-black md:pb-10">
-      <Container className="py-8 md:py-9">
-        <div className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between md:gap-10">
+    <footer className="relative mt-20 bg-[#222222] pb-20 text-white md:mt-28 md:pb-10">
+      <Container className="py-14 md:py-16">
+        <div className="flex flex-col gap-12 border-b border-white/10 pb-10 md:gap-14 md:pb-12 lg:flex-row lg:items-start lg:justify-between">
           <Link
             to="/"
             aria-label={labels.homeAria}
-            className="inline-block leading-none text-[48px] md:text-[64px] text-black"
-            style={{ fontFamily: '"Pacifico", cursive' }}
+            className="inline-flex items-center"
           >
-            H.
+            <img src="/footerlogo.png" alt={siteBrand.header.logoText} className="h-[34px] w-auto object-contain md:h-[40px]" />
           </Link>
 
-          <div className="grid w-full max-w-[980px] grid-cols-2 gap-x-10 gap-y-6 md:grid-cols-3 md:gap-x-16">
+          <div className="grid w-full flex-1 grid-cols-2 gap-x-10 gap-y-10 md:grid-cols-4 md:gap-x-12 lg:max-w-[980px] lg:gap-x-16">
             {footerColumns.map((column, columnIndex) => (
-              <ul key={`footer-column-${columnIndex}`} className="space-y-2.5 text-[15px] font-medium text-black">
+              <ul key={`footer-column-${columnIndex}`} className="space-y-4 text-[15px] font-semibold tracking-[-0.02em] text-white">
                 {column.map((item) => (
                   <li key={`${item.label}-${item.to}`}>
-                    <Link to={item.to || "/"} className="transition-colors hover:text-gray-600 hover:underline">
+                    <Link to={item.to} className="transition-colors hover:text-white/70">
                       {item.label}
                     </Link>
                   </li>
@@ -78,13 +83,13 @@ export function Footer() {
               </ul>
             ))}
 
-            <ul className="col-span-2 space-y-2.5 text-[15px] font-medium text-black md:col-span-1">
+            <ul className="col-span-2 space-y-4 text-[15px] font-semibold tracking-[-0.02em] text-white md:col-span-1">
               <li>
                 <a
                   href={footer.kakaoChatUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center transition-colors hover:text-gray-600 hover:underline"
+                  className="inline-flex items-center transition-colors hover:text-white/70"
                 >
                   {labels.kakao}
                 </a>
@@ -92,28 +97,40 @@ export function Footer() {
               <li>
                 <a
                   href="tel:18001985"
-                  className="flex flex-col items-start gap-0.5 transition-colors hover:text-gray-600 md:flex-row md:items-center md:gap-2"
+                  className="flex flex-col items-start gap-1 transition-colors hover:text-white/70"
                 >
-                  <span className="text-[13px] font-semibold text-gray-500 md:text-[15px] md:text-black">{labels.phone}</span>
-                  <span className="text-[15px] font-semibold text-black">1800-1985</span>
+                  <span>{labels.phone}</span>
+                  <span className="text-sm font-medium text-white/55">1800-1985</span>
                 </a>
               </li>
               <li>
                 <a
                   href="mailto:hm_solution@naver.com"
-                  className="flex flex-col items-start gap-0.5 transition-colors hover:text-gray-600 md:flex-row md:items-center md:gap-2"
+                  className="flex flex-col items-start gap-1 transition-colors hover:text-white/70"
                 >
-                  <span className="text-[13px] font-semibold text-gray-500 md:text-[15px] md:text-black">{labels.mail}</span>
-                  <span className="break-all text-[14px] font-semibold text-black md:break-normal">hm_solution@naver.com</span>
+                  <span>{labels.mail}</span>
+                  <span className="break-all text-sm font-medium text-white/55 md:break-normal">hm_solution@naver.com</span>
                 </a>
               </li>
             </ul>
           </div>
         </div>
 
-        <div className="mt-8 border-t border-dashed border-gray-200 pt-4 text-xs leading-relaxed text-gray-500">
-          <p>{footer.companyInfoLines.join(" | ")}</p>
-          <p className="mt-1">Copyright {currentYear}. {footer.copyrightOwner}. All rights reserved.</p>
+        <div className="flex flex-col gap-8 pt-8 md:pt-10">
+          <div className="space-y-3 text-sm leading-relaxed text-white/65">
+            {footer.companyInfoLines.map((line) => (
+              <p key={line}>{line}</p>
+            ))}
+
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 pt-2 text-[14px] font-semibold text-white/90">
+              <span>Copyright {currentYear}. {footer.copyrightOwner}. All rights reserved.</span>
+              {policyLinks.map((item) => (
+                <Link key={`${item.label}-${item.to}`} to={item.to} className="transition-colors hover:text-white">
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+          </div>
         </div>
       </Container>
 
@@ -121,7 +138,7 @@ export function Footer() {
         href="https://367.co.kr"
         target="_blank"
         rel="noopener noreferrer"
-        className="group fixed bottom-8 left-1/2 z-[60] hidden w-[calc(100%-2rem)] max-w-[340px] -translate-x-1/2 items-center justify-center gap-2 rounded-full border border-gray-800 bg-black px-5 py-3.5 text-[14px] font-semibold tracking-[0.01em] text-white transition-all duration-300 hover:-translate-x-1/2 hover:-translate-y-1 hover:bg-gray-900 lg:inline-flex"
+        className="group fixed bottom-8 left-1/2 z-[60] hidden w-[calc(100%-2rem)] max-w-[340px] -translate-x-1/2 items-center justify-center gap-2 rounded-full border border-[#0b2a5a] bg-[#001E45] px-5 py-3.5 text-[14px] font-semibold tracking-[0.01em] text-white transition-all duration-300 hover:-translate-x-1/2 hover:-translate-y-1 hover:bg-[#0b2a5a] lg:inline-flex"
         aria-label={labels.remoteAria}
       >
         <MonitorPlay size={16} className="transition-transform duration-300 group-hover:scale-105" />
@@ -145,7 +162,7 @@ export function Footer() {
 
         <button
           onClick={scrollToTop}
-          className="group flex h-12 w-12 items-center justify-center rounded-lg bg-black text-white shadow-md transition-all duration-500 hover:bg-gray-800 hover:shadow-lg md:h-12 md:w-12 translate-y-0 scale-100 opacity-100 blur-0"
+          className="group flex h-12 w-12 items-center justify-center rounded-lg bg-[#001E45] text-white shadow-md transition-all duration-500 hover:bg-[#0b2a5a] hover:shadow-lg md:h-12 md:w-12 translate-y-0 scale-100 opacity-100 blur-0"
           aria-label={footer.scrollTopAriaLabel}
         >
           <ArrowUp size={20} className="transition-transform duration-300 group-hover:-translate-y-0.5" />

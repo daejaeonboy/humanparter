@@ -1,13 +1,23 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { PublicPageEditButton } from '../components/admin/PublicPageEditButton';
+import { PublicCollectionHero } from '../components/PublicCollectionHero';
 import { Container } from '../components/ui/Container';
 import { Phone, MessageCircle, ChevronDown, Loader2 } from 'lucide-react';
 import { Seo } from '../components/Seo';
 import { getFAQs, FAQ, getFAQCategories } from '../src/api/faqApi';
+import { CS_SECTION_TABS } from '../src/config/publicMegaMenu';
 import { buildBreadcrumbStructuredData } from '../src/utils/seo';
 
 const DEFAULT_FAQ_CATEGORIES = ['자주 묻는 질문', '공통', '이용문의', '견적/결제', '취소/환불', '상품문의', '기타'];
+const FAQ_HERO_CONTENT = {
+    title: 'FAQ',
+    description: '자주 묻는 질문과 상담 채널을 한 번에 확인하고 필요한 안내를 빠르게 찾아보세요.',
+    imageUrl: 'https://images.unsplash.com/photo-1516321497487-e288fb19713f?auto=format&fit=crop&w=1600&q=80',
+};
 
 export const CSCenter: React.FC = () => {
+    const navigate = useNavigate();
     const [faqs, setFaqs] = useState<FAQ[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeCategory, setActiveCategory] = useState('자주 묻는 질문');
@@ -76,7 +86,7 @@ export const CSCenter: React.FC = () => {
         : null;
 
     return (
-        <div className="pb-20 pt-10 bg-white min-h-screen">
+        <main className="min-h-screen bg-white pb-20 pt-0">
             <Seo
                 title="고객센터 | 휴먼파트너"
                 description="휴먼파트너 고객센터입니다. 자주 묻는 질문부터 실시간 상담까지 도와드립니다."
@@ -90,13 +100,23 @@ export const CSCenter: React.FC = () => {
                 ]}
             />
 
-            <Container>
-                {/* Header Section */}
-                <div className="mb-8">
-                    <h1 className="text-2xl md:text-3xl font-bold text-slate-900 mb-2">고객센터</h1>
-                    <p className="text-slate-500 font-medium">어려움이나 궁금한 점이 있으신가요?</p>
-                </div>
+            <PublicCollectionHero
+                title={FAQ_HERO_CONTENT.title}
+                description={FAQ_HERO_CONTENT.description}
+                imageUrl={FAQ_HERO_CONTENT.imageUrl}
+                tabs={CS_SECTION_TABS.map((tab) => ({ label: tab.label, value: tab.value }))}
+                activeValue="faq"
+                onSelect={(value) => {
+                    const selectedTab = CS_SECTION_TABS.find((tab) => tab.value === value);
+                    if (selectedTab) {
+                        navigate(selectedTab.to);
+                    }
+                }}
+                topRightAction={<PublicPageEditButton to="/admin/faqs" />}
+            />
 
+            <Container size="layout">
+                <div className="mt-20 md:mt-24">
                 {/* CS Info Card */}
                 <div className="bg-slate-50 rounded-3xl p-6 md:p-10 mb-12 flex flex-col md:flex-row justify-between items-center gap-6">
                     <div className="flex items-center gap-5 w-full md:w-auto">
@@ -124,9 +144,7 @@ export const CSCenter: React.FC = () => {
                 </div>
 
                 {/* FAQ Section */}
-                <div className="mb-6">
-                    <h2 className="text-xl font-bold text-slate-900 mb-6">자주 묻는 질문</h2>
-
+                <div id="faq" className="mb-6 scroll-mt-28">
                     {/* Category Tabs */}
                     <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 mb-8 -mx-4 px-4 md:mx-0 md:px-0">
                         {categories.map(cat => (
@@ -134,10 +152,10 @@ export const CSCenter: React.FC = () => {
                                 key={cat}
                                 onClick={() => setActiveCategory(cat)}
                                 className={`
-                                    whitespace-nowrap px-4 py-2.5 rounded-full text-sm font-bold transition-all
+                                    min-h-12 whitespace-nowrap rounded-[8px] border px-4 py-2.5 text-sm font-bold transition-all
                                     ${activeCategory === cat
-                                        ? 'bg-[#001e45] text-white shadow-md shadow-[#001e45]/20'
-                                        : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                                        ? 'border-[#001e45] bg-[#001e45] text-white'
+                                        : 'border-slate-200 bg-white text-slate-500 hover:border-[#001e45]/20 hover:bg-slate-50'
                                     }
                                 `}
                             >
@@ -184,8 +202,9 @@ export const CSCenter: React.FC = () => {
                         )}
                     </div>
                 </div>
+                </div>
             </Container>
-        </div>
+        </main>
     );
 };
 

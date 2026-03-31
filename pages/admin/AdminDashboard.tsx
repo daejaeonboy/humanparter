@@ -2,7 +2,9 @@ import type { ComponentType } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
+  Building2,
   CalendarCheck,
+  FileText,
   HelpCircle,
   ImageIcon,
   LayoutDashboard,
@@ -30,6 +32,12 @@ const navItems: NavItem[] = [
     description: '관리 첫 화면',
     icon: LayoutDashboard,
     exact: true,
+  },
+  {
+    path: '/admin/company',
+    label: '회사소개 관리',
+    description: '회사소개 페이지 콘텐츠 관리',
+    icon: Building2,
   },
   {
     path: '/admin/products',
@@ -72,6 +80,12 @@ const navItems: NavItem[] = [
     label: 'FAQ 관리',
     description: '자주 묻는 질문 관리',
     icon: HelpCircle,
+  },
+  {
+    path: '/admin/notices',
+    label: '공지사항 관리',
+    description: '공지사항 게시글 관리',
+    icon: FileText,
   },
   {
     path: '/admin/users',

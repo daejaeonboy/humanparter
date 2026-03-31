@@ -411,12 +411,25 @@ export const QuoteRequestPage: React.FC = () => {
       />
 
       <Container>
-        <section className="rounded-3xl border border-slate-200 bg-gradient-to-r from-slate-50 to-white px-6 py-8 md:px-10 md:py-12">
-          <p className="text-[11px] font-bold tracking-[0.15em] text-[#001e45]/80">{TEXT.eyebrow}</p>
-          <h1 className="mt-3 break-keep text-[22px] font-extrabold tracking-tight text-slate-900 md:text-[40px] md:leading-[1.25]">
-            {TEXT.heroTitle}
-          </h1>
-          <p className="mt-5 max-w-3xl text-sm leading-relaxed text-slate-600 md:text-base">{TEXT.heroDescription}</p>
+        <section className="relative overflow-hidden rounded-[8px]">
+          <div
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-50"
+            style={{
+              backgroundImage:
+                "url(https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1600&q=80)",
+            }}
+            aria-hidden="true"
+          />
+          <div className="absolute inset-0 z-10 bg-[linear-gradient(90deg,rgba(0,18,46,0.95)_0%,rgba(1,12,34,0.84)_46%,rgba(0,7,22,0.96)_100%)]" />
+          <div className="absolute inset-0 z-10 bg-[linear-gradient(180deg,rgba(0,0,0,0.16)_0%,rgba(0,0,0,0.22)_100%)]" />
+
+          <div className="relative z-20 px-6 py-10 md:px-10 md:py-14">
+            <p className="text-[11px] font-bold tracking-[0.15em] text-white/72">{TEXT.eyebrow}</p>
+            <h1 className="mt-3 break-keep text-[22px] font-extrabold tracking-tight text-white md:text-[40px] md:leading-[1.25]">
+              {TEXT.heroTitle}
+            </h1>
+            <p className="mt-5 max-w-3xl text-sm leading-relaxed text-white/80 md:text-base">{TEXT.heroDescription}</p>
+          </div>
         </section>
 
         <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-10">

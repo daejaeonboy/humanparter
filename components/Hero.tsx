@@ -128,7 +128,7 @@ export const Hero: React.FC = () => {
                 </div>
 
                 {/* Main Title */}
-                <h1 className={`text-3xl md:text-5xl lg:text-6xl font-bold leading-[1.05] tracking-tighter text-white mb-6 md:mb-8 transition-all duration-1000 delay-500 transform drop-shadow-2xl
+                <h1 className={`text-3xl md:text-5xl lg:text-6xl font-medium leading-[1.05] tracking-tighter text-white mb-6 md:mb-8 transition-all duration-1000 delay-500 transform drop-shadow-2xl
                   ${index === currentSlide ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}
                 `}>
                   {slide.title}
@@ -145,7 +145,7 @@ export const Hero: React.FC = () => {
                 <div className={`mt-10 md:mt-14 transition-all duration-1000 delay-1000 transform flex gap-4
                   ${index === currentSlide ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}
                 `}>
-                  <div className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-brand-600 hover:bg-brand-700 text-white rounded-md font-bold transition-all shadow-lg hover:shadow-xl hover:-translate-y-1">
+                  <div className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-brand-600 hover:bg-brand-700 text-white rounded-md font-medium transition-all shadow-lg hover:shadow-xl hover:-translate-y-1">
                     자세히 보기 <ArrowRight size={18} />
                   </div>
                 </div>
