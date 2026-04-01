@@ -2,7 +2,20 @@ import React, { useState, useEffect } from 'react';
 import {
     Plus, Edit2, Trash2, X, Save, Loader2, HelpCircle, Tag, Check
 } from 'lucide-react';
-import { getFAQs, addFAQ, updateFAQ, deleteFAQ, FAQ, getFAQCategories, addFAQCategory, updateFAQCategory, deleteFAQCategory, FAQCategory } from '../../src/api/faqApi';
+import {
+    getFAQs,
+    addFAQ,
+    updateFAQ,
+    deleteFAQ,
+    FAQ,
+    getFAQCategories,
+    addFAQCategory,
+    updateFAQCategory,
+    deleteFAQCategory,
+    FAQCategory,
+    resetFAQTableStatus,
+    resetFAQCategoryTableStatus,
+} from '../../src/api/faqApi';
 import { invalidatePublicDataCache } from '../../src/api/publicDataApi';
 
 const DEFAULT_CATEGORIES = ['자주 묻는 질문', '공통', '이용문의', '견적/결제', '취소/환불', '상품문의', '기타'];
@@ -57,6 +70,8 @@ export const FAQManager: React.FC = () => {
     };
 
     useEffect(() => {
+        resetFAQTableStatus();
+        resetFAQCategoryTableStatus();
         Promise.all([loadFAQs(), loadCategories()]);
     }, []);
 

@@ -6,6 +6,7 @@ import {
   FALLBACK_NOTICE_POSTS,
   getAdminNoticePostCollection,
   NoticePost,
+  resetNoticePostTableStatus,
   updateNoticePost,
   deleteNoticePost,
 } from '../../src/api/noticeApi';
@@ -41,10 +42,16 @@ export const NoticeManager: React.FC = () => {
   const [formData, setFormData] = useState<NoticeFormState>(createEmptyForm(1));
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const loadData = async () => {
+  const loadData = async (forceRefresh = false) => {
     setLoading(true);
     try {
-      const { items: data, usesFallback } = await getAdminNoticePostCollection();
+      if (forceRefresh) {
+        resetNoticePostTableStatus();
+      }
+
+      const { items: data, usesFallback } = await getAdminNoticePostCollection({
+        bypassMissingCache: forceRefresh,
+      });
       setItems(data);
       setUsingFallback(usesFallback);
     } catch (error) {
@@ -57,7 +64,7 @@ export const NoticeManager: React.FC = () => {
   };
 
   useEffect(() => {
-    void loadData();
+    void loadData(true);
   }, []);
 
   const openAddModal = () => {
@@ -204,9 +211,20 @@ export const NoticeManager: React.FC = () => {
 
       {usingFallback && (
         <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm leading-6 text-amber-900">
-          현재는 예시 정보센터 데이터를 보고 있습니다. 실제 저장, 수정, 삭제를 사용하려면 Supabase에서
-          <code className="mx-1 rounded bg-amber-100 px-1.5 py-0.5 text-[13px] font-semibold">sql/create_notice_posts_table.sql</code>
-          을 먼저 실행해 주세요.
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              현재는 예시 정보센터 데이터를 보고 있습니다. 실제 저장, 수정, 삭제를 사용하려면 Supabase에서
+              <code className="mx-1 rounded bg-amber-100 px-1.5 py-0.5 text-[13px] font-semibold">sql/create_notice_posts_table.sql</code>
+              을 먼저 실행해 주세요.
+            </div>
+            <button
+              type="button"
+              onClick={() => void loadData(true)}
+              className="inline-flex shrink-0 items-center justify-center rounded-xl border border-amber-300 bg-white px-4 py-2 text-sm font-semibold text-amber-900 transition hover:bg-amber-100"
+            >
+              테이블 다시 확인
+            </button>
+          </div>
         </div>
       )}
 

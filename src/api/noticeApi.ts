@@ -26,6 +26,10 @@ export interface AdminNoticePostCollection {
   usesFallback: boolean;
 }
 
+interface NoticeFetchOptions {
+  bypassMissingCache?: boolean;
+}
+
 type NoticeRecord = {
   id: string;
   title: string;
@@ -87,6 +91,18 @@ const getTableStatus = () => {
 const setTableStatus = (status: Exclude<TableStatus, 'unknown'>) => {
   tableStatusCache = status;
   writeStoredTableStatus(status);
+};
+
+export const resetNoticePostTableStatus = () => {
+  tableStatusCache = 'unknown';
+
+  if (typeof window === 'undefined') return;
+
+  try {
+    window.sessionStorage.removeItem(TABLE_STATUS_STORAGE_KEY);
+  } catch {
+    // Ignore sessionStorage write failures.
+  }
 };
 
 const escapeHtml = (value: string) =>
@@ -198,8 +214,8 @@ const createNoticeId = (title: string) => {
   return `notice-${slug || timestamp}-${random}`;
 };
 
-const fetchAdminNoticeRows = async (): Promise<NoticePost[]> => {
-  if (getTableStatus() === 'missing') {
+const fetchAdminNoticeRows = async (options?: NoticeFetchOptions): Promise<NoticePost[]> => {
+  if (!options?.bypassMissingCache && getTableStatus() === 'missing') {
     throw createMissingTableError();
   }
 
@@ -237,9 +253,11 @@ export const getAllAdminNoticePosts = async (): Promise<NoticePost[]> => {
   }
 };
 
-export const getAdminNoticePostCollection = async (): Promise<AdminNoticePostCollection> => {
+export const getAdminNoticePostCollection = async (
+  options?: NoticeFetchOptions,
+): Promise<AdminNoticePostCollection> => {
   try {
-    const items = await fetchAdminNoticeRows();
+    const items = await fetchAdminNoticeRows(options);
     return {
       items,
       usesFallback: false,

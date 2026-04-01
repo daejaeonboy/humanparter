@@ -70,6 +70,21 @@ const setTableStatus = (
     writeStoredTableStatus(storageKey, status);
 };
 
+const resetTableStatus = (
+    setCacheValue: (status: TableStatus) => void,
+    storageKey: string,
+) => {
+    setCacheValue('unknown');
+
+    if (typeof window === 'undefined') return;
+
+    try {
+        window.sessionStorage.removeItem(storageKey);
+    } catch {
+        // Ignore sessionStorage write failures.
+    }
+};
+
 const sortByDisplayOrder = <T extends { display_order?: number; created_at?: string }>(items: T[]) =>
     [...items].sort((a, b) => {
         const aOrder = typeof a.display_order === 'number' ? a.display_order : Number.MAX_SAFE_INTEGER;
@@ -80,6 +95,24 @@ const sortByDisplayOrder = <T extends { display_order?: number; created_at?: str
         const bCreatedAt = b.created_at ? new Date(b.created_at).getTime() : 0;
         return aCreatedAt - bCreatedAt;
     });
+
+export const resetFAQTableStatus = () => {
+    resetTableStatus(
+        (status) => {
+            faqTableStatusCache = status;
+        },
+        FAQ_TABLE_STATUS_STORAGE_KEY,
+    );
+};
+
+export const resetFAQCategoryTableStatus = () => {
+    resetTableStatus(
+        (status) => {
+            faqCategoryTableStatusCache = status;
+        },
+        FAQ_CATEGORY_TABLE_STATUS_STORAGE_KEY,
+    );
+};
 
 export const getFAQs = async (): Promise<FAQ[]> => {
     if (
