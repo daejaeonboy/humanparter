@@ -8,6 +8,7 @@ import { PublicPageEditButton } from "../components/admin/PublicPageEditButton";
 import { NoticeInlineEditor } from "../components/notice/NoticeInlineEditor";
 import {
   buildBreadcrumbStructuredData,
+  buildSeoTitle,
   normalizeMetaText,
   SITE_NAME,
   SITE_URL,
@@ -15,6 +16,7 @@ import {
 } from "../src/utils/seo";
 import {
   buildNoticeAuthoringInputFromPost,
+  deleteNoticePost,
   NoticePost,
   stripNoticeHtml,
   updateNoticePost,
@@ -30,7 +32,7 @@ const TEXT = {
   backToNoticeList: "정보센터 목록으로",
   prevPost: "이전글",
   nextPost: "다음글",
-  pageTitleSuffix: "휴먼파트너 정보센터",
+  pageTitleSuffix: '정보센터',
   pageDescriptionFallback: "휴먼파트너의 주요 공지 및 운영 안내입니다.",
 };
 
@@ -139,6 +141,23 @@ export const NoticeDetail: React.FC = () => {
     }
   };
 
+  const handleDelete = async () => {
+    if (!post?.id) return;
+    if (!window.confirm("정말 이 소식을 삭제하시겠습니까?")) return;
+
+    setSavingEdit(true);
+    try {
+      await deleteNoticePost(post.id);
+      invalidatePublicDataCache();
+      navigate("/notice");
+    } catch (error) {
+      console.error("Failed to delete notice post:", error);
+      alert("삭제에 실패했습니다.");
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
   if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-white">
@@ -151,7 +170,7 @@ export const NoticeDetail: React.FC = () => {
     return (
       <main className="min-h-screen bg-white pb-20 pt-20 text-center">
         <Seo
-          title="정보센터를 찾을 수 없습니다 | 휴먼파트너"
+          title={buildSeoTitle('정보센터를 찾을 수 없습니다')}
           description={TEXT.notFoundDescription}
           canonicalPath={false}
           urlPath={false}
@@ -173,7 +192,7 @@ export const NoticeDetail: React.FC = () => {
   return (
     <main className="min-h-screen bg-white pb-20 pt-10">
       <Seo
-        title={`${post.title} | ${TEXT.pageTitleSuffix}`}
+        title={buildSeoTitle(TEXT.pageTitleSuffix, post.title)}
         description={pageDescription}
         image={post.imageUrl}
         imageAlt={post.title}
@@ -224,15 +243,17 @@ export const NoticeDetail: React.FC = () => {
         </div>
 
         {isEditing && editDraft ? (
-          <NoticeInlineEditor
-            title="정보센터 글 수정"
-            description="공개 페이지에서 바로 현재 게시글을 수정합니다."
-            initialValue={editDraft}
-            submitLabel={savingEdit ? "저장 중" : "수정사항 저장"}
-            saving={savingEdit}
-            onCancel={cancelEdit}
-            onSave={handleSaveEdit}
-          />
+          <div className="mx-auto max-w-[1080px]">
+            <NoticeInlineEditor
+              title="소식 수정"
+              initialValue={editDraft}
+              submitLabel={savingEdit ? "저장 중" : "소식 저장"}
+              saving={savingEdit}
+              onCancel={cancelEdit}
+              onSave={handleSaveEdit}
+              onDelete={handleDelete}
+            />
+          </div>
         ) : (
           <article>
             <header className="border-b border-slate-200 pb-8 md:pb-10">
@@ -260,46 +281,48 @@ export const NoticeDetail: React.FC = () => {
           </article>
         )}
 
-        <div className="mt-16 border-t border-slate-200 pt-8 md:mt-20 md:pt-10">
-          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 md:gap-6">
-            {previousNotice ? (
-              <Link
-                to={`/notice/${previousNotice.id}`}
-                className="inline-flex items-center gap-1.5 justify-self-start text-sm font-semibold text-slate-500 transition hover:text-slate-900 md:text-base"
-              >
-                <ChevronLeft size={18} />
-                <span>{TEXT.prevPost}</span>
-              </Link>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 justify-self-start text-sm font-semibold text-slate-300 md:text-base">
-                <ChevronLeft size={18} />
-                <span>{TEXT.prevPost}</span>
-              </span>
-            )}
+        {!isEditing && (
+          <div className="mt-16 border-t border-slate-200 pt-8 md:mt-20 md:pt-10">
+            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 md:gap-6">
+              {previousNotice ? (
+                <Link
+                  to={`/notice/${previousNotice.id}`}
+                  className="inline-flex items-center gap-1.5 justify-self-start text-sm font-semibold text-slate-500 transition hover:text-slate-900 md:text-base"
+                >
+                  <ChevronLeft size={18} />
+                  <span>{TEXT.prevPost}</span>
+                </Link>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 justify-self-start text-sm font-semibold text-slate-300 md:text-base">
+                  <ChevronLeft size={18} />
+                  <span>{TEXT.prevPost}</span>
+                </span>
+              )}
 
-            <Link
-              to="/notice"
-              className="inline-flex min-w-[170px] items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-3 font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900 md:min-w-[220px] md:px-8"
-            >
-              {TEXT.backToList}
-            </Link>
-
-            {nextNotice ? (
               <Link
-                to={`/notice/${nextNotice.id}`}
-                className="inline-flex items-center gap-1.5 justify-self-end text-sm font-semibold text-slate-500 transition hover:text-slate-900 md:text-base"
+                to="/notice"
+                className="inline-flex min-w-[170px] items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-3 font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900 md:min-w-[220px] md:px-8"
               >
-                <span>{TEXT.nextPost}</span>
-                <ChevronRight size={18} />
+                {TEXT.backToList}
               </Link>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 justify-self-end text-sm font-semibold text-slate-300 md:text-base">
-                <span>{TEXT.nextPost}</span>
-                <ChevronRight size={18} />
-              </span>
-            )}
+
+              {nextNotice ? (
+                <Link
+                  to={`/notice/${nextNotice.id}`}
+                  className="inline-flex items-center gap-1.5 justify-self-end text-sm font-semibold text-slate-500 transition hover:text-slate-900 md:text-base"
+                >
+                  <span>{TEXT.nextPost}</span>
+                  <ChevronRight size={18} />
+                </Link>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 justify-self-end text-sm font-semibold text-slate-300 md:text-base">
+                  <span>{TEXT.nextPost}</span>
+                  <ChevronRight size={18} />
+                </span>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </Container>
     </main>
   );

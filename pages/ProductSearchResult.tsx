@@ -6,6 +6,7 @@ import { Container } from '../components/ui/Container';
 import { ResponsiveImage } from '../components/ui/ResponsiveImage';
 import { Loader2, Search } from 'lucide-react';
 import { getPublicProductsData } from '../src/api/publicDataApi';
+import { buildSeoTitle } from '../src/utils/seo';
 
 export const ProductSearchResult: React.FC = () => {
     const [searchParams] = useSearchParams();
@@ -65,7 +66,7 @@ export const ProductSearchResult: React.FC = () => {
     return (
         <div className="min-h-screen bg-slate-50 py-8 md:py-12">
             <Seo
-                title={query ? `${query} 검색 결과 | 휴먼파트너` : '검색 | 휴먼파트너'}
+                title={query ? buildSeoTitle(`"${query}" 검색 결과`) : buildSeoTitle('검색')}
                 description={query ? `휴먼파트너 사이트 내 ${query} 검색 결과 페이지입니다.` : '휴먼파트너 사이트 내 검색 페이지입니다.'}
                 canonicalPath={false}
                 urlPath={false}

@@ -28,7 +28,7 @@ import { getQuoteNotificationRecipientEmails } from "../src/api/quoteNotificatio
 import { getPublicBootstrapData } from "../src/api/publicDataApi";
 import { usePrerenderData } from "../src/prerender/context";
 import { sendQuoteInquiryNotificationEmail } from "../src/utils/email";
-import { buildBreadcrumbStructuredData, buildLocalBusinessStructuredData, toAbsoluteUrl } from "../src/utils/seo";
+import { buildBreadcrumbStructuredData, buildLocalBusinessStructuredData, buildSeoTitle, toAbsoluteUrl } from "../src/utils/seo";
 
 type CategoryGroup = {
   parentName: string;
@@ -36,7 +36,7 @@ type CategoryGroup = {
 };
 
 const TEXT = {
-  pageTitle: "\uACAC\uC801\uBB38\uC758\uC11C | \uD734\uBA3C\uD30C\uD2B8\uB108",
+  pageTitle: buildSeoTitle("\uACAC\uC801 \uC694\uCCAD"),
   pageDescription:
     "\uC0AC\uBB34\uAC00\uAD6C \uB80C\uD0C8\uACFC \uAE30\uC5C5 \uACF5\uAC04 \uAD6C\uC131, \uB2E8\uAE30\u00B7\uC7A5\uAE30 \uB80C\uD0C8 \uACAC\uC801\uC744 \uD734\uBA3C\uD30C\uD2B8\uB108\uC5D0 \uBB38\uC758\uD574\uBCF4\uC138\uC694.",
   eyebrow: "ESTIMATE REQUEST",

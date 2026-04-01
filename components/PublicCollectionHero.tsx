@@ -31,7 +31,7 @@ export const PublicCollectionHero: React.FC<PublicCollectionHeroProps> = ({
   return (
     <section className="relative overflow-visible bg-transparent">
       <div className="relative overflow-hidden">
-        <div className="absolute inset-0 opacity-50" aria-hidden="true">
+        <div className="pointer-events-none absolute inset-0 opacity-50" aria-hidden="true">
           <ResponsiveImage
             src={imageUrl}
             alt=""
@@ -41,16 +41,16 @@ export const PublicCollectionHero: React.FC<PublicCollectionHeroProps> = ({
             sizes="100vw"
           />
         </div>
-        <div className="absolute inset-0 z-10 bg-[linear-gradient(90deg,rgba(0,18,46,0.95)_0%,rgba(1,12,34,0.84)_46%,rgba(0,7,22,0.96)_100%)]" />
-        <div className="absolute inset-0 z-10 bg-[linear-gradient(180deg,rgba(0,0,0,0.16)_0%,rgba(0,0,0,0.22)_100%)]" />
+        <div className="pointer-events-none absolute inset-0 z-10 bg-[linear-gradient(90deg,rgba(0,18,46,0.95)_0%,rgba(1,12,34,0.84)_46%,rgba(0,7,22,0.96)_100%)]" />
+        <div className="pointer-events-none absolute inset-0 z-10 bg-[linear-gradient(180deg,rgba(0,0,0,0.16)_0%,rgba(0,0,0,0.22)_100%)]" />
 
         {topRightAction && (
-          <div className="absolute right-4 top-4 z-20 md:right-8 md:top-8">
+          <div className="pointer-events-auto absolute right-4 top-4 z-40 md:right-8 md:top-8">
             {topRightAction}
           </div>
         )}
 
-        <div className="relative z-20 flex h-[280px] items-center justify-center px-6 py-6 text-center md:h-[420px] md:px-10 md:py-20">
+        <div className="pointer-events-none relative z-20 flex h-[280px] items-center justify-center px-6 py-6 text-center md:h-[420px] md:px-10 md:py-20">
           <div className="max-w-3xl">
             <h1 className="text-[32px] font-extrabold tracking-tight text-white md:text-[62px] md:leading-[1.1]">
               {title}

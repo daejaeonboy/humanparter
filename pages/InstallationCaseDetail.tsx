@@ -6,7 +6,7 @@ import { PublicPageEditButton } from '../components/admin/PublicPageEditButton';
 import { Seo } from '../components/Seo';
 import { Container } from '../components/ui/Container';
 import { ResponsiveImage } from '../components/ui/ResponsiveImage';
-import { type InstallationCase, updateInstallationCase } from '../src/api/cmsApi';
+import { type InstallationCase, updateInstallationCase, deleteInstallationCase } from '../src/api/cmsApi';
 import { getPublicCaseDetailData, invalidatePublicDataCache, type PublicCaseSummary } from '../src/api/publicDataApi';
 import { useAuth } from '../src/context/AuthContext';
 import { usePrerenderData } from '../src/prerender/context';
@@ -15,7 +15,7 @@ import {
   buildInstallationCaseHtmlFromBlocks,
   extractInstallationCaseContent,
 } from '../src/utils/installationCaseContent';
-import { buildBreadcrumbStructuredData, normalizeMetaText, SITE_NAME, SITE_URL, toAbsoluteUrl } from '../src/utils/seo';
+import { buildBreadcrumbStructuredData, buildSeoTitle, normalizeMetaText, SITE_NAME, SITE_URL, toAbsoluteUrl } from '../src/utils/seo';
 
 const TEXT = {
   notFoundTitle: '게시글을 찾을 수 없습니다.',
@@ -25,7 +25,7 @@ const TEXT = {
   emptyContent: '상세 내용이 아직 등록되지 않았습니다.',
   prevPost: '이전글',
   nextPost: '다음글',
-  pageTitleSuffix: '휴먼파트너 설치 사례',
+  pageTitleSuffix: '설치사례',
   pageDescriptionFallback: '휴먼파트너 맞춤 렌탈 솔루션 설치 사례입니다.',
 };
 
@@ -157,6 +157,23 @@ export const InstallationCaseDetail: React.FC = () => {
     }
   };
 
+  const handleDelete = async () => {
+    if (!post?.id) return;
+    if (!window.confirm('정말 이 설치사례를 삭제하시겠습니까?')) return;
+
+    setSavingEdit(true);
+    try {
+      await deleteInstallationCase(post.id);
+      invalidatePublicDataCache();
+      navigate('/cases');
+    } catch (error) {
+      console.error('Failed to delete installation case:', error);
+      alert('삭제에 실패했습니다.');
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
   if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-white pb-20 pt-10">
@@ -169,7 +186,7 @@ export const InstallationCaseDetail: React.FC = () => {
     return (
       <main className="min-h-screen bg-white pb-20 pt-20 text-center">
         <Seo
-          title="설치사례를 찾을 수 없습니다 | 휴먼파트너"
+          title={buildSeoTitle('설치사례를 찾을 수 없습니다')}
           description={TEXT.notFoundDescription}
           canonicalPath={false}
           urlPath={false}
@@ -191,7 +208,7 @@ export const InstallationCaseDetail: React.FC = () => {
   return (
     <main className="min-h-screen bg-white pb-20 pt-10">
       <Seo
-        title={`${post.title} | ${TEXT.pageTitleSuffix}`}
+        title={buildSeoTitle(TEXT.pageTitleSuffix, post.title)}
         description={pageDescription}
         image={post.image_url}
         imageAlt={post.title}
@@ -242,24 +259,26 @@ export const InstallationCaseDetail: React.FC = () => {
         </div>
 
         {isEditing ? (
-          <InstallationCaseInlineEditor
-            title="설치사례 글 수정"
-            description="공개 페이지에서 바로 현재 설치사례 글을 수정합니다."
-            initialValue={{
-              title: post.title,
-              category: post.category || '임시사무실',
-              subtitle: post.subtitle || '',
-              created_at: toDateInputValue(post.created_at),
-              image_url: post.image_url || '',
-              contentHtml: parsedContent.usesBlocks
-                ? buildInstallationCaseHtmlFromBlocks(parsedContent.blocks)
-                : appendInstallationCaseGalleryImages(parsedContent.bodyContent, parsedContent.galleryImages),
-            }}
-            submitLabel={savingEdit ? '저장 중' : '수정사항 저장'}
-            saving={savingEdit}
-            onCancel={cancelEdit}
-            onSave={handleSaveEdit}
-          />
+          <div className="mx-auto max-w-[1080px]">
+            <InstallationCaseInlineEditor
+              title="사례 수정"
+              initialValue={{
+                title: post.title,
+                category: post.category || '임시사무실',
+                subtitle: post.subtitle || '',
+                created_at: toDateInputValue(post.created_at),
+                image_url: post.image_url || '',
+                contentHtml: parsedContent.usesBlocks
+                  ? buildInstallationCaseHtmlFromBlocks(parsedContent.blocks)
+                  : appendInstallationCaseGalleryImages(parsedContent.bodyContent, parsedContent.galleryImages),
+              }}
+              submitLabel={savingEdit ? '저장 중' : '사례 저장'}
+              saving={savingEdit}
+              onCancel={cancelEdit}
+              onSave={handleSaveEdit}
+              onDelete={handleDelete}
+            />
+          </div>
         ) : (
           <article>
             <header className="border-b border-slate-200 pb-8 md:pb-10">
@@ -357,46 +376,48 @@ export const InstallationCaseDetail: React.FC = () => {
           </article>
         )}
 
-        <div className="mt-16 border-t border-slate-200 pt-8 md:mt-20 md:pt-10">
-          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 md:gap-6">
-            {previousCase ? (
-              <Link
-                to={`/cases/${previousCase.id}`}
-                className="inline-flex items-center gap-1.5 justify-self-start text-sm font-semibold text-slate-500 transition hover:text-slate-900 md:text-base"
-              >
-                <ChevronLeft size={18} />
-                <span>{TEXT.prevPost}</span>
-              </Link>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 justify-self-start text-sm font-semibold text-slate-300 md:text-base">
-                <ChevronLeft size={18} />
-                <span>{TEXT.prevPost}</span>
-              </span>
-            )}
+        {!isEditing && (
+          <div className="mt-16 border-t border-slate-200 pt-8 md:mt-20 md:pt-10">
+            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 md:gap-6">
+              {previousCase ? (
+                <Link
+                  to={`/cases/${previousCase.id}`}
+                  className="inline-flex items-center gap-1.5 justify-self-start text-sm font-semibold text-slate-500 transition hover:text-slate-900 md:text-base"
+                >
+                  <ChevronLeft size={18} />
+                  <span>{TEXT.prevPost}</span>
+                </Link>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 justify-self-start text-sm font-semibold text-slate-300 md:text-base">
+                  <ChevronLeft size={18} />
+                  <span>{TEXT.prevPost}</span>
+                </span>
+              )}
 
-            <Link
-              to="/cases"
-              className="inline-flex min-w-[170px] items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-3 font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900 md:min-w-[220px] md:px-8"
-            >
-              {TEXT.backToList}
-            </Link>
-
-            {nextCase ? (
               <Link
-                to={`/cases/${nextCase.id}`}
-                className="inline-flex items-center gap-1.5 justify-self-end text-sm font-semibold text-slate-500 transition hover:text-slate-900 md:text-base"
+                to="/cases"
+                className="inline-flex min-w-[170px] items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-3 font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900 md:min-w-[220px] md:px-8"
               >
-                <span>{TEXT.nextPost}</span>
-                <ChevronRight size={18} />
+                {TEXT.backToList}
               </Link>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 justify-self-end text-sm font-semibold text-slate-300 md:text-base">
-                <span>{TEXT.nextPost}</span>
-                <ChevronRight size={18} />
-              </span>
-            )}
+
+              {nextCase ? (
+                <Link
+                  to={`/cases/${nextCase.id}`}
+                  className="inline-flex items-center gap-1.5 justify-self-end text-sm font-semibold text-slate-500 transition hover:text-slate-900 md:text-base"
+                >
+                  <span>{TEXT.nextPost}</span>
+                  <ChevronRight size={18} />
+                </Link>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 justify-self-end text-sm font-semibold text-slate-300 md:text-base">
+                  <span>{TEXT.nextPost}</span>
+                  <ChevronRight size={18} />
+                </span>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </Container>
     </main>
   );

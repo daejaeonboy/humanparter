@@ -11,7 +11,7 @@ import { CS_SECTION_TABS } from '../src/config/publicMegaMenu';
 import { getCollectionHeroVisual } from '../src/content/publicVisualsContent';
 import { usePublicVisuals } from '../src/hooks/usePublicVisuals';
 import { usePrerenderData } from '../src/prerender/context';
-import { buildBreadcrumbStructuredData } from '../src/utils/seo';
+import { buildBreadcrumbStructuredData, buildSeoTitle } from '../src/utils/seo';
 const DEFAULT_FAQ_CATEGORIES = ['자주 묻는 질문', '공통', '이용문의', '견적/결제', '취소/환불', '상품문의', '기타'];
 
 export const CSCenter: React.FC = () => {
@@ -93,7 +93,7 @@ export const CSCenter: React.FC = () => {
     return (
         <main className="min-h-screen bg-white pb-20 pt-0">
             <Seo
-                title="고객센터 | 휴먼파트너"
+                title={buildSeoTitle('고객센터')}
                 description="휴먼파트너 고객센터입니다. 자주 묻는 질문부터 실시간 상담까지 도와드립니다."
                 canonicalPath="/cs"
                 structuredData={[

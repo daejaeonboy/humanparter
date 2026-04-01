@@ -8,7 +8,7 @@ import { Seo } from '../components/Seo';
 import { CS_SECTION_TABS } from '../src/config/publicMegaMenu';
 import { getCollectionHeroVisual } from '../src/content/publicVisualsContent';
 import { usePublicVisuals } from '../src/hooks/usePublicVisuals';
-import { buildBreadcrumbStructuredData } from '../src/utils/seo';
+import { buildBreadcrumbStructuredData, buildSeoTitle } from '../src/utils/seo';
 
 type AsGuideItem = {
   id: string;
@@ -97,7 +97,7 @@ export const AsGuidePage: React.FC = () => {
   return (
     <main className="min-h-screen bg-white pb-20 pt-0">
       <Seo
-        title="A/S 안내 | 휴먼파트너"
+        title={buildSeoTitle('A/S 안내')}
         description="휴먼파트너의 A/S 접수 방법, 처리 절차, 방문 지원 범위와 운영 기준을 안내합니다."
         canonicalPath="/cs/as-guide"
         structuredData={[

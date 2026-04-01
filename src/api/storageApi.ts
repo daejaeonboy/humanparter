@@ -379,6 +379,36 @@ const parseBucketAndPathFromUrl = (imageUrl: string): { bucket: string; path: st
     }
 };
 
+export const uploadFile = async (
+    file: File,
+    folder: string = 'attachments',
+): Promise<string> => {
+    const timestamp = Date.now();
+    const cleanFileName = file.name.replace(/[^a-zA-Z0-9가-힣.-]/g, '_');
+    const filePath = `${folder}/${timestamp}_${cleanFileName}`;
+    const errors: string[] = [];
+
+    for (const bucket of uniqueBuckets) {
+        const { error } = await supabase.storage.from(bucket).upload(filePath, file, {
+            cacheControl: LONG_CACHE_CONTROL_SECONDS,
+            contentType: file.type || 'application/octet-stream',
+            upsert: false,
+        });
+
+        if (error) {
+            errors.push(`${bucket}: ${getErrorText(error)}`);
+            continue;
+        }
+
+        const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(filePath);
+        return urlData.publicUrl;
+    }
+
+    throw new Error(
+        `File upload failed. Tried buckets [${uniqueBuckets.join(', ')}]. Errors: ${errors.join(' | ')}`,
+    );
+};
+
 export const deleteImage = async (imageUrl: string): Promise<void> => {
     const parsed = parseBucketAndPathFromUrl(imageUrl);
     const bucketsToTry = parsed

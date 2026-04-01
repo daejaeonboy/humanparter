@@ -16,7 +16,7 @@ import { usePrerenderData } from '../src/prerender/context';
 import {
   stripInstallationCaseMetadata,
 } from '../src/utils/installationCaseContent';
-import { buildBreadcrumbStructuredData, toAbsoluteUrl } from '../src/utils/seo';
+import { buildBreadcrumbStructuredData, buildSeoTitle, toAbsoluteUrl } from '../src/utils/seo';
 
 const CASES_PER_PAGE = 12;
 
@@ -237,7 +237,7 @@ export const InstallationCasesGallery: React.FC = () => {
   return (
     <main className="min-h-screen bg-white pb-20 pt-0">
       <Seo
-        title="휴먼파트너 설치사례 갤러리"
+        title={buildSeoTitle('설치사례')}
         description="기업, 공공기관, 교육기관 등 다양한 업무 환경에 맞춘 휴먼파트너의 실제 설치 사례를 확인해보세요."
         canonicalPath="/cases"
         urlPath="/cases"
@@ -299,7 +299,7 @@ export const InstallationCasesGallery: React.FC = () => {
 
       <Container size="layout">
         {isCreating && createDraft && (
-          <div ref={createEditorRef} className="mt-12 md:mt-16">
+          <div ref={createEditorRef} className="mx-auto mt-12 max-w-[1080px] md:mt-16">
             <InstallationCaseInlineEditor
               title="새 설치사례 등록"
               description="공개 페이지에서 바로 새 설치사례를 작성합니다. 저장하면 상세 페이지로 이동합니다."
@@ -312,7 +312,8 @@ export const InstallationCasesGallery: React.FC = () => {
           </div>
         )}
 
-        <div className="mt-20 md:mt-24">
+        {!isCreating && (
+          <div className="mt-20 md:mt-24">
           {loading ? (
             <div className="flex items-center justify-center py-24">
               <Loader2 className="animate-spin text-[#001e45]" size={40} />
@@ -393,7 +394,8 @@ export const InstallationCasesGallery: React.FC = () => {
               <p>{searchTerm ? '검색 결과가 없습니다.' : '등록된 설치 사례가 없습니다.'}</p>
             </div>
           )}
-        </div>
+          </div>
+        )}
       </Container>
     </main>
   );

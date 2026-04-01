@@ -1,7 +1,7 @@
 import React from 'react';
 import { Seo } from '../components/Seo';
 import { Container } from '../components/ui/Container';
-import { buildBreadcrumbStructuredData } from '../src/utils/seo';
+import { buildBreadcrumbStructuredData, buildSeoTitle } from '../src/utils/seo';
 
 const policySections: Array<{ title: string; items: string[] }> = [
   {
@@ -107,7 +107,7 @@ export const PrivacyPolicy: React.FC = () => {
   return (
     <div className="min-h-screen bg-white pb-20">
       <Seo
-        title="개인정보처리방침 - 휴먼파트너"
+        title={buildSeoTitle('개인정보처리방침')}
         description="휴먼파트너 웹사이트의 개인정보처리방침입니다. 견적 문의 접수 시 수집 항목, 이용 목적, 보유 기간과 이용자 권리를 안내합니다."
         canonicalPath="/privacy"
         structuredData={buildBreadcrumbStructuredData([

@@ -11,7 +11,7 @@ import { getPublicBootstrapData, getPublicProductsData } from '../src/api/public
 import { getProductDefaultVisual, type PublicVisualsContent } from '../src/content/publicVisualsContent';
 import { usePrerenderData } from '../src/prerender/context';
 import { getCategoryTabDescription, getCategoryTabImage } from '../src/config/categoryTabs';
-import { buildBreadcrumbStructuredData, normalizeMetaText, toAbsoluteUrl } from '../src/utils/seo';
+import { buildBreadcrumbStructuredData, buildSeoTitle, normalizeMetaText, toAbsoluteUrl } from '../src/utils/seo';
 
 const ALL_CATEGORY = '전체';
 const PRODUCTS_PER_PAGE = 16;
@@ -258,7 +258,10 @@ export const ProductListPage: React.FC = () => {
         || childToParentMap[activeCategory]
         || (activeCategory !== ALL_CATEGORY ? activeCategory : null);
     const pageHeading = currentGroup || urlTitle || (activeCategory !== ALL_CATEGORY ? activeCategory : '렌탈 품목');
-    const pageTitle = pageHeading === '모든 상품' ? '제품 안내 | 휴먼파트너' : `${pageHeading} | 휴먼파트너`;
+    const pageTitle =
+        pageHeading === '모든 상품' || pageHeading === '렌탈 품목'
+            ? buildSeoTitle('렌탈 품목')
+            : buildSeoTitle(`${pageHeading} 렌탈`);
     const pageDescription = normalizeMetaText(
         pageHeading === '모든 상품' || pageHeading === '렌탈 품목'
             ? '사무가구를 중심으로 기업 운영에 필요한 렌탈 품목을 휴먼파트너에서 확인해보세요.'

@@ -44,6 +44,14 @@ export const normalizeMetaText = (value?: string, maxLength = 160): string | und
   return `${normalized.slice(0, Math.max(0, maxLength - 3)).trimEnd()}...`;
 };
 
+export const buildSeoTitle = (...parts: Array<string | undefined | null | false>): string => {
+  const resolvedParts = parts
+    .map((part) => (typeof part === 'string' ? part.trim() : ''))
+    .filter(Boolean);
+
+  return [SITE_NAME, ...resolvedParts].join(' | ');
+};
+
 export const buildRobotsContent = ({ noindex = false, nofollow = false }: RobotsOptions = {}): string => {
   const indexDirective = noindex ? 'noindex' : 'index';
   const followDirective = nofollow ? 'nofollow' : 'follow';

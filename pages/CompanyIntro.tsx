@@ -18,7 +18,7 @@ import {
 import { normalizeCompanyPageContent } from '../src/content/companyPageContent';
 import { COMPANY_SECTION_TABS } from '../src/config/publicMegaMenu';
 import { usePrerenderData } from '../src/prerender/context';
-import { buildBreadcrumbStructuredData, buildLocalBusinessStructuredData, SITE_URL, toAbsoluteUrl } from '../src/utils/seo';
+import { buildBreadcrumbStructuredData, buildLocalBusinessStructuredData, buildSeoTitle, SITE_URL, toAbsoluteUrl } from '../src/utils/seo';
 
 const COMPANY_SECTION_PATHS: Record<string, CompanySectionTabValue> = {
   '/company': 'company-overview',
@@ -36,22 +36,22 @@ const COMPANY_SECTION_META: Record<
   }
 > = {
   'company-overview': {
-    title: '회사 개요 | 휴먼파트너',
+    title: buildSeoTitle('회사소개'),
     description: '휴먼파트너의 운영 경험과 B2B 렌탈 파트너로서의 강점을 확인해보세요.',
     canonicalPath: '/company',
   },
   'company-business': {
-    title: '사업영역 | 휴먼파트너',
+    title: buildSeoTitle('사업영역'),
     description: '사무가구, IT 장비, 현장 운영까지 휴먼파트너의 핵심 사업영역을 안내합니다.',
     canonicalPath: '/company/business',
   },
   'company-vision': {
-    title: '비전 | 휴먼파트너',
+    title: buildSeoTitle('비전'),
     description: '공간과 운영을 함께 설계하는 휴먼파트너의 서비스 방향성과 운영 기준을 확인해보세요.',
     canonicalPath: '/company/vision',
   },
   'company-location': {
-    title: '오시는길 | 휴먼파트너',
+    title: buildSeoTitle('오시는 길'),
     description: '휴먼파트너 위치와 연락처, 상담 안내를 확인하고 네이버 지도로 길찾기할 수 있습니다.',
     canonicalPath: '/company/location',
   },
@@ -304,7 +304,7 @@ export const CompanyIntro: React.FC = () => {
 
       <section className="bg-white pb-24 pt-28 md:pb-28 md:pt-32">
         <Container size="layout">
-          <div className="mx-auto max-w-[980px]">
+          <div className={`mx-auto ${isEditing ? 'max-w-[1080px]' : 'max-w-[980px]'}`}>
             {isEditing && (
               <div ref={editorRef} className="mb-12">
                 <CompanySectionsEditor
@@ -316,7 +316,6 @@ export const CompanyIntro: React.FC = () => {
                   defaultSection={activeSection}
                   sectionValues={[activeSection]}
                   title={`${activeTab.label} 수정`}
-                  description="현재 페이지 본문만 바로 수정합니다. 공통 상단 히어로와 대표 이미지는 관리자 페이지에서 관리합니다."
                   showHeroFields={false}
                   showOverviewImageField={false}
                 />

@@ -8,7 +8,7 @@ import { ResponsiveImage } from '../components/ui/ResponsiveImage';
 import { getProductNavigationTarget, normalizeExternalLinkUrl, Product } from '../src/api/productApi';
 import { getPublicProductDetailData } from '../src/api/publicDataApi';
 import { usePrerenderData } from '../src/prerender/context';
-import { buildBreadcrumbStructuredData, normalizeMetaText, toAbsoluteUrl } from '../src/utils/seo';
+import { buildBreadcrumbStructuredData, buildSeoTitle, normalizeMetaText, toAbsoluteUrl } from '../src/utils/seo';
 
 const fallbackImage =
   'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80';
@@ -129,7 +129,7 @@ export const ProductDetailPage: React.FC = () => {
     return (
       <main className="bg-white py-20">
         <Seo
-          title="상품을 찾을 수 없습니다 | 휴먼파트너"
+          title={buildSeoTitle('상품을 찾을 수 없습니다')}
           description="요청하신 상품 정보를 찾을 수 없습니다."
           canonicalPath={false}
           urlPath={false}
@@ -153,7 +153,7 @@ export const ProductDetailPage: React.FC = () => {
   return (
     <main className="bg-slate-50 pb-24 pt-8 md:pt-12">
       <Seo
-        title={`${product.name} | 휴먼파트너`}
+        title={buildSeoTitle(product.name)}
         description={metaDescription}
         image={product.image_url || fallbackImage}
         imageAlt={product.name}

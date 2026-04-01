@@ -330,178 +330,168 @@ export const RichTextEditor = ({
   const defaultButtonClassName =
     'rounded-lg p-2 text-slate-700 transition-colors hover:bg-slate-200 disabled:opacity-50';
   const plainButtonClassName =
-    'inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50';
+    'inline-flex h-9 items-center justify-center rounded-lg border border-slate-300 bg-white px-3 text-xs font-extrabold text-slate-800 transition-colors hover:bg-slate-50 disabled:opacity-50';
   const plainIconButtonClassName =
-    'inline-flex h-10 min-w-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50';
+    'inline-flex h-9 min-w-9 items-center justify-center rounded-lg border border-slate-300 bg-white px-2.5 text-slate-800 transition-colors hover:bg-slate-50 disabled:opacity-50';
 
   return (
-    <div className="overflow-hidden rounded-2xl bg-white">
+    <div className="overflow-hidden rounded-xl border border-slate-300 bg-white">
       {isPlain ? (
-        <div className="space-y-5 border-b border-slate-100 px-4 py-4 md:px-5">
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="min-w-[48px] text-xs font-semibold text-slate-500">프리셋</span>
-            <button
-              type="button"
-              onMouseDown={keepSelection}
-              onClick={applyPresetTitle}
-              className={plainButtonClassName}
-            >
-              타이틀
-            </button>
-            <button
-              type="button"
-              onMouseDown={keepSelection}
-              onClick={applyPresetBody}
-              className={plainButtonClassName}
-            >
-              본문
-            </button>
+        <div className="space-y-4 border-b border-slate-200 bg-slate-50/50 px-4 py-5 md:px-6">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+            <div className="flex items-center gap-3">
+              <span className="min-w-[40px] text-[11px] font-bold text-slate-600">프리셋</span>
+              <div className="flex gap-1.5">
+                <button
+                  key="preset-title"
+                  type="button"
+                  onMouseDown={keepSelection}
+                  onClick={applyPresetTitle}
+                  className={plainButtonClassName}
+                >
+                  타이틀
+                </button>
+                <button
+                  key="preset-body"
+                  type="button"
+                  onMouseDown={keepSelection}
+                  onClick={applyPresetBody}
+                  className={plainButtonClassName}
+                >
+                  본문
+                </button>
+              </div>
+              <span className="ml-1 text-[10px] font-medium text-slate-400">선택한 문단 기준</span>
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="min-w-[48px] text-xs font-semibold text-slate-500">글자</span>
-            <button
-              type="button"
-              onMouseDown={keepSelection}
-              onClick={() => exec('bold')}
-              className={plainButtonClassName}
-            >
-              굵게
-            </button>
-            <button
-              type="button"
-              onMouseDown={keepSelection}
-              onClick={() => exec('italic')}
-              className={plainIconButtonClassName}
-              aria-label="기울임"
-            >
-              <Italic size={16} />
-            </button>
-            <button
-              type="button"
-              onMouseDown={keepSelection}
-              onClick={() => exec('underline')}
-              className={plainIconButtonClassName}
-              aria-label="밑줄"
-            >
-              <Underline size={16} />
-            </button>
-            <button
-              type="button"
-              onMouseDown={keepSelection}
-              onClick={() => exec('insertUnorderedList')}
-              className={plainIconButtonClassName}
-              aria-label="리스트"
-            >
-              <List size={16} />
-            </button>
-            <button
-              type="button"
-              onMouseDown={keepSelection}
-              onClick={() => exec('removeFormat')}
-              className={plainIconButtonClassName}
-              aria-label="서식 지우기"
-            >
-              <Eraser size={16} />
-            </button>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="min-w-[48px] text-xs font-semibold text-slate-500">폰트 크기</span>
-            {FONT_SIZE_OPTIONS.map((fontSize) => (
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+            <div className="flex items-center gap-3">
+              <span className="min-w-[40px] text-[11px] font-bold text-slate-600">글자</span>
               <button
-                key={fontSize}
                 type="button"
                 onMouseDown={keepSelection}
-                onClick={() => applyFontSize(fontSize)}
-                className={plainButtonClassName}
-              >
-                {fontSize}
-              </button>
-            ))}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="min-w-[48px] text-xs font-semibold text-slate-500">행간</span>
-            <select
-              value={selectedLineHeight}
-              onChange={(event) => applyLineHeight(event.target.value)}
-              className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 outline-none"
-            >
-              <option value="1.4">1.4</option>
-              <option value="1.6">1.6</option>
-              <option value="1.8">1.8</option>
-              <option value="1.9">1.9</option>
-              <option value="2">2.0</option>
-            </select>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="min-w-[48px] text-xs font-semibold text-slate-500">글자색</span>
-            {COLOR_OPTIONS.map((color) => (
-              <button
-                key={color}
-                type="button"
-                onMouseDown={keepSelection}
-                onClick={() => applyTextColor(color)}
-                className={`flex h-10 w-10 items-center justify-center rounded-xl border transition-colors ${
-                  selectedColor === color ? 'border-slate-400 bg-slate-50' : 'border-slate-200 bg-white hover:bg-slate-50'
+                onClick={() => exec('bold')}
+                className={`${plainButtonClassName} ${
+                  document.queryCommandState?.('bold') ? 'border-[#001e45] bg-[#001e45]/5 text-[#001e45]' : ''
                 }`}
-                aria-label={`글자색 ${color}`}
               >
-                <span
-                  className="h-4 w-4 rounded-full border border-black/10"
-                  style={{ backgroundColor: color }}
-                />
+                <Bold size={14} className="mr-1" />
+                굵게
               </button>
-            ))}
-            <label className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50">
-              직접 선택
-              <input
-                type="color"
-                value={selectedColor}
-                onChange={handleColorInput}
-                className="h-5 w-5 cursor-pointer border-0 bg-transparent p-0"
-              />
-            </label>
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="min-w-[48px] text-xs font-semibold text-slate-500">이미지 삽입</span>
-            <input
-              type="text"
-              value={imageUrlInput}
-              onChange={(event) => setImageUrlInput(event.target.value)}
-              placeholder="이미지 URL 붙여넣기"
-              className="h-10 min-w-[260px] flex-1 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none placeholder:text-slate-400"
-            />
-            <button
-              type="button"
-              onMouseDown={keepSelection}
-              onClick={() => insertImageByUrl()}
-              className={plainButtonClassName}
-            >
-              URL 삽입
-            </button>
-            <button
-              type="button"
-              onMouseDown={keepSelection}
-              onClick={handleImageUpload}
-              disabled={uploading}
-              className={plainButtonClassName}
-            >
-              {uploading ? (
-                <>
-                  <Loader2 size={16} className="animate-spin" />
-                  업로드 중
-                </>
-              ) : (
-                <>
-                  <ImageIcon size={16} />
-                  업로드 삽입
-                </>
-              )}
-            </button>
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+            <div className="flex items-center gap-3">
+              <span className="min-w-[40px] text-[11px] font-bold text-slate-600">폰트 크기</span>
+              <div className="flex flex-wrap gap-1.5">
+                {FONT_SIZE_OPTIONS.map((fontSize) => (
+                  <button
+                    key={fontSize}
+                    type="button"
+                    onMouseDown={keepSelection}
+                    onClick={() => applyFontSize(fontSize)}
+                    className={plainButtonClassName}
+                  >
+                    {fontSize}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+            <div className="flex items-center gap-3">
+              <span className="min-w-[40px] text-[11px] font-bold text-slate-600">행간</span>
+              <select
+                value={selectedLineHeight}
+                onChange={(event) => applyLineHeight(event.target.value)}
+                className="h-9 rounded-lg border border-slate-300 bg-white px-2.5 text-xs font-extrabold text-slate-800 outline-none focus:border-[#001e45]"
+              >
+                <option value="1.0">1.0</option>
+                <option value="1.2">1.2</option>
+                <option value="1.4">1.4</option>
+                <option value="1.5">1.5</option>
+                <option value="1.6">1.6</option>
+                <option value="1.8">1.8</option>
+                <option value="1.9">1.9</option>
+                <option value="2">2.0</option>
+              </select>
+              <span className="ml-1 text-[10px] font-medium text-slate-400">선택한 문단 기준</span>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+            <div className="flex items-center gap-3">
+              <span className="min-w-[40px] text-[11px] font-bold text-slate-600">글자색</span>
+              <div className="flex gap-2">
+                {COLOR_OPTIONS.map((color) => (
+                  <button
+                    key={color}
+                    type="button"
+                    onMouseDown={keepSelection}
+                    onClick={() => applyTextColor(color)}
+                    className={`flex h-6 w-6 items-center justify-center rounded-full border transition-transform hover:scale-110 ${
+                      selectedColor === color ? 'border-[#001e45] ring-2 ring-[#001e45]/20' : 'border-black/10'
+                    }`}
+                    aria-label={`글자색 ${color}`}
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+              </div>
+              <label className="ml-2 inline-flex h-9 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 text-xs font-extrabold text-slate-800 transition-colors hover:bg-slate-50">
+                직접 선택
+                <input
+                  type="color"
+                  value={selectedColor}
+                  onChange={handleColorInput}
+                  className="h-4 w-4 cursor-pointer border-0 bg-transparent p-0"
+                />
+              </label>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+            <div className="flex items-center gap-3">
+              <span className="min-w-[40px] text-[11px] font-bold text-slate-600">이미지 삽입</span>
+              <div className="flex flex-1 flex-wrap items-center gap-2">
+                <input
+                  type="text"
+                  value={imageUrlInput}
+                  onChange={(event) => setImageUrlInput(event.target.value)}
+                  placeholder="이미지 URL 붙여넣기"
+                  className="h-9 min-w-[200px] flex-1 rounded-lg border border-slate-300 bg-white px-3 text-xs font-medium text-slate-900 outline-none placeholder:text-slate-400 focus:border-[#001e45]"
+                />
+                <button
+                  type="button"
+                  onMouseDown={keepSelection}
+                  onClick={() => insertImageByUrl()}
+                  className={plainButtonClassName}
+                >
+                  URL 삽입
+                </button>
+                <button
+                  type="button"
+                  onMouseDown={keepSelection}
+                  onClick={handleImageUpload}
+                  disabled={uploading}
+                  className={plainButtonClassName}
+                >
+                  {uploading ? (
+                    <>
+                      <Loader2 size={14} className="mr-1 animate-spin" />
+                      업로드 중
+                    </>
+                  ) : (
+                    <>
+                      <ImageIcon size={14} className="mr-1" />
+                      이미지 업로드
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       ) : (

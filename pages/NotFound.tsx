@@ -3,12 +3,13 @@ import { Link } from 'react-router-dom';
 import { Container } from '../components/ui/Container';
 import { Home, ArrowLeft } from 'lucide-react';
 import { Seo } from '../components/Seo';
+import { buildSeoTitle } from '../src/utils/seo';
 
 export const NotFound: React.FC = () => {
     return (
         <div className="min-h-[70vh] flex items-center justify-center py-20 px-4">
             <Seo
-                title="페이지를 찾을 수 없습니다 - 휴먼파트너"
+                title={buildSeoTitle('페이지를 찾을 수 없습니다')}
                 description="요청하신 페이지를 찾을 수 없습니다."
                 canonicalPath={false}
                 urlPath={false}

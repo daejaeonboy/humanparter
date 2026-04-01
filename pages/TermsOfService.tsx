@@ -1,7 +1,7 @@
 import React from 'react';
 import { Seo } from '../components/Seo';
 import { Container } from '../components/ui/Container';
-import { buildBreadcrumbStructuredData } from '../src/utils/seo';
+import { buildBreadcrumbStructuredData, buildSeoTitle } from '../src/utils/seo';
 
 const termsSections: Array<{ title: string; items: string[] }> = [
   {
@@ -90,7 +90,7 @@ export const TermsOfService: React.FC = () => {
   return (
     <div className="min-h-screen bg-white pb-20">
       <Seo
-        title="서비스 이용약관 - 휴먼파트너"
+        title={buildSeoTitle('서비스 이용약관')}
         description="휴먼파트너 웹사이트 서비스 이용약관입니다. 회사소개, 제품 안내, 견적 문의 이용과 관련한 기본 정책을 안내합니다."
         canonicalPath="/terms"
         structuredData={buildBreadcrumbStructuredData([

@@ -5,6 +5,11 @@ import { stripHtmlTags } from '../utils/html';
 const TABLE_NAME = 'notice_posts';
 const TABLE_STATUS_STORAGE_KEY = 'hp_notice_posts_table_status';
 
+export interface NoticeAttachment {
+  name: string;
+  url: string;
+}
+
 export interface NoticePost {
   id: string;
   title: string;
@@ -13,6 +18,7 @@ export interface NoticePost {
   publishedAt: string;
   category: string;
   contentHtml: string;
+  attachments?: NoticeAttachment[];
   displayOrder: number;
   isActive: boolean;
   created_at?: string;
@@ -22,7 +28,7 @@ export interface NoticePost {
 export type PublicNoticePost = NoticePost;
 export type NoticeAuthoringInput = Pick<
   NoticePost,
-  'title' | 'excerpt' | 'imageUrl' | 'publishedAt' | 'category' | 'contentHtml'
+  'title' | 'excerpt' | 'imageUrl' | 'publishedAt' | 'category' | 'contentHtml' | 'attachments'
 >;
 
 export const DEFAULT_NOTICE_CATEGORY = '공지사항';
@@ -33,6 +39,7 @@ export const createEmptyNoticeAuthoringInput = (): NoticeAuthoringInput => ({
   publishedAt: new Date().toISOString().slice(0, 10),
   category: DEFAULT_NOTICE_CATEGORY,
   contentHtml: '<p></p>',
+  attachments: [],
 });
 
 export const buildNoticeAuthoringInputFromPost = (post: NoticePost): NoticeAuthoringInput => ({
@@ -42,6 +49,7 @@ export const buildNoticeAuthoringInputFromPost = (post: NoticePost): NoticeAutho
   publishedAt: post.publishedAt,
   category: post.category,
   contentHtml: post.contentHtml,
+  attachments: post.attachments || [],
 });
 
 export const getNextNoticeDisplayOrder = (items: Pick<NoticePost, 'displayOrder'>[]) =>
@@ -200,6 +208,7 @@ const normalizeRecord = (record: Record<string, unknown>): NoticePost => ({
   publishedAt: normalizeDate(record.published_at as string | null | undefined),
   category: String(record.category || ''),
   contentHtml: String(record.content_html || ''),
+  attachments: Array.isArray(record.attachments) ? record.attachments : [],
   displayOrder: Number(record.display_order || 0),
   isActive: record.is_active !== false,
   created_at: typeof record.created_at === 'string' ? record.created_at : undefined,
@@ -222,6 +231,7 @@ const toSupabasePayload = (post: NoticeFormInput | NoticeUpdateInput) => {
   if (post.publishedAt !== undefined) payload.published_at = formatDateForStorage(post.publishedAt);
   if (post.category !== undefined) payload.category = post.category.trim() || '공지사항';
   if (post.contentHtml !== undefined) payload.content_html = normalizeHtml(post.contentHtml);
+  if (post.attachments !== undefined) payload.attachments = post.attachments;
   if (post.displayOrder !== undefined) payload.display_order = Number(post.displayOrder || 0);
   if (post.isActive !== undefined) payload.is_active = post.isActive !== false;
 

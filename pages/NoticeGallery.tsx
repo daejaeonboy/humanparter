@@ -10,7 +10,7 @@ import { NoticeInlineEditor } from "../components/notice/NoticeInlineEditor";
 import { NOTICE_FILTER_TABS, getNoticeTabValue } from "../src/config/publicMegaMenu";
 import { getCollectionHeroVisual } from "../src/content/publicVisualsContent";
 import { usePublicVisuals } from "../src/hooks/usePublicVisuals";
-import { buildBreadcrumbStructuredData, toAbsoluteUrl } from "../src/utils/seo";
+import { buildBreadcrumbStructuredData, buildSeoTitle, toAbsoluteUrl } from "../src/utils/seo";
 import {
   addNoticePost,
   createEmptyNoticeAuthoringInput,
@@ -132,7 +132,7 @@ export const NoticeGallery: React.FC = () => {
   return (
     <main className="min-h-screen bg-white pb-20 pt-0">
       <Seo
-        title="휴먼파트너 정보센터"
+        title={buildSeoTitle('정보센터')}
         description="휴먼파트너의 운영 소식, 상담 안내, 설치 및 렌탈 관련 주요 업데이트를 확인해보세요."
         canonicalPath="/notice"
         urlPath="/notice"
@@ -186,7 +186,7 @@ export const NoticeGallery: React.FC = () => {
 
       <Container size="layout">
         {isCreating && createDraft && (
-          <div ref={createEditorRef} className="mt-12 md:mt-16">
+          <div ref={createEditorRef} className="mx-auto mt-12 max-w-[1080px] md:mt-16">
             <NoticeInlineEditor
               title="새 정보센터 등록"
               description="공개 페이지에서 바로 새 게시글을 작성합니다. 저장하면 상세 페이지로 이동합니다."
@@ -199,7 +199,8 @@ export const NoticeGallery: React.FC = () => {
           </div>
         )}
 
-        <div className="mt-20 md:mt-24">
+        {!isCreating && (
+          <div className="mt-20 md:mt-24">
           {loading ? (
             <div className="flex items-center justify-center py-24">
               <Loader2 className="animate-spin text-[#001e45]" size={40} />
@@ -272,7 +273,8 @@ export const NoticeGallery: React.FC = () => {
               <p>등록된 정보센터가 없습니다.</p>
             </div>
           )}
-        </div>
+          </div>
+        )}
       </Container>
     </main>
   );

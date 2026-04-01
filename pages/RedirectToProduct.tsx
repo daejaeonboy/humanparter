@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Seo } from '../components/Seo';
 import { getProductByCode, getProductById, getProductNavigationTarget } from '../src/api/productApi';
 import { getPublicProductsData } from '../src/api/publicDataApi';
+import { buildSeoTitle } from '../src/utils/seo';
 
 export const RedirectToProduct = () => {
     const { code } = useParams();
@@ -62,7 +63,7 @@ export const RedirectToProduct = () => {
     return (
         <div className="flex justify-center items-center h-screen">
             <Seo
-                title="상품 페이지로 이동 중 | 휴먼파트너"
+                title={buildSeoTitle('상품 페이지 이동')}
                 description="요청하신 상품 페이지로 이동하고 있습니다."
                 canonicalPath={false}
                 urlPath={false}
