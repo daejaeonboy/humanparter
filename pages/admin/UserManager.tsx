@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
     Building2,
     Calendar,
-    CheckCircle,
     Edit2,
     Eye,
     FileText,
@@ -13,10 +12,7 @@ import {
     Save,
     Search,
     Trash2,
-    UserCheck,
-    UserX,
     X,
-    XCircle,
 } from 'lucide-react';
 import {
     deleteUserProfile,
@@ -41,7 +37,6 @@ export const UserManager = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
     const [deleting, setDeleting] = useState<string | null>(null);
-    const [approving, setApproving] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
     const [editMode, setEditMode] = useState(false);
     const [editData, setEditData] = useState<Partial<UserProfile>>({});
@@ -49,9 +44,6 @@ export const UserManager = () => {
     useEffect(() => {
         void loadUsers();
     }, []);
-
-    const approvedCount = useMemo(() => users.filter((user) => user.is_approved).length, [users]);
-    const pendingCount = users.length - approvedCount;
 
     const loadUsers = async () => {
         try {
@@ -79,21 +71,6 @@ export const UserManager = () => {
             console.error('Search failed:', error);
         } finally {
             setLoading(false);
-        }
-    };
-
-    const handleApproval = async (id: string, approve: boolean) => {
-        setApproving(id);
-        try {
-            const updated = await updateUserProfile(id, { is_approved: approve });
-            setUsers((current) => current.map((user) => (user.id === id ? updated : user)));
-            setSelectedUser((current) => (current?.id === id ? updated : current));
-            alert(approve ? '회원 승인이 완료되었습니다.' : '회원 승인을 취소했습니다.');
-        } catch (error) {
-            console.error('Failed to update approval:', error);
-            alert('승인 상태 변경에 실패했습니다.');
-        } finally {
-            setApproving(null);
         }
     };
 
@@ -172,7 +149,7 @@ export const UserManager = () => {
                 <div>
                     <h2 className="text-2xl font-bold text-slate-800">회원 관리</h2>
                     <p className="mt-1 text-sm text-slate-500">
-                        총 {users.length}명, 승인 {approvedCount}명, 대기 {pendingCount}명
+                        총 {users.length}명의 회원 정보를 확인하고 관리자 승인 상태를 관리할 수 있습니다.
                     </p>
                 </div>
             </div>
@@ -218,7 +195,7 @@ export const UserManager = () => {
                             <th className="px-4 py-3 text-left text-sm font-semibold text-slate-600">회원정보</th>
                             <th className="px-4 py-3 text-left text-sm font-semibold text-slate-600">회사/기관</th>
                             <th className="px-4 py-3 text-left text-sm font-semibold text-slate-600">연락처</th>
-                            <th className="px-4 py-3 text-center text-sm font-semibold text-slate-600">승인상태</th>
+                            <th className="px-4 py-3 text-center text-sm font-semibold text-slate-600">관리자 승인</th>
                             <th className="px-4 py-3 text-center text-sm font-semibold text-slate-600">작업</th>
                         </tr>
                     </thead>
@@ -231,10 +208,10 @@ export const UserManager = () => {
                             </tr>
                         ) : (
                             users.map((user) => (
-                                <tr key={user.id} className={user.is_approved ? 'hover:bg-slate-50' : 'bg-amber-50/50 hover:bg-amber-50'}>
+                                <tr key={user.id} className="hover:bg-slate-50">
                                     <td className="px-4 py-3">
                                         <div className="flex items-center gap-3">
-                                            <div className={`flex h-10 w-10 items-center justify-center rounded-full font-bold text-white ${user.is_approved ? 'bg-gradient-to-br from-[#001e45] to-[#003366]' : 'bg-slate-400'}`}>
+                                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#001e45] to-[#003366] font-bold text-white">
                                                 {user.name.charAt(0)}
                                             </div>
                                             <div>
@@ -255,38 +232,15 @@ export const UserManager = () => {
                                     <td className="px-4 py-3 text-slate-600">{user.phone}</td>
                                     <td className="px-4 py-3">
                                         <div className="flex items-center justify-center">
-                                            {user.is_approved ? (
-                                                <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-1 text-xs font-medium text-green-700">
-                                                    <CheckCircle size={14} /> 승인
-                                                </span>
-                                            ) : (
-                                                <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-700">
-                                                    <XCircle size={14} /> 대기
-                                                </span>
-                                            )}
+                                            <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${
+                                                user.is_admin ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-500'
+                                            }`}>
+                                                {user.is_admin ? '승인됨' : '미승인'}
+                                            </span>
                                         </div>
                                     </td>
                                     <td className="px-4 py-3">
                                         <div className="flex items-center justify-center gap-1">
-                                            {!user.is_approved ? (
-                                                <button
-                                                    onClick={() => void handleApproval(user.id!, true)}
-                                                    disabled={approving === user.id}
-                                                    className="rounded-lg p-2 text-green-600 transition-colors hover:bg-green-50 disabled:opacity-50"
-                                                    title="승인"
-                                                >
-                                                    {approving === user.id ? <Loader2 size={18} className="animate-spin" /> : <UserCheck size={18} />}
-                                                </button>
-                                            ) : (
-                                                <button
-                                                    onClick={() => void handleApproval(user.id!, false)}
-                                                    disabled={approving === user.id}
-                                                    className="rounded-lg p-2 text-amber-600 transition-colors hover:bg-amber-50 disabled:opacity-50"
-                                                    title="승인 취소"
-                                                >
-                                                    {approving === user.id ? <Loader2 size={18} className="animate-spin" /> : <UserX size={18} />}
-                                                </button>
-                                            )}
                                             <button
                                                 onClick={() => {
                                                     setSelectedUser(user);
@@ -332,30 +286,6 @@ export const UserManager = () => {
                         </div>
 
                         <div className="space-y-4 p-6">
-                            <div className={`flex items-center justify-between rounded-lg border p-3 ${selectedUser.is_approved ? 'border-green-200 bg-green-50' : 'border-amber-200 bg-amber-50'}`}>
-                                <div className="flex items-center gap-2">
-                                    {selectedUser.is_approved ? (
-                                        <>
-                                            <CheckCircle className="text-green-600" size={20} />
-                                            <span className="font-medium text-green-700">승인된 회원</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <XCircle className="text-amber-600" size={20} />
-                                            <span className="font-medium text-amber-700">승인 대기중</span>
-                                        </>
-                                    )}
-                                </div>
-                                <button
-                                    onClick={() => void handleApproval(selectedUser.id!, !selectedUser.is_approved)}
-                                    className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-                                        selectedUser.is_approved ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-green-600 text-white hover:bg-green-700'
-                                    }`}
-                                >
-                                    {selectedUser.is_approved ? '승인 취소' : '승인하기'}
-                                </button>
-                            </div>
-
                             {editMode ? (
                                 <div className="space-y-4">
                                     <div>
@@ -437,7 +367,7 @@ export const UserManager = () => {
                             ) : (
                                 <>
                                     <div className="flex items-center gap-4 border-b pb-4">
-                                        <div className={`flex h-16 w-16 items-center justify-center rounded-full text-2xl font-bold text-white ${selectedUser.is_approved ? 'bg-gradient-to-br from-[#001e45] to-[#003366]' : 'bg-slate-400'}`}>
+                                        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-[#001e45] to-[#003366] text-2xl font-bold text-white">
                                             {selectedUser.name.charAt(0)}
                                         </div>
                                         <div>
@@ -494,8 +424,8 @@ export const UserManager = () => {
                                     <div className="border-t pt-4">
                                         <div className="flex items-center justify-between">
                                             <div>
-                                                <h4 className="font-medium text-slate-800">관리자 권한</h4>
-                                                <p className="text-sm text-slate-500">관리자 대시보드 접근 권한을 부여합니다.</p>
+                                                <h4 className="font-medium text-slate-800">관리자 승인</h4>
+                                                <p className="text-sm text-slate-500">승인된 회원만 관리자 대시보드와 홈페이지 수정 기능을 사용할 수 있습니다.</p>
                                             </div>
                                             <button
                                                 onClick={() => void handleAdminToggle(selectedUser.id!, !selectedUser.is_admin)}

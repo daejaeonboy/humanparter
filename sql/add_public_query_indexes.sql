@@ -30,6 +30,8 @@ begin
     create index if not exists idx_installation_cases_active_display_order_created_at
       on public.installation_cases (display_order, created_at desc)
       where is_active = true;
+    create index if not exists idx_installation_cases_category
+      on public.installation_cases (category);
   end if;
 
   if to_regclass('public.notice_posts') is not null then

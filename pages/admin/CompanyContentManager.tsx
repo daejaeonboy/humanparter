@@ -37,7 +37,7 @@ export const CompanyContentManager: React.FC = () => {
       const saved = await saveCompanyPageContent(content);
       invalidatePublicDataCache();
       setContent(normalizeCompanyPageContent(saved));
-      alert('회사소개 본문을 저장했습니다.');
+      alert('회사소개 공통 비주얼을 저장했습니다.');
     } catch (error) {
       console.error('Failed to save company content:', error);
       alert('저장에 실패했습니다. Supabase에서 `sql/create_page_contents_table.sql`을 먼저 실행해 주세요.');
@@ -61,10 +61,10 @@ export const CompanyContentManager: React.FC = () => {
           <div>
             <h1 className="flex items-center gap-2 text-2xl font-bold text-slate-900">
               <Building2 size={22} className="text-[#001e45]" />
-              회사소개 콘텐츠 관리
+              회사소개 공통 비주얼 관리
             </h1>
             <p className="mt-2 text-sm leading-6 text-slate-500">
-              회사소개 상단 히어로, 회사 개요 대표 이미지, 각 탭 본문까지 공개 페이지와 같은 데이터로 함께 관리합니다.
+              회사소개 공통 상단 히어로와 회사 개요 대표 이미지를 관리합니다. 본문 글 수정은 공개 페이지 인라인 에디터에서 진행합니다.
             </p>
           </div>
 
@@ -83,8 +83,9 @@ export const CompanyContentManager: React.FC = () => {
         onChange={setContent}
         onSave={handleSave}
         saving={saving}
-        title="회사소개 콘텐츠 수정"
-        description="회사소개 상단 히어로와 회사 개요 대표 이미지, 회사 개요·사업영역·비전·오시는길 본문을 한 곳에서 관리합니다."
+        title="회사소개 공통 비주얼 수정"
+        description="회사소개 전체 페이지에서 공통으로 사용하는 상단 히어로와 회사 개요 대표 이미지를 관리합니다."
+        showBodyEditor={false}
       />
     </div>
   );

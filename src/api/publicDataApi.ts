@@ -40,6 +40,7 @@ export interface PublicNoticeSummary {
 export interface PublicCaseSummary {
   id: string;
   title: string;
+  category?: string;
   subtitle?: string;
   image_url: string;
   link: string;
@@ -130,6 +131,7 @@ const noticeToSummary = (item: NoticePost): PublicNoticeSummary => ({
 const caseToSummary = (item: InstallationCase): PublicCaseSummary => ({
   id: item.id || '',
   title: item.title,
+  category: item.category,
   subtitle: item.subtitle,
   image_url: item.image_url,
   link: item.link,

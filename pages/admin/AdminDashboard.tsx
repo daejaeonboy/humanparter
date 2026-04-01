@@ -4,7 +4,6 @@ import {
   ArrowLeft,
   Building2,
   CalendarCheck,
-  FileText,
   HelpCircle,
   ImageIcon,
   LayoutDashboard,
@@ -35,8 +34,8 @@ const navItems: NavItem[] = [
   },
   {
     path: '/admin/company',
-    label: '회사소개 관리',
-    description: '회사소개 페이지 콘텐츠 관리',
+    label: '회사소개 비주얼 관리',
+    description: '회사소개 공통 히어로와 대표 이미지 관리',
     icon: Building2,
   },
   {
@@ -64,12 +63,6 @@ const navItems: NavItem[] = [
     icon: MessageSquare,
   },
   {
-    path: '/admin/cases',
-    label: '설치 사례 관리',
-    description: '설치 사례 페이지 데이터 관리',
-    icon: ImageIcon,
-  },
-  {
     path: '/admin/main-reviews',
     label: '메인 리뷰 카드',
     description: '메인 리뷰 섹션 카드 관리',
@@ -88,15 +81,9 @@ const navItems: NavItem[] = [
     icon: HelpCircle,
   },
   {
-    path: '/admin/notices',
-    label: '정보센터 관리',
-    description: '정보센터 게시글 관리',
-    icon: FileText,
-  },
-  {
     path: '/admin/users',
     label: '회원 관리',
-    description: '회원 확인 및 상태 관리',
+    description: '회원 정보 및 관리자 승인 관리',
     icon: Users,
   },
 ];

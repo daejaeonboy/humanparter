@@ -32,6 +32,16 @@ const stripHtmlTags = (value: string) =>
 
 const createBlockId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
+const escapeHtml = (value: string) =>
+  value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
+const escapeAttribute = (value: string) => escapeHtml(value);
+
 const normalizeGalleryImages = (galleryImages: string[]) =>
   galleryImages
     .map((item) => item.trim())
@@ -175,6 +185,39 @@ export const buildInstallationCaseContentFromBlocks = (blocks: InstallationCaseC
   }
 
   return `${LAYOUT_METADATA_PREFIX}${JSON.stringify({ blocks: normalizedBlocks })}${METADATA_SUFFIX}`;
+};
+
+export const buildInstallationCaseHtmlFromBlocks = (blocks: InstallationCaseContentBlock[]) => {
+  const normalizedBlocks = normalizeBlocks(blocks);
+
+  return normalizedBlocks
+    .map((block) => {
+      if (block.type === 'heading') {
+        return `<h2>${escapeHtml(block.text || '')}</h2>`;
+      }
+
+      if (block.type === 'paragraph') {
+        return `<p>${escapeHtml(block.text || '').replace(/\n/g, '<br />')}</p>`;
+      }
+
+      if (!block.imageUrl) return '';
+
+      const captionHtml = block.caption?.trim()
+        ? `<figcaption>${escapeHtml(block.caption.trim())}</figcaption>`
+        : '';
+
+      return `<figure><img src="${escapeAttribute(block.imageUrl)}" alt="${escapeAttribute(block.caption || '설치사례 이미지')}" />${captionHtml}</figure>`;
+    })
+    .filter(Boolean)
+    .join('');
+};
+
+export const appendInstallationCaseGalleryImages = (bodyContent: string, galleryImages: string[]) => {
+  const galleryHtml = normalizeGalleryImages(galleryImages)
+    .map((imageUrl) => `<p><img src="${escapeAttribute(imageUrl)}" alt="설치사례 이미지" /></p>`)
+    .join('');
+
+  return `${bodyContent}${galleryHtml}`;
 };
 
 export const stripInstallationCaseMetadata = (content?: string | null) =>

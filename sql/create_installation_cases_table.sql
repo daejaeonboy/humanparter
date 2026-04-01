@@ -1,6 +1,7 @@
 create table if not exists public.installation_cases (
     id uuid primary key default gen_random_uuid(),
     title text not null,
+    category text,
     subtitle text,
     image_url text not null,
     link text not null default '/company',

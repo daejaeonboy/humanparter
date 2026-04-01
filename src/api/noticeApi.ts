@@ -20,6 +20,32 @@ export interface NoticePost {
 }
 
 export type PublicNoticePost = NoticePost;
+export type NoticeAuthoringInput = Pick<
+  NoticePost,
+  'title' | 'excerpt' | 'imageUrl' | 'publishedAt' | 'category' | 'contentHtml'
+>;
+
+export const DEFAULT_NOTICE_CATEGORY = '공지사항';
+export const createEmptyNoticeAuthoringInput = (): NoticeAuthoringInput => ({
+  title: '',
+  excerpt: '',
+  imageUrl: '',
+  publishedAt: new Date().toISOString().slice(0, 10),
+  category: DEFAULT_NOTICE_CATEGORY,
+  contentHtml: '<p></p>',
+});
+
+export const buildNoticeAuthoringInputFromPost = (post: NoticePost): NoticeAuthoringInput => ({
+  title: post.title,
+  excerpt: post.excerpt,
+  imageUrl: post.imageUrl,
+  publishedAt: post.publishedAt,
+  category: post.category,
+  contentHtml: post.contentHtml,
+});
+
+export const getNextNoticeDisplayOrder = (items: Pick<NoticePost, 'displayOrder'>[]) =>
+  items.reduce((max, item) => Math.max(max, Number(item.displayOrder || 0)), 0) + 1;
 
 export interface AdminNoticePostCollection {
   items: NoticePost[];
@@ -44,7 +70,10 @@ type NoticeRecord = {
   updated_at?: string;
 };
 
-type NoticeFormInput = Omit<NoticePost, 'id' | 'created_at' | 'updated_at'>;
+type NoticeFormInput = NoticeAuthoringInput & {
+  displayOrder: number;
+  isActive: boolean;
+};
 type NoticeUpdateInput = Partial<NoticeFormInput>;
 type TableStatus = 'unknown' | 'available' | 'missing';
 

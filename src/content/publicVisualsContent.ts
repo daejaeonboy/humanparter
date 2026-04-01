@@ -2,7 +2,7 @@ export {
   PUBLIC_VISUALS_PAGE_KEY,
   defaultPublicVisualsContent,
   getCollectionHeroVisual,
-  getMegaMenuVisual,
+  getMegaMenuPreviewAsset,
   getProductDefaultVisual,
   normalizePublicVisualsContent,
 } from '../data/publicVisualsContent';
@@ -10,7 +10,8 @@ export {
 export type {
   CollectionHeroGroup,
   CollectionHeroKeyMap,
-  PublicMegaMenuVisualGroup,
+  PublicMegaMenuPreviewKey,
+  PublicVisualImageAsset,
   PublicVisualAsset,
   PublicVisualsContent,
 } from '../data/publicVisualsContent';

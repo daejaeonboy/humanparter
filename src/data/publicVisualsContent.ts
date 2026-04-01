@@ -4,6 +4,10 @@ export interface PublicVisualAsset {
   description: string;
 }
 
+export interface PublicVisualImageAsset {
+  imageUrl: string;
+}
+
 export interface PublicVisualsContent {
   productDefaults: {
     all: PublicVisualAsset;
@@ -24,15 +28,16 @@ export interface PublicVisualsContent {
       publicInstitution: PublicVisualAsset;
     };
   };
-  megaMenu: {
-    company: Record<string, PublicVisualAsset>;
-    cases: Record<string, PublicVisualAsset>;
-    notice: Record<string, PublicVisualAsset>;
-    cs: Record<string, PublicVisualAsset>;
+  megaMenuPreviews: {
+    company: PublicVisualImageAsset;
+    products: PublicVisualImageAsset;
+    cases: PublicVisualImageAsset;
+    notice: PublicVisualImageAsset;
+    cs: PublicVisualImageAsset;
   };
 }
 
-export type PublicMegaMenuVisualGroup = keyof PublicVisualsContent['megaMenu'];
+export type PublicMegaMenuPreviewKey = keyof PublicVisualsContent['megaMenuPreviews'];
 export type CollectionHeroGroup = keyof PublicVisualsContent['collectionHeroes'];
 export type CollectionHeroKeyMap = {
   cs: keyof PublicVisualsContent['collectionHeroes']['cs'];
@@ -74,113 +79,96 @@ const ensureVisualAsset = (value: unknown, fallback: PublicVisualAsset): PublicV
   };
 };
 
-const defaultProductVisual = {
+const ensureImageAsset = (value: unknown, fallback: PublicVisualImageAsset): PublicVisualImageAsset => {
+  const record = value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
+  return {
+    imageUrl: ensureAssetString(record.imageUrl, fallback.imageUrl),
+  };
+};
+
+const pickImageUrl = (value: unknown) => {
+  if (!value || typeof value !== 'object') return '';
+  return ensureAssetString((value as Record<string, unknown>).imageUrl, '');
+};
+
+const defaultProductVisual: PublicVisualAsset = {
   imageUrl: 'https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1200&q=80',
   description: '휴먼파트너의 전체 렌탈 품목을 한눈에 확인해보세요.',
+};
+
+const defaultCollectionHeroes: PublicVisualsContent['collectionHeroes'] = {
+  cs: {
+    faq: {
+      title: 'FAQ',
+      imageUrl: 'https://images.unsplash.com/photo-1516321497487-e288fb19713f?auto=format&fit=crop&w=1600&q=80',
+      description: '자주 묻는 질문과 상담 채널을 한 번에 확인하고 필요한 안내를 빠르게 찾아보세요.',
+    },
+    asGuide: {
+      title: 'A/S 안내',
+      imageUrl: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1600&q=80',
+      description: '접수 방법부터 처리 절차, 방문 지원 범위까지 운영 중 필요한 유지관리 안내를 확인해보세요.',
+    },
+  },
+  notice: {
+    all: {
+      title: '정보센터',
+      imageUrl: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1600&q=80',
+      description: '휴먼파트너의 운영 소식, 상담 안내, 설치 및 렌탈 관련 주요 업데이트를 확인해보세요.',
+    },
+    news: {
+      title: '공지사항',
+      imageUrl: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1600&q=80',
+      description: '운영 변경, 서비스 업데이트, 상담 안내 등 최신 공지를 한 번에 확인할 수 있습니다.',
+    },
+    resources: {
+      title: '자료실',
+      imageUrl: 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=1600&q=80',
+      description: '설치 안내와 현장 체크리스트 같은 참고 자료형 공지를 빠르게 찾아볼 수 있습니다.',
+    },
+  },
+  cases: {
+    all: {
+      title: '설치 사례',
+      imageUrl: 'https://images.unsplash.com/photo-1497366412874-3415097a27e7?auto=format&fit=crop&w=1600&q=80',
+      description: '기업, 공공기관, 교육기관 등 다양한 업무 환경에 맞춘 휴먼파트너의 실제 설치 사례를 확인해보세요.',
+    },
+    temporaryOffice: {
+      title: '임시사무실',
+      imageUrl: 'https://images.unsplash.com/photo-1497366412874-3415097a27e7?auto=format&fit=crop&w=1600&q=80',
+      description: '단기 프로젝트와 임시 업무공간에 맞춘 렌탈 구성 사례를 빠르게 비교해보세요.',
+    },
+    publicInstitution: {
+      title: '공공기관',
+      imageUrl: 'https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1600&q=80',
+      description: '공공기관과 교육 현장 중심의 설치 사례를 통해 실제 운영 구성을 확인할 수 있습니다.',
+    },
+  },
+};
+
+const defaultMegaMenuPreviews: PublicVisualsContent['megaMenuPreviews'] = {
+  company: {
+    imageUrl: '/company/abouthuman.png',
+  },
+  products: {
+    imageUrl: defaultProductVisual.imageUrl,
+  },
+  cases: {
+    imageUrl: defaultCollectionHeroes.cases.all.imageUrl,
+  },
+  notice: {
+    imageUrl: defaultCollectionHeroes.notice.all.imageUrl,
+  },
+  cs: {
+    imageUrl: defaultCollectionHeroes.cs.faq.imageUrl,
+  },
 };
 
 export const defaultPublicVisualsContent: PublicVisualsContent = {
   productDefaults: {
     all: defaultProductVisual,
   },
-  collectionHeroes: {
-    cs: {
-      faq: {
-        title: 'FAQ',
-        imageUrl: 'https://images.unsplash.com/photo-1516321497487-e288fb19713f?auto=format&fit=crop&w=1600&q=80',
-        description: '자주 묻는 질문과 상담 채널을 한 번에 확인하고 필요한 안내를 빠르게 찾아보세요.',
-      },
-      asGuide: {
-        title: 'A/S 안내',
-        imageUrl: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1600&q=80',
-        description: '접수 방법부터 처리 절차, 방문 지원 범위까지 운영 중 필요한 유지관리 안내를 확인해보세요.',
-      },
-    },
-    notice: {
-      all: {
-        title: '정보센터',
-        imageUrl: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1600&q=80',
-        description: '휴먼파트너의 운영 소식, 상담 안내, 설치 및 렌탈 관련 주요 업데이트를 확인해보세요.',
-      },
-      news: {
-        title: '공지사항',
-        imageUrl: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1600&q=80',
-        description: '운영 변경, 서비스 업데이트, 상담 안내 등 최신 공지를 한 번에 확인할 수 있습니다.',
-      },
-      resources: {
-        title: '자료실',
-        imageUrl: 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=1600&q=80',
-        description: '설치 안내와 현장 체크리스트 같은 참고 자료형 공지를 빠르게 찾아볼 수 있습니다.',
-      },
-    },
-    cases: {
-      all: {
-        title: '설치 사례',
-        imageUrl: 'https://images.unsplash.com/photo-1497366412874-3415097a27e7?auto=format&fit=crop&w=1600&q=80',
-        description: '기업, 공공기관, 교육기관 등 다양한 업무 환경에 맞춘 휴먼파트너의 실제 설치 사례를 확인해보세요.',
-      },
-      temporaryOffice: {
-        title: '임시사무실',
-        imageUrl: 'https://images.unsplash.com/photo-1497366412874-3415097a27e7?auto=format&fit=crop&w=1600&q=80',
-        description: '단기 프로젝트와 임시 업무공간에 맞춘 렌탈 구성 사례를 빠르게 비교해보세요.',
-      },
-      publicInstitution: {
-        title: '공공기관',
-        imageUrl: 'https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1600&q=80',
-        description: '공공기관과 교육 현장 중심의 설치 사례를 통해 실제 운영 구성을 확인할 수 있습니다.',
-      },
-    },
-  },
-  megaMenu: {
-    company: {
-      '/company': {
-        imageUrl: '/company/abouthuman.png',
-        description: '휴먼파트너의 운영 경험과 B2B 렌탈 파트너로서의 강점을 확인해보세요.',
-      },
-      '/company/business': {
-        imageUrl: '/company/service-01.jpg',
-        description: '사무가구, IT 장비, 현장 운영까지 휴먼파트너의 핵심 사업영역을 살펴볼 수 있습니다.',
-      },
-      '/company/vision': {
-        imageUrl: '/company/service-02.png',
-        description: '공간과 운영을 함께 설계하는 휴먼파트너의 서비스 방향성을 살펴볼 수 있습니다.',
-      },
-      '/company/location': {
-        imageUrl: 'https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1200&q=80',
-        description: '휴먼파트너 위치와 연락처, 상담 채널 정보를 바로 확인할 수 있습니다.',
-      },
-    },
-    cases: {
-      '/cases?tab=temporary-office': {
-        imageUrl: 'https://images.unsplash.com/photo-1497366412874-3415097a27e7?auto=format&fit=crop&w=1200&q=80',
-        description: '단기 프로젝트와 임시 업무공간을 위한 설치 사례를 빠르게 모아볼 수 있습니다.',
-      },
-      '/cases?tab=public-institution': {
-        imageUrl: 'https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1200&q=80',
-        description: '공공기관과 교육 현장 중심의 구축 사례를 확인할 수 있습니다.',
-      },
-    },
-    notice: {
-      '/notice?tab=news': {
-        imageUrl: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80',
-        description: '운영 변경, 서비스 업데이트, 상담 안내 등 최신 공지를 모아볼 수 있습니다.',
-      },
-      '/notice?tab=resources': {
-        imageUrl: 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=1200&q=80',
-        description: '설치 안내와 현장 체크리스트 같은 참고 자료형 공지를 확인할 수 있습니다.',
-      },
-    },
-    cs: {
-      '/cs': {
-        imageUrl: 'https://images.unsplash.com/photo-1516321497487-e288fb19713f?auto=format&fit=crop&w=1200&q=80',
-        description: '자주 묻는 질문과 답변을 바로 확인하고 필요한 상담 채널로 이동할 수 있습니다.',
-      },
-      '/cs/as-guide': {
-        imageUrl: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80',
-        description: '장애 접수 방법과 처리 절차, 방문 지원 범위 등 A/S 운영 기준을 확인할 수 있습니다.',
-      },
-    },
-  },
+  collectionHeroes: defaultCollectionHeroes,
+  megaMenuPreviews: defaultMegaMenuPreviews,
 };
 
 export const normalizePublicVisualsContent = (value: unknown): PublicVisualsContent => {
@@ -203,6 +191,9 @@ export const normalizePublicVisualsContent = (value: unknown): PublicVisualsCont
   const collectionCases = collectionHeroes.cases && typeof collectionHeroes.cases === 'object'
     ? (collectionHeroes.cases as Record<string, unknown>)
     : {};
+  const megaMenuPreviews = record.megaMenuPreviews && typeof record.megaMenuPreviews === 'object'
+    ? (record.megaMenuPreviews as Record<string, unknown>)
+    : {};
   const megaMenu = record.megaMenu && typeof record.megaMenu === 'object'
     ? (record.megaMenu as Record<string, unknown>)
     : {};
@@ -218,96 +209,85 @@ export const normalizePublicVisualsContent = (value: unknown): PublicVisualsCont
   const megaMenuCs = megaMenu.cs && typeof megaMenu.cs === 'object'
     ? (megaMenu.cs as Record<string, unknown>)
     : {};
-
-  const normalizeMegaMenuGroup = (
-    groupValue: unknown,
-    fallbackGroup: Record<string, PublicVisualAsset>,
-  ): Record<string, PublicVisualAsset> => {
-    const groupRecord = groupValue && typeof groupValue === 'object' ? (groupValue as Record<string, unknown>) : {};
-    const normalized = Object.entries(fallbackGroup).reduce<Record<string, PublicVisualAsset>>((acc, [key, fallback]) => {
-      acc[key] = ensureVisualAsset(groupRecord[key], fallback);
-      return acc;
-    }, {});
-
-    Object.entries(groupRecord).forEach(([key, groupItem]) => {
-      if (normalized[key]) return;
-      normalized[key] = ensureVisualAsset(groupItem, defaultProductVisual);
-    });
-
-    return normalized;
-  };
-
   const legacyProductDefault = legacyProducts.all;
   const csAsGuideValue = collectionCs.asGuide ?? collectionCs['as-guide'];
   const casesTemporaryOfficeValue = collectionCases.temporaryOffice ?? collectionCases['temporary-office'];
   const casesPublicInstitutionValue = collectionCases.publicInstitution ?? collectionCases['public-institution'];
 
+  const normalizedProductDefaults = {
+    all: ensureVisualAsset(productDefaults.all ?? legacyProductDefault, defaultPublicVisualsContent.productDefaults.all),
+  };
+
+  const normalizedCollectionHeroes = {
+    cs: {
+      faq: ensureVisualAsset(collectionCs.faq, defaultPublicVisualsContent.collectionHeroes.cs.faq),
+      asGuide: ensureVisualAsset(csAsGuideValue, defaultPublicVisualsContent.collectionHeroes.cs.asGuide),
+    },
+    notice: {
+      all: ensureVisualAsset(collectionNotice.all, defaultPublicVisualsContent.collectionHeroes.notice.all),
+      news: ensureVisualAsset(collectionNotice.news, defaultPublicVisualsContent.collectionHeroes.notice.news),
+      resources: ensureVisualAsset(
+        collectionNotice.resources,
+        defaultPublicVisualsContent.collectionHeroes.notice.resources,
+      ),
+    },
+    cases: {
+      all: ensureVisualAsset(collectionCases.all, defaultPublicVisualsContent.collectionHeroes.cases.all),
+      temporaryOffice: ensureVisualAsset(
+        casesTemporaryOfficeValue,
+        defaultPublicVisualsContent.collectionHeroes.cases.temporaryOffice,
+      ),
+      publicInstitution: ensureVisualAsset(
+        casesPublicInstitutionValue,
+        defaultPublicVisualsContent.collectionHeroes.cases.publicInstitution,
+      ),
+    },
+  };
+
+  const companyPreviewFallback = {
+    imageUrl:
+      pickImageUrl(megaMenuCompany['/company']) ||
+      pickImageUrl(megaMenuCompany['company-overview']) ||
+      defaultPublicVisualsContent.megaMenuPreviews.company.imageUrl,
+  };
+  const productsPreviewFallback = {
+    imageUrl: normalizedProductDefaults.all.imageUrl,
+  };
+  const casesPreviewFallback = {
+    imageUrl:
+      pickImageUrl(collectionCases.all) ||
+      pickImageUrl(megaMenuCases['/cases?tab=temporary-office']) ||
+      pickImageUrl(megaMenuCases['temporary-office']) ||
+      pickImageUrl(megaMenuCases['/cases?tab=public-institution']) ||
+      pickImageUrl(megaMenuCases['public-institution']) ||
+      defaultPublicVisualsContent.megaMenuPreviews.cases.imageUrl,
+  };
+  const noticePreviewFallback = {
+    imageUrl:
+      pickImageUrl(collectionNotice.all) ||
+      pickImageUrl(megaMenuNotice['/notice?tab=news']) ||
+      pickImageUrl(megaMenuNotice.news) ||
+      pickImageUrl(megaMenuNotice['/notice?tab=resources']) ||
+      pickImageUrl(megaMenuNotice.resources) ||
+      defaultPublicVisualsContent.megaMenuPreviews.notice.imageUrl,
+  };
+  const csPreviewFallback = {
+    imageUrl:
+      pickImageUrl(megaMenuCs['/cs']) ||
+      pickImageUrl(megaMenuCs.faq) ||
+      pickImageUrl(collectionCs.faq) ||
+      defaultPublicVisualsContent.megaMenuPreviews.cs.imageUrl,
+  };
+
   return {
-    productDefaults: {
-      all: ensureVisualAsset(productDefaults.all ?? legacyProductDefault, defaultPublicVisualsContent.productDefaults.all),
-    },
-    collectionHeroes: {
-      cs: {
-        faq: ensureVisualAsset(collectionCs.faq, defaultPublicVisualsContent.collectionHeroes.cs.faq),
-        asGuide: ensureVisualAsset(csAsGuideValue, defaultPublicVisualsContent.collectionHeroes.cs.asGuide),
-      },
-      notice: {
-        all: ensureVisualAsset(collectionNotice.all, defaultPublicVisualsContent.collectionHeroes.notice.all),
-        news: ensureVisualAsset(collectionNotice.news, defaultPublicVisualsContent.collectionHeroes.notice.news),
-        resources: ensureVisualAsset(
-          collectionNotice.resources,
-          defaultPublicVisualsContent.collectionHeroes.notice.resources,
-        ),
-      },
-      cases: {
-        all: ensureVisualAsset(collectionCases.all, defaultPublicVisualsContent.collectionHeroes.cases.all),
-        temporaryOffice: ensureVisualAsset(
-          casesTemporaryOfficeValue,
-          defaultPublicVisualsContent.collectionHeroes.cases.temporaryOffice,
-        ),
-        publicInstitution: ensureVisualAsset(
-          casesPublicInstitutionValue,
-          defaultPublicVisualsContent.collectionHeroes.cases.publicInstitution,
-        ),
-      },
-    },
-    megaMenu: {
-      company: normalizeMegaMenuGroup(
-        {
-          ...megaMenuCompany,
-          '/company': megaMenuCompany['/company'] ?? megaMenuCompany['company-overview'],
-          '/company/business': megaMenuCompany['/company/business'] ?? megaMenuCompany['company-business'],
-          '/company/vision': megaMenuCompany['/company/vision'] ?? megaMenuCompany['company-vision'],
-          '/company/location': megaMenuCompany['/company/location'] ?? megaMenuCompany['company-location'],
-        },
-        defaultPublicVisualsContent.megaMenu.company,
-      ),
-      cases: normalizeMegaMenuGroup(
-        {
-          ...megaMenuCases,
-          '/cases?tab=temporary-office':
-            megaMenuCases['/cases?tab=temporary-office'] ?? megaMenuCases['temporary-office'],
-          '/cases?tab=public-institution':
-            megaMenuCases['/cases?tab=public-institution'] ?? megaMenuCases['public-institution'],
-        },
-        defaultPublicVisualsContent.megaMenu.cases,
-      ),
-      notice: normalizeMegaMenuGroup(
-        {
-          ...megaMenuNotice,
-          '/notice?tab=news': megaMenuNotice['/notice?tab=news'] ?? megaMenuNotice.news,
-          '/notice?tab=resources': megaMenuNotice['/notice?tab=resources'] ?? megaMenuNotice.resources,
-        },
-        defaultPublicVisualsContent.megaMenu.notice,
-      ),
-      cs: normalizeMegaMenuGroup(
-        {
-          ...megaMenuCs,
-          '/cs': megaMenuCs['/cs'] ?? megaMenuCs.faq,
-          '/cs/as-guide': megaMenuCs['/cs/as-guide'] ?? megaMenuCs['as-guide'],
-        },
-        defaultPublicVisualsContent.megaMenu.cs,
-      ),
+    productDefaults: normalizedProductDefaults,
+    collectionHeroes: normalizedCollectionHeroes,
+    megaMenuPreviews: {
+      company: ensureImageAsset(megaMenuPreviews.company, companyPreviewFallback),
+      products: ensureImageAsset(megaMenuPreviews.products ?? megaMenuPreviews.productCategories, productsPreviewFallback),
+      cases: ensureImageAsset(megaMenuPreviews.cases, casesPreviewFallback),
+      notice: ensureImageAsset(megaMenuPreviews.notice, noticePreviewFallback),
+      cs: ensureImageAsset(megaMenuPreviews.cs, csPreviewFallback),
     },
   };
 };
@@ -324,13 +304,12 @@ export const getCollectionHeroVisual = <
   return normalized.collectionHeroes[group][key];
 };
 
-export const getMegaMenuVisual = (
+export const getMegaMenuPreviewAsset = (
   content: PublicVisualsContent | null | undefined,
-  group: PublicMegaMenuVisualGroup,
-  itemPath: string,
+  key: PublicMegaMenuPreviewKey,
 ) => {
   const normalized = content ? normalizePublicVisualsContent(content) : defaultPublicVisualsContent;
-  return normalized.megaMenu[group][itemPath];
+  return normalized.megaMenuPreviews[key];
 };
 
 export const getProductDefaultVisual = (content: PublicVisualsContent | null | undefined) => {

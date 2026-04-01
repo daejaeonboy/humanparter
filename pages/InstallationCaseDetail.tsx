@@ -1,14 +1,20 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { InstallationCaseInlineEditor } from '../components/cases/InstallationCaseInlineEditor';
 import { PublicPageEditButton } from '../components/admin/PublicPageEditButton';
 import { Seo } from '../components/Seo';
 import { Container } from '../components/ui/Container';
 import { ResponsiveImage } from '../components/ui/ResponsiveImage';
-import { InstallationCase } from '../src/api/cmsApi';
-import { getPublicCaseDetailData, type PublicCaseSummary } from '../src/api/publicDataApi';
+import { type InstallationCase, updateInstallationCase } from '../src/api/cmsApi';
+import { getPublicCaseDetailData, invalidatePublicDataCache, type PublicCaseSummary } from '../src/api/publicDataApi';
+import { useAuth } from '../src/context/AuthContext';
 import { usePrerenderData } from '../src/prerender/context';
-import { extractInstallationCaseContent } from '../src/utils/installationCaseContent';
+import {
+  appendInstallationCaseGalleryImages,
+  buildInstallationCaseHtmlFromBlocks,
+  extractInstallationCaseContent,
+} from '../src/utils/installationCaseContent';
 import { buildBreadcrumbStructuredData, normalizeMetaText, SITE_NAME, SITE_URL, toAbsoluteUrl } from '../src/utils/seo';
 
 const TEXT = {
@@ -30,9 +36,22 @@ const formatDisplayDate = (value?: string) => {
   return `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, '0')}-${String(parsed.getDate()).padStart(2, '0')}`;
 };
 
+const toDateInputValue = (value?: string) => {
+  if (!value) return '';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value.slice(0, 10);
+  const year = parsed.getFullYear();
+  const month = String(parsed.getMonth() + 1).padStart(2, '0');
+  const day = String(parsed.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const toCaseTimestamp = (value: string) => `${value}T00:00:00+09:00`;
+
 export const InstallationCaseDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user, userProfile, isAdmin, loading: authLoading } = useAuth();
   const prerenderData = usePrerenderData();
   const preloadedDetail = prerenderData?.installationCaseDetail;
   const hasPreloadedDetail = !!(id && preloadedDetail?.post?.id === id);
@@ -44,6 +63,9 @@ export const InstallationCaseDetail: React.FC = () => {
   const [nextCase, setNextCase] = useState<PublicCaseSummary | null>(
     hasPreloadedDetail ? preloadedDetail?.nextCase || null : null,
   );
+  const [isEditing, setIsEditing] = useState(false);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const canInlineEdit = !authLoading && !!user && !!userProfile && isAdmin;
 
   useEffect(() => {
     if (hasPreloadedDetail && preloadedDetail) {
@@ -51,6 +73,7 @@ export const InstallationCaseDetail: React.FC = () => {
       setPreviousCase(preloadedDetail.previousCase);
       setNextCase(preloadedDetail.nextCase);
       setLoading(false);
+      setIsEditing(false);
       return;
     }
 
@@ -60,6 +83,7 @@ export const InstallationCaseDetail: React.FC = () => {
         setPost(detail.post);
         setPreviousCase(detail.previousCase);
         setNextCase(detail.nextCase);
+        setIsEditing(false);
       } catch (error) {
         console.error('Failed to load post detail:', error);
         setPost(null);
@@ -85,6 +109,53 @@ export const InstallationCaseDetail: React.FC = () => {
         .filter(Boolean)
         .join(' '),
     ) || TEXT.pageDescriptionFallback;
+
+  const startEdit = () => {
+    if (!post) return;
+    setIsEditing(true);
+  };
+
+  const cancelEdit = () => {
+    setIsEditing(false);
+  };
+
+  const handleSaveEdit = async (value: {
+    title: string;
+    category: string;
+    subtitle: string;
+    created_at: string;
+    image_url: string;
+    contentHtml: string;
+  }) => {
+    if (!post?.id) return;
+
+    setSavingEdit(true);
+    try {
+      await updateInstallationCase(post.id, {
+        title: value.title.trim(),
+        category: value.category.trim(),
+        subtitle: value.subtitle.trim(),
+        created_at: toCaseTimestamp(value.created_at),
+        image_url: value.image_url.trim(),
+        link: post.link || '/cases',
+        content: value.contentHtml,
+        display_order: post.display_order,
+        is_active: true,
+      });
+
+      invalidatePublicDataCache();
+      const detail = await getPublicCaseDetailData(post.id);
+      setPost(detail.post);
+      setPreviousCase(detail.previousCase);
+      setNextCase(detail.nextCase);
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Failed to update installation case:', error);
+      alert('저장에 실패했습니다.');
+    } finally {
+      setSavingEdit(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -150,7 +221,7 @@ export const InstallationCaseDetail: React.FC = () => {
         ]}
       />
 
-      <Container className="max-w-[1000px]">
+      <Container size="detail">
         <div className="mb-8 flex items-center justify-between gap-4">
           <Link
             to="/cases"
@@ -159,83 +230,132 @@ export const InstallationCaseDetail: React.FC = () => {
             <ChevronLeft size={16} />
             <span>{TEXT.backToCasesList}</span>
           </Link>
-          <PublicPageEditButton to="/admin/cases" className="mb-0" />
+          {canInlineEdit ? (
+            isEditing ? (
+              <span className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-500 shadow-sm">
+                편집 중
+              </span>
+            ) : (
+              <PublicPageEditButton onClick={startEdit} label="이 글 수정" className="mb-0" />
+            )
+          ) : null}
         </div>
 
-        <article>
-          <header className="border-b border-slate-200 pb-8 md:pb-10">
-            <h1 className="max-w-5xl text-[30px] font-bold leading-[1.18] tracking-[-0.04em] text-slate-950 md:text-[44px]">
-              {post.title}
-            </h1>
-            {post.subtitle && (
-              <p className="mt-5 max-w-3xl text-base leading-7 text-slate-600 md:text-[17px]">
-                {post.subtitle}
-              </p>
-            )}
-            {post.created_at && (
-              <p className="mt-5 text-sm font-semibold text-slate-400">{formatDisplayDate(post.created_at)}</p>
-            )}
-          </header>
+        {isEditing ? (
+          <InstallationCaseInlineEditor
+            title="설치사례 글 수정"
+            description="공개 페이지에서 바로 현재 설치사례 글을 수정합니다."
+            initialValue={{
+              title: post.title,
+              category: post.category || '임시사무실',
+              subtitle: post.subtitle || '',
+              created_at: toDateInputValue(post.created_at),
+              image_url: post.image_url || '',
+              contentHtml: parsedContent.usesBlocks
+                ? buildInstallationCaseHtmlFromBlocks(parsedContent.blocks)
+                : appendInstallationCaseGalleryImages(parsedContent.bodyContent, parsedContent.galleryImages),
+            }}
+            submitLabel={savingEdit ? '저장 중' : '수정사항 저장'}
+            saving={savingEdit}
+            onCancel={cancelEdit}
+            onSave={handleSaveEdit}
+          />
+        ) : (
+          <article>
+            <header className="border-b border-slate-200 pb-8 md:pb-10">
+              <h1 className="max-w-5xl text-[30px] font-bold leading-[1.18] tracking-[-0.04em] text-slate-950 md:text-[44px]">
+                {post.title}
+              </h1>
+              {post.subtitle && (
+                <p className="mt-5 max-w-3xl text-base leading-7 text-slate-600 md:text-[17px]">
+                  {post.subtitle}
+                </p>
+              )}
+              {post.created_at && (
+                <p className="mt-5 text-sm font-semibold text-slate-400">{formatDisplayDate(post.created_at)}</p>
+              )}
+            </header>
 
-          {post.image_url && (
-            <div className="mt-8">
-              <ResponsiveImage
-                src={post.image_url}
-                alt={post.title}
-                kind="detail"
-                priority
-                sizes="(min-width: 1024px) 1000px, 100vw"
-                className="h-auto max-h-[760px] w-full object-cover"
-              />
-            </div>
-          )}
+            {post.image_url && (
+              <div className="mt-8">
+                <ResponsiveImage
+                  src={post.image_url}
+                  alt={post.title}
+                  kind="detail"
+                  priority
+                  sizes="(min-width: 1024px) 1080px, 100vw"
+                  className="h-auto max-h-[760px] w-full object-cover"
+                />
+              </div>
+            )}
 
-          <div className="mt-10 space-y-8 md:mt-12">
-            {parsedContent.blocks.length > 0 ? (
-              parsedContent.blocks.map((block) => {
-                if (block.type === 'heading') {
+            <div className="mt-10 space-y-8 md:mt-12">
+              {parsedContent.usesBlocks ? (
+                parsedContent.blocks.map((block) => {
+                  if (block.type === 'heading') {
+                    return (
+                      <h2
+                        key={block.id}
+                        className="text-[24px] font-bold leading-[1.35] tracking-[-0.03em] text-slate-900 md:text-[30px]"
+                      >
+                        {block.text}
+                      </h2>
+                    );
+                  }
+
+                  if (block.type === 'image' && block.imageUrl) {
+                    return (
+                      <figure key={block.id} className="space-y-4">
+                        <ResponsiveImage
+                          src={block.imageUrl}
+                          alt={block.caption || post.title}
+                          kind="inline"
+                          sizes="(min-width: 1024px) 1080px, 100vw"
+                          className="w-full object-cover"
+                          loading="lazy"
+                        />
+                        {block.caption && <figcaption className="text-sm leading-6 text-slate-500">{block.caption}</figcaption>}
+                      </figure>
+                    );
+                  }
+
                   return (
-                    <h2
-                      key={block.id}
-                      className="text-[24px] font-bold leading-[1.35] tracking-[-0.03em] text-slate-900 md:text-[30px]"
-                    >
+                    <p key={block.id} className="whitespace-pre-line text-[16px] leading-8 text-slate-700 md:text-[17px] md:leading-8">
                       {block.text}
-                    </h2>
+                    </p>
                   );
-                }
+                })
+              ) : parsedContent.bodyContent || parsedContent.galleryImages.length > 0 ? (
+                <div className="space-y-8">
+                  {parsedContent.bodyContent && (
+                    <div
+                      className="prose prose-lg max-w-none prose-slate [&_img]:rounded-none [&_img]:shadow-none"
+                      dangerouslySetInnerHTML={{ __html: parsedContent.bodyContent }}
+                    />
+                  )}
 
-                if (block.type === 'image' && block.imageUrl) {
-                  return (
-                    <figure key={block.id} className="space-y-4">
-                      <ResponsiveImage
-                        src={block.imageUrl}
-                        alt={block.caption || post.title}
-                        kind="inline"
-                        sizes="(min-width: 1024px) 900px, 100vw"
-                        className="w-full object-cover"
-                        loading="lazy"
-                      />
-                      {block.caption && <figcaption className="text-sm leading-6 text-slate-500">{block.caption}</figcaption>}
-                    </figure>
-                  );
-                }
-
-                return (
-                  <p key={block.id} className="whitespace-pre-line text-[16px] leading-8 text-slate-700 md:text-[17px] md:leading-8">
-                    {block.text}
-                  </p>
-                );
-              })
-            ) : parsedContent.bodyContent ? (
-              <div
-                className="prose prose-lg max-w-none prose-slate [&_img]:rounded-none [&_img]:shadow-none"
-                dangerouslySetInnerHTML={{ __html: parsedContent.bodyContent }}
-              />
-            ) : (
-              <div className="py-16 text-left text-lg text-slate-500">{TEXT.emptyContent}</div>
-            )}
-          </div>
-        </article>
+                  {parsedContent.galleryImages.length > 0 && (
+                    <div className="space-y-6">
+                      {parsedContent.galleryImages.map((imageUrl, index) => (
+                        <ResponsiveImage
+                          key={`${imageUrl}-${index}`}
+                          src={imageUrl}
+                          alt={post.title}
+                          kind="inline"
+                          sizes="(min-width: 1024px) 1080px, 100vw"
+                          className="w-full object-cover"
+                          loading="lazy"
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="py-16 text-left text-lg text-slate-500">{TEXT.emptyContent}</div>
+              )}
+            </div>
+          </article>
+        )}
 
         <div className="mt-16 border-t border-slate-200 pt-8 md:mt-20 md:pt-10">
           <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 md:gap-6">

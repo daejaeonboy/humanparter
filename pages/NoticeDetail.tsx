@@ -5,6 +5,7 @@ import { Seo } from "../components/Seo";
 import { Container } from "../components/ui/Container";
 import { ResponsiveImage } from "../components/ui/ResponsiveImage";
 import { PublicPageEditButton } from "../components/admin/PublicPageEditButton";
+import { NoticeInlineEditor } from "../components/notice/NoticeInlineEditor";
 import {
   buildBreadcrumbStructuredData,
   normalizeMetaText,
@@ -12,9 +13,15 @@ import {
   SITE_URL,
   toAbsoluteUrl,
 } from "../src/utils/seo";
-import { NoticePost, stripNoticeHtml } from "../src/api/noticeApi";
-import { getPublicNoticeDetailData, type PublicNoticeSummary } from "../src/api/publicDataApi";
+import {
+  buildNoticeAuthoringInputFromPost,
+  NoticePost,
+  stripNoticeHtml,
+  updateNoticePost,
+} from "../src/api/noticeApi";
+import { getPublicNoticeDetailData, invalidatePublicDataCache, type PublicNoticeSummary } from "../src/api/publicDataApi";
 import { usePrerenderData } from "../src/prerender/context";
+import { useAuth } from "../src/context/AuthContext";
 
 const TEXT = {
   notFoundTitle: "게시글을 찾을 수 없습니다.",
@@ -36,6 +43,7 @@ const formatDate = (value: string) => {
 export const NoticeDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user, userProfile, isAdmin, loading: authLoading } = useAuth();
   const prerenderData = usePrerenderData();
   const preloadedDetail = prerenderData?.noticeDetail;
   const hasPreloadedDetail = !!(id && preloadedDetail?.post?.id === id);
@@ -47,6 +55,10 @@ export const NoticeDetail: React.FC = () => {
     hasPreloadedDetail ? preloadedDetail?.nextNotice || null : null,
   );
   const [loading, setLoading] = useState(!hasPreloadedDetail);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editDraft, setEditDraft] = useState<ReturnType<typeof buildNoticeAuthoringInputFromPost> | null>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const canInlineEdit = !authLoading && !!user && !!userProfile && isAdmin;
 
   useEffect(() => {
     if (!id) {
@@ -59,6 +71,8 @@ export const NoticeDetail: React.FC = () => {
       setPreviousNotice(preloadedDetail.previousNotice);
       setNextNotice(preloadedDetail.nextNotice);
       setLoading(false);
+      setIsEditing(false);
+      setEditDraft(null);
       return;
     }
 
@@ -69,6 +83,8 @@ export const NoticeDetail: React.FC = () => {
         setPost(detail.post);
         setPreviousNotice(detail.previousNotice);
         setNextNotice(detail.nextNotice);
+        setIsEditing(false);
+        setEditDraft(null);
       } catch (error) {
         console.error("Failed to load notice detail:", error);
         setPost(null);
@@ -85,6 +101,43 @@ export const NoticeDetail: React.FC = () => {
   const pageDescription =
     normalizeMetaText(post?.excerpt || (post ? stripNoticeHtml(post.contentHtml) : "")) ||
     TEXT.pageDescriptionFallback;
+
+  const startEdit = () => {
+    if (!post) return;
+    setEditDraft(buildNoticeAuthoringInputFromPost(post));
+    setIsEditing(true);
+  };
+
+  const cancelEdit = () => {
+    setIsEditing(false);
+    setEditDraft(null);
+  };
+
+  const handleSaveEdit = async (value: ReturnType<typeof buildNoticeAuthoringInputFromPost>) => {
+    if (!post?.id) return;
+
+    setSavingEdit(true);
+    try {
+      await updateNoticePost(post.id, {
+        ...value,
+        displayOrder: post.displayOrder,
+        isActive: true,
+      });
+
+      invalidatePublicDataCache();
+      const detail = await getPublicNoticeDetailData(post.id);
+      setPost(detail.post);
+      setPreviousNotice(detail.previousNotice);
+      setNextNotice(detail.nextNotice);
+      setIsEditing(false);
+      setEditDraft(null);
+    } catch (error) {
+      console.error("Failed to update notice post:", error);
+      alert("저장에 실패했습니다.");
+    } finally {
+      setSavingEdit(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -150,7 +203,7 @@ export const NoticeDetail: React.FC = () => {
         ]}
       />
 
-      <Container className="max-w-[1000px]">
+      <Container size="detail">
         <div className="mb-8 flex items-center justify-between gap-4">
           <Link
             to="/notice"
@@ -159,33 +212,53 @@ export const NoticeDetail: React.FC = () => {
             <ChevronLeft size={16} />
             <span>{TEXT.backToNoticeList}</span>
           </Link>
-          <PublicPageEditButton to="/admin/notices" className="mb-0" />
+          {canInlineEdit ? (
+            isEditing ? (
+              <span className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-500 shadow-sm">
+                편집 중
+              </span>
+            ) : (
+              <PublicPageEditButton onClick={startEdit} label="이 글 수정" className="mb-0" />
+            )
+          ) : null}
         </div>
 
-        <article>
-          <header className="border-b border-slate-200 pb-8 md:pb-10">
-            <h1 className="max-w-5xl text-[30px] font-bold leading-[1.18] tracking-[-0.04em] text-slate-950 md:text-[44px]">
-              {post.title}
-            </h1>
-            <p className="mt-5 text-sm font-semibold text-slate-400">{formatDate(post.publishedAt)}</p>
-          </header>
-
-          <div className="mt-8">
-            <ResponsiveImage
-              src={post.imageUrl}
-              alt={post.title}
-              kind="detail"
-              priority
-              sizes="(min-width: 1024px) 1000px, 100vw"
-              className="h-auto max-h-[760px] w-full object-cover"
-            />
-          </div>
-
-          <div
-            className="prose prose-slate mt-10 max-w-none [&_h2]:mt-10 [&_h2]:text-[24px] [&_h2]:font-bold [&_h2]:tracking-[-0.03em] [&_h2]:text-slate-900 [&_img]:rounded-none [&_img]:shadow-none [&_p]:text-[16px] [&_p]:leading-8 [&_p]:text-slate-700 md:mt-12 md:[&_h2]:text-[30px] md:[&_p]:text-[17px]"
-            dangerouslySetInnerHTML={{ __html: post.contentHtml }}
+        {isEditing && editDraft ? (
+          <NoticeInlineEditor
+            title="정보센터 글 수정"
+            description="공개 페이지에서 바로 현재 게시글을 수정합니다."
+            initialValue={editDraft}
+            submitLabel={savingEdit ? "저장 중" : "수정사항 저장"}
+            saving={savingEdit}
+            onCancel={cancelEdit}
+            onSave={handleSaveEdit}
           />
-        </article>
+        ) : (
+          <article>
+            <header className="border-b border-slate-200 pb-8 md:pb-10">
+              <h1 className="max-w-5xl text-[30px] font-bold leading-[1.18] tracking-[-0.04em] text-slate-950 md:text-[44px]">
+                {post.title}
+              </h1>
+              <p className="mt-5 text-sm font-semibold text-slate-400">{formatDate(post.publishedAt)}</p>
+            </header>
+
+            <div className="mt-8">
+              <ResponsiveImage
+                src={post.imageUrl}
+                alt={post.title}
+                kind="detail"
+                priority
+                sizes="(min-width: 1024px) 1080px, 100vw"
+                className="h-auto max-h-[760px] w-full object-cover"
+              />
+            </div>
+
+            <div
+              className="prose prose-slate mt-10 max-w-none [&_h2]:mt-10 [&_h2]:text-[24px] [&_h2]:font-bold [&_h2]:tracking-[-0.03em] [&_h2]:text-slate-900 [&_img]:rounded-none [&_img]:shadow-none [&_p]:text-[16px] [&_p]:leading-8 [&_p]:text-slate-700 md:mt-12 md:[&_h2]:text-[30px] md:[&_p]:text-[17px]"
+              dangerouslySetInnerHTML={{ __html: post.contentHtml }}
+            />
+          </article>
+        )}
 
         <div className="mt-16 border-t border-slate-200 pt-8 md:mt-20 md:pt-10">
           <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 md:gap-6">

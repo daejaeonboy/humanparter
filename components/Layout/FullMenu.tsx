@@ -17,7 +17,9 @@ export const FullMenu: React.FC<FullMenuProps> = ({ onClose, variant = 'mobile',
     const preloadedNavItems = usePrerenderData()?.bootstrap?.navItems;
     const [menuItems, setMenuItems] = useState<NavMenuItem[]>([]);
     const [loading, setLoading] = useState(true);
-    const { user, userProfile, logout } = useAuth();
+    const { user, userProfile, isAdmin, initialized, loading: authLoading, logout } = useAuth();
+    const isAuthSettling = !initialized || authLoading;
+    const isAdminSession = initialized && !authLoading && !!user && isAdmin;
 
     useEffect(() => {
         if (preloadedNavItems?.length && !items) {
@@ -149,7 +151,13 @@ export const FullMenu: React.FC<FullMenuProps> = ({ onClose, variant = 'mobile',
                         {/* Login/Signup OR Profile Card */}
                         <div className="px-5 py-6 bg-slate-50">
                             <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 text-center">
-                                {user ? (
+                                {isAuthSettling ? (
+                                    <>
+                                        <h3 className="font-bold text-lg text-slate-800 mb-1">계정 확인 중</h3>
+                                        <p className="text-sm text-slate-500 mb-4">로그인 상태를 확인하고 있습니다.</p>
+                                        <div className="h-12 rounded-xl bg-slate-100" aria-hidden="true" />
+                                    </>
+                                ) : isAdminSession ? (
                                     <>
                                         <div className="mb-4">
                                             <div className="w-16 h-16 bg-[#001e45]/10 text-[#001e45] rounded-full flex items-center justify-center mx-auto mb-3 font-bold text-xl">
@@ -250,7 +258,7 @@ export const FullMenu: React.FC<FullMenuProps> = ({ onClose, variant = 'mobile',
                                     </div>
                                 </div>
                             ))}
-                            {user && variant === 'mobile' && (
+                            {isAdminSession && variant === 'mobile' && (
                                 <div className="mt-10 pt-4 border-t border-gray-100 flex justify-center">
                                     <button
                                         onClick={() => { logout(); onClose(); }}

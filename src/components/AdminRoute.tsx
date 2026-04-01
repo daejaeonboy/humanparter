@@ -8,10 +8,10 @@ interface AdminRouteProps {
 }
 
 export const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
-  const { user, userProfile, loading, isAdmin } = useAuth();
+  const { user, loading, initialized, isAdmin } = useAuth();
   const location = useLocation();
 
-  if (loading) {
+  if (!initialized || loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-100">
         <div className="text-center">
@@ -26,7 +26,7 @@ export const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
     return <Navigate to="/admin/login" state={{ from: location }} replace />;
   }
 
-  if (!userProfile || !isAdmin) {
+  if (!isAdmin) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-100 p-4">
         <div className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-xl">

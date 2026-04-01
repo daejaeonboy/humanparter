@@ -316,9 +316,9 @@ export const CompanyIntro: React.FC = () => {
                   defaultSection={activeSection}
                   sectionValues={[activeSection]}
                   title={`${activeTab.label} 수정`}
-                  description="현재 페이지 본문과 공통 상단 히어로, 회사 개요 대표 이미지를 함께 수정합니다."
-                  showHeroFields
-                  showOverviewImageField={activeSection === 'company-overview'}
+                  description="현재 페이지 본문만 바로 수정합니다. 공통 상단 히어로와 대표 이미지는 관리자 페이지에서 관리합니다."
+                  showHeroFields={false}
+                  showOverviewImageField={false}
                 />
               </div>
             )}

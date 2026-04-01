@@ -415,6 +415,7 @@ export const deleteAllianceMember = async (id: string): Promise<void> => {
 export interface InstallationCase {
     id?: string;
     title: string;
+    category?: string;
     subtitle?: string;
     image_url: string;
     link: string;
@@ -444,7 +445,7 @@ export const getAllInstallationCases = async (): Promise<InstallationCase[]> => 
 };
 
 export const addInstallationCase = async (
-    item: Omit<InstallationCase, 'id' | 'created_at'>,
+    item: Omit<InstallationCase, 'id'>,
 ): Promise<InstallationCase> => {
     const { data, error } = await supabase
         .from('installation_cases')

@@ -5,16 +5,25 @@ import { Container } from "../ui/Container";
 import { ResponsiveImage } from "../ui/ResponsiveImage";
 import { siteBrand } from "../../src/config/siteBrand";
 import { buildCategoryTabItems, FALLBACK_CATEGORY_TAB_ITEMS, type CategoryTabItem } from "../../src/config/categoryTabs";
-import { buildPublicMegaMenuItems, STATIC_PUBLIC_MEGA_MENU_ITEMS, type MegaMenuLinkItem } from "../../src/config/publicMegaMenu";
+import {
+  buildPublicMegaMenuItems,
+  getMegaMenuPreviewKey,
+  STATIC_PUBLIC_MEGA_MENU_ITEMS,
+  type MegaMenuLinkItem,
+} from "../../src/config/publicMegaMenu";
 import { isPublicNavActive, PUBLIC_NAV_ITEMS, type PublicNavItem } from "../../src/config/publicNavigation";
 import { useAuth } from "../../src/context/AuthContext";
 import { getPublicBootstrapData } from "../../src/api/publicDataApi";
-import { getProductDefaultVisual, type PublicVisualsContent } from "../../src/content/publicVisualsContent";
+import {
+  getMegaMenuPreviewAsset,
+  getProductDefaultVisual,
+  type PublicVisualsContent,
+} from "../../src/content/publicVisualsContent";
 import { usePrerenderData } from "../../src/prerender/context";
 
 export const Header: React.FC = () => {
   const location = useLocation();
-  const { user, isAdmin, loading, logout } = useAuth();
+  const { user, isAdmin, loading, initialized, logout } = useAuth();
   const preloadedNavItems = usePrerenderData()?.bootstrap?.navItems;
   const preloadedPublicVisuals = usePrerenderData()?.bootstrap?.publicVisuals;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -29,10 +38,15 @@ export const Header: React.FC = () => {
   const primaryNavItems = PUBLIC_NAV_ITEMS.filter((item) => !item.cta);
   const ctaNavItem = PUBLIC_NAV_ITEMS.find((item) => item.cta);
   const loginPath = "/admin/login";
-  const isAdminSession = !loading && !!user && isAdmin;
+  const isAuthSettling = !initialized || loading;
+  const isAdminSession = initialized && !loading && !!user && isAdmin;
   const activeMegaMenuItem = primaryNavItems.find((item) => item.path === activeMegaMenuPath) || null;
   const megaMenuLookup = useMemo(() => buildPublicMegaMenuItems(publicVisuals), [publicVisuals]);
   const defaultProductHero = getProductDefaultVisual(publicVisuals);
+  const activeMegaMenuPreviewKey = activeMegaMenuItem ? getMegaMenuPreviewKey(activeMegaMenuItem.megaMenuType) : null;
+  const activeMegaMenuPreviewAsset = activeMegaMenuPreviewKey
+    ? getMegaMenuPreviewAsset(publicVisuals, activeMegaMenuPreviewKey)
+    : null;
 
   const megaMenuItems = useMemo<MegaMenuLinkItem[]>(() => {
     if (!activeMegaMenuItem?.megaMenuType) return [];
@@ -56,8 +70,6 @@ export const Header: React.FC = () => {
 
     return megaMenuLookup[activeMegaMenuItem.megaMenuType] || [];
   }, [activeMegaMenuItem, defaultProductHero.description, defaultProductHero.imageUrl, megaMenuLookup, productMegaMenuItems]);
-
-  const activeMegaMenuPreview = megaMenuItems[Math.min(activeMegaMenuIndex, Math.max(megaMenuItems.length - 1, 0))] || null;
 
   const getSubMenuItems = (megaMenuType?: string) => {
     if (!megaMenuType) return [];
@@ -234,7 +246,11 @@ export const Header: React.FC = () => {
             </div>
 
             <div className="hidden shrink-0 items-center gap-3 md:flex">
-              {isAdminSession ? (
+              {isAuthSettling ? (
+                <div className="inline-flex h-12 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 px-6 text-[15px] font-semibold tracking-tight text-slate-400">
+                  확인 중
+                </div>
+              ) : isAdminSession ? (
                 <>
                   <Link
                     to="/admin"
@@ -287,7 +303,7 @@ export const Header: React.FC = () => {
           </div>
         </Container>
 
-        {activeMegaMenuItem && activeMegaMenuPreview && (
+        {activeMegaMenuItem && activeMegaMenuPreviewAsset && (
           <>
             <div 
               className="fixed inset-0 top-[80px] z-30 bg-black/40 backdrop-blur-sm transition-opacity animate-fadeIn pointer-events-none" 
@@ -327,16 +343,16 @@ export const Header: React.FC = () => {
 
                 <div className="w-[55%] lg:w-[50%] xl:w-[48%] h-full pr-4 md:pr-8 relative">
                   <ResponsiveImage
-                    src={activeMegaMenuPreview.imageUrl}
-                    alt={activeMegaMenuPreview.label}
+                    src={activeMegaMenuPreviewAsset.imageUrl}
+                    alt={`${activeMegaMenuItem.label} 메가 메뉴 이미지`}
                     kind="card"
                     sizes="(min-width: 1280px) 48vw, 55vw"
                     className="h-full w-full object-cover transition-opacity duration-500"
                   />
                   <div className="absolute inset-0 right-4 md:right-8 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
                   <div className="absolute bottom-10 left-10 text-white">
-                    <p className="text-sm font-medium opacity-80">{activeMegaMenuItem.label}</p>
-                    <h3 className="text-3xl font-medium mt-1">{activeMegaMenuPreview.label}</h3>
+                    <p className="text-sm font-medium opacity-80">휴먼파트너</p>
+                    <h3 className="mt-1 text-3xl font-medium">{activeMegaMenuItem.label}</h3>
                   </div>
                 </div>
               </Container>
@@ -441,7 +457,11 @@ export const Header: React.FC = () => {
                 </Link>
               )}
 
-              {isAdminSession ? (
+              {isAuthSettling ? (
+                <div className="flex w-full items-center justify-center py-2 text-[14px] font-medium text-slate-400">
+                  계정 확인 중...
+                </div>
+              ) : isAdminSession ? (
                 <>
                   <Link
                     to="/admin"

@@ -1,21 +1,45 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Loader2, Shield } from 'lucide-react';
-import { fetchSignInMethodsForEmail, signInWithEmailAndPassword, signInWithPopup, User } from 'firebase/auth';
+import { fetchSignInMethodsForEmail, signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
 import { auth, googleProvider } from '../../src/firebase';
-import { resolveUserProfileForAuthIdentity } from '../../src/api/userApi';
+import { useAuth } from '../../src/context/AuthContext';
 import { getAuthErrorMessage } from '../../src/utils/authErrors';
 
 export const AdminLogin: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as any)?.from?.pathname || '/admin';
+  const { user, userProfile, isAdmin, loading: authLoading, initialized, logout } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loadingMethod, setLoadingMethod] = useState<'password' | 'google' | null>(null);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!initialized || authLoading) {
+      return;
+    }
+
+    if (user && isAdmin) {
+      setLoadingMethod(null);
+      navigate(from, { replace: true });
+      return;
+    }
+
+    if (!user) {
+      setLoadingMethod(null);
+      return;
+    }
+
+    void (async () => {
+      setLoadingMethod(null);
+      await logout();
+      setError(userProfile ? '관리자 승인 후 로그인할 수 있습니다.' : '등록되지 않은 관리자 계정입니다.');
+    })();
+  }, [authLoading, from, initialized, isAdmin, logout, navigate, user, userProfile]);
 
   const getLoginErrorMessage = async (err: any, attemptedEmail?: string) => {
     const errorCode = typeof err?.code === 'string' ? err.code : '';
@@ -48,43 +72,16 @@ export const AdminLogin: React.FC = () => {
     return '인증 처리 중 오류가 발생했습니다. 다시 시도해주세요.';
   };
 
-  const finishAdminLogin = async (firebaseUser: User) => {
-    const profile = await resolveUserProfileForAuthIdentity({
-      uid: firebaseUser.uid,
-      email: firebaseUser.email,
-      displayName: firebaseUser.displayName,
-      providerIds: firebaseUser.providerData.map((provider) => provider.providerId),
-    });
-
-    if (!profile) {
-      await auth.signOut();
-      throw new Error('등록되지 않은 관리자 계정입니다.');
-    }
-
-    if (!profile.is_admin) {
-      await auth.signOut();
-      throw new Error('관리자 권한이 없는 계정입니다.');
-    }
-
-    if (!profile.is_approved) {
-      await auth.signOut();
-      throw new Error('관리자 승인 후 로그인할 수 있습니다.');
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoadingMethod('password');
 
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      await finishAdminLogin(userCredential.user);
-      navigate(from, { replace: true });
+      await signInWithEmailAndPassword(auth, email, password);
     } catch (err: any) {
       console.error('Admin login failed:', err);
       setError(await getLoginErrorMessage(err, email));
-    } finally {
       setLoadingMethod(null);
     }
   };
@@ -94,13 +91,10 @@ export const AdminLogin: React.FC = () => {
     setLoadingMethod('google');
 
     try {
-      const result = await signInWithPopup(auth, googleProvider);
-      await finishAdminLogin(result.user);
-      navigate(from, { replace: true });
+      await signInWithPopup(auth, googleProvider);
     } catch (err: any) {
       console.error('Admin Google login failed:', err);
       setError(await getLoginErrorMessage(err, email));
-    } finally {
       setLoadingMethod(null);
     }
   };
@@ -208,7 +202,7 @@ export const AdminLogin: React.FC = () => {
           </button>
 
           <p className="mt-3 text-center text-xs text-gray-500">
-            승인된 관리자 계정과 동일한 Google 이메일로 로그인해야 합니다.
+            관리자 승인된 Google 이메일로 로그인해 주세요.
           </p>
 
           <div className="mt-6 border-t border-gray-200 pt-6">

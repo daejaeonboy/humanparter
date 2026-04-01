@@ -7,9 +7,10 @@ import {
   defaultPublicVisualsContent,
   normalizePublicVisualsContent,
   type CollectionHeroKeyMap,
+  type PublicMegaMenuPreviewKey,
   type PublicVisualsContent,
 } from '../../src/content/publicVisualsContent';
-import { STATIC_PUBLIC_MEGA_MENU_ITEMS } from '../../src/config/publicMegaMenu';
+import { MEGA_MENU_PREVIEW_EDITORS } from '../../src/config/publicMegaMenu';
 
 type CollectionHeroEditor =
   | {
@@ -36,8 +37,8 @@ type CollectionHeroEditor =
 
 const productDefaultEditor = {
   key: 'product-default',
-  label: '제품 전체 기본 비주얼',
-  description: '상품 목록 상단 기본 히어로와 제품 메가 메뉴의 전체보기 카드에 사용됩니다.',
+  label: '제품 목록 기본 비주얼',
+  description: '상품 목록 상단 기본 히어로 이미지와 설명에 사용됩니다.',
 };
 
 const collectionHeroEditors: CollectionHeroEditor[] = [
@@ -99,29 +100,6 @@ const collectionHeroEditors: CollectionHeroEditor[] = [
   },
 ];
 
-const megaMenuGroups = [
-  {
-    key: 'company',
-    label: '회사소개 메가 메뉴',
-    description: '헤더의 회사소개 메가 메뉴 카드 이미지와 설명입니다.',
-  },
-  {
-    key: 'cases',
-    label: '설치사례 메가 메뉴',
-    description: '헤더의 설치사례 메가 메뉴 카드 이미지와 설명입니다.',
-  },
-  {
-    key: 'notice',
-    label: '공지사항 메가 메뉴',
-    description: '헤더의 공지사항 메가 메뉴 카드 이미지와 설명입니다.',
-  },
-  {
-    key: 'cs',
-    label: '고객센터 메가 메뉴',
-    description: '헤더의 고객센터 메가 메뉴 카드 이미지와 설명입니다.',
-  },
-] as const;
-
 const sectionCardClass = 'rounded-2xl border border-slate-200 bg-white p-5 shadow-sm';
 const inputClassName =
   'w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition-colors focus:border-[#001e45]';
@@ -165,16 +143,13 @@ export const PublicVisualsManager: React.FC = () => {
     void loadContent();
   }, []);
 
-  const megaMenuSections = useMemo(
+  const megaMenuPreviewSections = useMemo(
     () =>
-      megaMenuGroups.map((group) => ({
-        ...group,
-        items: STATIC_PUBLIC_MEGA_MENU_ITEMS[group.key].map((item) => ({
-          ...item,
-          visual: content.megaMenu[group.key][item.to],
-        })),
+      MEGA_MENU_PREVIEW_EDITORS.map((item) => ({
+        ...item,
+        imageUrl: content.megaMenuPreviews[item.key]?.imageUrl || '',
       })),
-    [content.megaMenu],
+    [content.megaMenuPreviews],
   );
 
   const updateProductDefault = (field: 'imageUrl' | 'description', value: string) => {
@@ -190,7 +165,7 @@ export const PublicVisualsManager: React.FC = () => {
     }));
   };
 
-const updateCollectionHero = (
+  const updateCollectionHero = (
     group: CollectionHeroEditor['group'],
     itemKey: string,
     field: 'title' | 'imageUrl' | 'description',
@@ -214,22 +189,17 @@ const updateCollectionHero = (
     });
   };
 
-  const updateMegaMenuVisual = (
-    group: keyof PublicVisualsContent['megaMenu'],
-    itemPath: string,
-    field: 'imageUrl' | 'description',
+  const updateMegaMenuPreview = (
+    key: PublicMegaMenuPreviewKey,
     value: string,
   ) => {
     setContent((prev) => ({
       ...prev,
-      megaMenu: {
-        ...prev.megaMenu,
-        [group]: {
-          ...prev.megaMenu[group],
-          [itemPath]: {
-            ...prev.megaMenu[group][itemPath],
-            [field]: value,
-          },
+      megaMenuPreviews: {
+        ...prev.megaMenuPreviews,
+        [key]: {
+          ...prev.megaMenuPreviews[key],
+          imageUrl: value,
         },
       },
     }));
@@ -290,7 +260,7 @@ const updateCollectionHero = (
           <div>
             <h1 className="text-2xl font-bold text-slate-900">공개 비주얼 관리</h1>
             <p className="mt-2 text-sm leading-6 text-slate-500">
-              고객센터, 공지사항, 설치사례 상단 배너와 헤더 메가 메뉴 프리뷰 이미지를 한 곳에서 관리합니다.
+              공개 페이지 상단 배너와 헤더 메가 메뉴의 상위 5개 대표 이미지를 한 곳에서 관리합니다.
             </p>
           </div>
 
@@ -420,69 +390,55 @@ const updateCollectionHero = (
 
       <section className="space-y-4">
         <div>
-          <h2 className="text-lg font-bold text-slate-900">메가 메뉴 프리뷰</h2>
-          <p className="mt-1 text-sm text-slate-500">헤더 메가 메뉴의 카드 이미지와 설명을 관리합니다.</p>
+          <h2 className="text-lg font-bold text-slate-900">메가 메뉴 대표 이미지</h2>
+          <p className="mt-1 text-sm text-slate-500">헤더 메가 메뉴의 상위 5개 메뉴 이미지를 관리합니다.</p>
         </div>
 
-        {megaMenuSections.map((section) => (
-          <section key={section.key} className={sectionCardClass}>
-            <div className="mb-4">
-              <h3 className="text-base font-bold text-slate-900">{section.label}</h3>
-              <p className="mt-1 text-sm text-slate-500">{section.description}</p>
-            </div>
+        <div className="grid gap-4 xl:grid-cols-2">
+          {megaMenuPreviewSections.map((item) => {
+            const uploadKey = `mega-menu-preview:${item.key}`;
 
-            <div className="grid gap-4 xl:grid-cols-2">
-              {section.items.map((item) => {
-                const uploadKey = `mega-menu:${section.key}:${item.to}`;
-                return (
-                  <article key={item.to} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                    <div className="mb-4">
-                      <h4 className="text-sm font-bold text-slate-900">{item.label}</h4>
-                      <p className="mt-1 text-xs text-slate-500">{item.to}</p>
-                    </div>
+            return (
+              <article key={item.key} className={sectionCardClass}>
+                <div className="mb-4">
+                  <h3 className="text-base font-bold text-slate-900">{item.label}</h3>
+                  <p className="mt-1 text-sm text-slate-500">{item.description}</p>
+                </div>
 
-                    <div className="grid gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
-                      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-                        {item.visual?.imageUrl ? (
-                          <img src={item.visual.imageUrl} alt={item.label} className="h-40 w-full object-cover" />
-                        ) : (
-                          <div className="flex h-40 items-center justify-center text-slate-300">
-                            <ImageIcon size={28} />
-                          </div>
-                        )}
+                <div className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
+                  <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+                    {item.imageUrl ? (
+                      <img src={item.imageUrl} alt={item.label} className="h-48 w-full object-cover" />
+                    ) : (
+                      <div className="flex h-48 items-center justify-center text-slate-300">
+                        <ImageIcon size={32} />
                       </div>
+                    )}
+                  </div>
 
-                      <div className="space-y-3">
-                        <button
-                          type="button"
-                          onClick={() => void handleUpload(uploadKey, (imageUrl) => updateMegaMenuVisual(section.key, item.to, 'imageUrl', imageUrl))}
-                          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                        >
-                          {uploadingKey === uploadKey ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
-                          이미지 업로드
-                        </button>
+                  <div className="space-y-3">
+                    <button
+                      type="button"
+                      onClick={() => void handleUpload(uploadKey, (imageUrl) => updateMegaMenuPreview(item.key, imageUrl))}
+                      className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                    >
+                      {uploadingKey === uploadKey ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
+                      이미지 업로드
+                    </button>
 
-                        <input
-                          type="url"
-                          value={item.visual?.imageUrl || ''}
-                          onChange={(event) => updateMegaMenuVisual(section.key, item.to, 'imageUrl', event.target.value)}
-                          className={inputClassName}
-                          placeholder="메가 메뉴 이미지 URL"
-                        />
-                        <textarea
-                          value={item.visual?.description || ''}
-                          onChange={(event) => updateMegaMenuVisual(section.key, item.to, 'description', event.target.value)}
-                          className={textareaClassName}
-                          placeholder="메가 메뉴 설명"
-                        />
-                      </div>
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-          </section>
-        ))}
+                    <input
+                      type="url"
+                      value={item.imageUrl}
+                      onChange={(event) => updateMegaMenuPreview(item.key, event.target.value)}
+                      className={inputClassName}
+                      placeholder="메가 메뉴 대표 이미지 URL"
+                    />
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
       </section>
     </div>
   );

@@ -1,5 +1,13 @@
-import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import { getApp, getApps, initializeApp } from "firebase/app";
+import {
+  browserLocalPersistence,
+  browserPopupRedirectResolver,
+  getAuth,
+  GoogleAuthProvider,
+  indexedDBLocalPersistence,
+  initializeAuth,
+  setPersistence,
+} from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 // TODO: Replace with your actual Firebase User Configuration
@@ -13,9 +21,34 @@ const firebaseConfig = {
   measurementId: "G-02W6YXECKW",
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-export const auth = (typeof window !== 'undefined' ? getAuth(app) : null) as ReturnType<typeof getAuth>;
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+
+const createBrowserAuth = () => {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    return initializeAuth(app, {
+      persistence: [indexedDBLocalPersistence, browserLocalPersistence],
+      popupRedirectResolver: browserPopupRedirectResolver,
+    });
+  } catch (error) {
+    const existingAuth = getAuth(app);
+
+    void setPersistence(existingAuth, browserLocalPersistence).catch((persistenceError) => {
+      console.warn("Failed to restore Firebase auth persistence:", persistenceError);
+    });
+
+    if (import.meta.env.DEV) {
+      console.warn("Reusing existing Firebase auth instance:", error);
+    }
+
+    return existingAuth;
+  }
+};
+
+export const auth = createBrowserAuth() as ReturnType<typeof getAuth>;
 export const db = getFirestore(app);
 export const googleProvider = new GoogleAuthProvider();
-googleProvider.setCustomParameters({ prompt: 'select_account' });
+googleProvider.setCustomParameters({ prompt: "select_account" });

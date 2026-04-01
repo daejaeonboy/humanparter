@@ -3,13 +3,15 @@ import React from 'react';
 interface ContainerProps {
   children: React.ReactNode;
   className?: string;
-  size?: 'default' | 'layout' | 'narrow' | 'wide'; // default: 1520px, layout: 1440px, narrow: 1280px, wide: 1880px
+  size?: 'default' | 'layout' | 'narrow' | 'detail' | 'wide'; // default: 1520px, layout: 1440px, narrow: 1280px, detail: 1080px, wide: 1880px
 }
 
 export const Container: React.FC<ContainerProps> = ({ children, className = '', size = 'default' }) => {
   const maxWidth =
     size === 'wide'
       ? 'max-w-[1880px]'
+      : size === 'detail'
+        ? 'max-w-[1080px]'
       : size === 'narrow'
         ? 'max-w-[1280px]'
       : size === 'layout'

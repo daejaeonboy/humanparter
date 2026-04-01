@@ -1,4 +1,5 @@
-import { getMegaMenuVisual, type PublicVisualsContent } from '../content/publicVisualsContent';
+import type { PublicMegaMenuPreviewKey, PublicVisualsContent } from '../content/publicVisualsContent';
+import type { PublicNavMegaMenuType } from './publicNavigation';
 
 export interface MegaMenuLinkItem {
   label: string;
@@ -25,6 +26,11 @@ export const INSTALLATION_CASE_FILTER_TABS: FilterTabItem[] = [
   { label: '임시사무실', value: 'temporary-office', to: '/cases?tab=temporary-office' },
   { label: '공공기관', value: 'public-institution', to: '/cases?tab=public-institution' },
 ];
+
+export const INSTALLATION_CASE_CATEGORY_OPTIONS = [
+  { label: '임시사무실', value: '임시사무실' },
+  { label: '공공기관', value: '공공기관' },
+] as const;
 
 export const NOTICE_FILTER_TABS: FilterTabItem[] = [
   { label: '전체', value: 'all', to: '/notice' },
@@ -106,32 +112,38 @@ export const STATIC_PUBLIC_MEGA_MENU_ITEMS = {
       description: '장애 접수 방법과 처리 절차, 방문 지원 범위 등 A/S 운영 기준을 확인할 수 있습니다.',
     },
   ],
-} satisfies Record<string, MegaMenuLinkItem[]>;
+} satisfies Record<'company' | 'cases' | 'notice' | 'cs', MegaMenuLinkItem[]>;
 
-export const buildPublicMegaMenuItems = (publicVisuals?: PublicVisualsContent | null) => {
-  if (!publicVisuals) {
-    return STATIC_PUBLIC_MEGA_MENU_ITEMS;
+export const MEGA_MENU_PREVIEW_EDITORS = [
+  { key: 'company', label: '회사소개', description: '헤더 메가 메뉴의 회사소개 대표 이미지입니다.' },
+  { key: 'products', label: '렌탈품목', description: '헤더 메가 메뉴의 렌탈품목 대표 이미지입니다.' },
+  { key: 'cases', label: '설치사례', description: '헤더 메가 메뉴의 설치사례 대표 이미지입니다.' },
+  { key: 'notice', label: '정보센터', description: '헤더 메가 메뉴의 정보센터 대표 이미지입니다.' },
+  { key: 'cs', label: '고객센터', description: '헤더 메가 메뉴의 고객센터 대표 이미지입니다.' },
+] as const satisfies ReadonlyArray<{
+  key: PublicMegaMenuPreviewKey;
+  label: string;
+  description: string;
+}>;
+
+export const getMegaMenuPreviewKey = (megaMenuType?: PublicNavMegaMenuType): PublicMegaMenuPreviewKey | null => {
+  switch (megaMenuType) {
+    case 'company':
+      return 'company';
+    case 'productCategories':
+      return 'products';
+    case 'cases':
+      return 'cases';
+    case 'notice':
+      return 'notice';
+    case 'cs':
+      return 'cs';
+    default:
+      return null;
   }
-
-  return {
-    company: STATIC_PUBLIC_MEGA_MENU_ITEMS.company.map((item) => ({
-      ...item,
-      ...getMegaMenuVisual(publicVisuals, 'company', item.to),
-    })),
-    cases: STATIC_PUBLIC_MEGA_MENU_ITEMS.cases.map((item) => ({
-      ...item,
-      ...getMegaMenuVisual(publicVisuals, 'cases', item.to),
-    })),
-    notice: STATIC_PUBLIC_MEGA_MENU_ITEMS.notice.map((item) => ({
-      ...item,
-      ...getMegaMenuVisual(publicVisuals, 'notice', item.to),
-    })),
-    cs: STATIC_PUBLIC_MEGA_MENU_ITEMS.cs.map((item) => ({
-      ...item,
-      ...getMegaMenuVisual(publicVisuals, 'cs', item.to),
-    })),
-  } satisfies Record<string, MegaMenuLinkItem[]>;
 };
+
+export const buildPublicMegaMenuItems = (_publicVisuals?: PublicVisualsContent | null) => STATIC_PUBLIC_MEGA_MENU_ITEMS;
 
 const PUBLIC_INSTITUTION_CASE_KEYWORDS = [
   '공공기관',
@@ -152,9 +164,20 @@ const NOTICE_RESOURCE_CATEGORIES = ['설치안내', '현장안내', '자료실']
 
 export const getInstallationCaseTabValue = (input: {
   title: string;
+  category?: string;
   subtitle?: string;
   plainContent?: string;
 }) => {
+  const normalizedCategory = (input.category || '').replace(/\s+/g, '').toLowerCase();
+
+  if (normalizedCategory.includes('공공기관')) {
+    return 'public-institution';
+  }
+
+  if (normalizedCategory.includes('임시사무실')) {
+    return 'temporary-office';
+  }
+
   const normalizedText = [input.title, input.subtitle || '', input.plainContent || '']
     .join(' ')
     .toLowerCase();
