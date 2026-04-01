@@ -102,7 +102,7 @@ export const BookingList: React.FC = () => {
             setAnswerDrafts({});
             setLoadError(
                 isInquiriesTableMissingError(error)
-                    ? 'inquiries 테이블이 아직 생성되지 않았습니다. Supabase SQL Editor에서 create_inquiries_table.sql을 먼저 실행하세요.'
+                    ? 'inquiries 테이블이 아직 생성되지 않았습니다. Supabase SQL Editor에서 sql/create_inquiries_table.sql을 먼저 실행하세요.'
                     : '견적문의 데이터를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.',
             );
         } finally {
@@ -121,7 +121,7 @@ export const BookingList: React.FC = () => {
             setRecipients([]);
             setRecipientLoadError(
                 isQuoteNotificationRecipientsTableMissingError(error)
-                    ? 'quote_notification_recipients 테이블이 아직 생성되지 않았습니다. Supabase SQL Editor에서 create_quote_notification_recipients_table.sql을 먼저 실행하세요.'
+                    ? 'quote_notification_recipients 테이블이 아직 생성되지 않았습니다. Supabase SQL Editor에서 sql/create_quote_notification_recipients_table.sql을 먼저 실행하세요.'
                     : '수신 이메일 설정을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.',
             );
         } finally {
@@ -159,7 +159,7 @@ export const BookingList: React.FC = () => {
             return '이미 등록된 이메일입니다.';
         }
         if (isQuoteNotificationRecipientsTableMissingError(error)) {
-            return '수신 이메일 설정 테이블이 없습니다. create_quote_notification_recipients_table.sql을 먼저 실행해 주세요.';
+            return '수신 이메일 설정 테이블이 없습니다. sql/create_quote_notification_recipients_table.sql을 먼저 실행해 주세요.';
         }
         return '수신 이메일 저장에 실패했습니다.';
     };

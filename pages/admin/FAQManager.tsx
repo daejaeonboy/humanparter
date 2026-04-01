@@ -96,7 +96,7 @@ export const FAQManager: React.FC = () => {
             setShowModal(false);
         } catch (error) {
             console.error('Failed to save FAQ:', error);
-            alert('저장에 실패했습니다. Supabase에서 `create_faqs_table.sql`을 실행해 FAQ 테이블/RLS 정책을 먼저 생성해주세요.');
+            alert('저장에 실패했습니다. Supabase에서 `sql/create_faqs_table.sql`을 실행해 FAQ 테이블/RLS 정책을 먼저 생성해주세요.');
         } finally {
             setSaving(false);
         }

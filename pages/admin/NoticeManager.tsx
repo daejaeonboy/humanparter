@@ -113,7 +113,7 @@ export const NoticeManager: React.FC = () => {
     try {
       if (editingItem?.id) {
         if (usingFallback) {
-          alert('먼저 Supabase에서 `create_notice_posts_table.sql`을 실행해 실제 정보센터 테이블을 만든 뒤 수정해 주세요.');
+          alert('먼저 Supabase에서 `sql/create_notice_posts_table.sql`을 실행해 실제 정보센터 테이블을 만든 뒤 수정해 주세요.');
           return;
         }
         await updateNoticePost(editingItem.id, formData);
@@ -126,7 +126,7 @@ export const NoticeManager: React.FC = () => {
       closeModal();
     } catch (error) {
       console.error('Failed to save notice post:', error);
-      alert('저장에 실패했습니다. Supabase에서 `create_notice_posts_table.sql`을 먼저 실행해 주세요.');
+      alert('저장에 실패했습니다. Supabase에서 `sql/create_notice_posts_table.sql`을 먼저 실행해 주세요.');
     } finally {
       setSaving(false);
     }
@@ -134,7 +134,7 @@ export const NoticeManager: React.FC = () => {
 
   const handleDelete = async (item: NoticePost) => {
     if (usingFallback) {
-      alert('먼저 Supabase에서 `create_notice_posts_table.sql`을 실행해 실제 정보센터 테이블을 만든 뒤 삭제해 주세요.');
+      alert('먼저 Supabase에서 `sql/create_notice_posts_table.sql`을 실행해 실제 정보센터 테이블을 만든 뒤 삭제해 주세요.');
       return;
     }
 
@@ -152,7 +152,7 @@ export const NoticeManager: React.FC = () => {
 
   const handleToggleActive = async (item: NoticePost) => {
     if (usingFallback) {
-      alert('먼저 Supabase에서 `create_notice_posts_table.sql`을 실행해 실제 정보센터 테이블을 만든 뒤 노출 상태를 변경해 주세요.');
+      alert('먼저 Supabase에서 `sql/create_notice_posts_table.sql`을 실행해 실제 정보센터 테이블을 만든 뒤 노출 상태를 변경해 주세요.');
       return;
     }
 
@@ -205,7 +205,7 @@ export const NoticeManager: React.FC = () => {
       {usingFallback && (
         <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm leading-6 text-amber-900">
           현재는 예시 정보센터 데이터를 보고 있습니다. 실제 저장, 수정, 삭제를 사용하려면 Supabase에서
-          <code className="mx-1 rounded bg-amber-100 px-1.5 py-0.5 text-[13px] font-semibold">create_notice_posts_table.sql</code>
+          <code className="mx-1 rounded bg-amber-100 px-1.5 py-0.5 text-[13px] font-semibold">sql/create_notice_posts_table.sql</code>
           을 먼저 실행해 주세요.
         </div>
       )}

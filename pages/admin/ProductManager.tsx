@@ -1164,8 +1164,8 @@ export const ProductManager = () => {
                 <button onClick={() => { setEditingProduct(null); setSelectedParentCategory(''); setLastCropZoomPercent(null); latestAppliedCropSettingsRef.current = null; setFormData(createInitialFormData('basic')); setShowForm(true); }} className="flex items-center gap-2 rounded-lg bg-[#001e45] px-4 py-2 text-white"><Plus size={20} />새 상품 추가</button>
             </div>
 
-            {!isOrdering && <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">드래그 순서 저장을 사용하려면 `products.display_order` 컬럼이 필요합니다. `add_products_display_order.sql`을 Supabase SQL Editor에서 1회 실행해주세요.</div>}
-            {!isExternalLinkSupported && <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">상품 외부 링크 기능을 사용하려면 `products.external_link_url` 컬럼이 필요합니다. `add_products_external_link_url.sql`을 Supabase SQL Editor에서 1회 실행해주세요.</div>}
+            {!isOrdering && <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">드래그 순서 저장을 사용하려면 `products.display_order` 컬럼이 필요합니다. `sql/add_products_display_order.sql`을 Supabase SQL Editor에서 1회 실행해주세요.</div>}
+            {!isExternalLinkSupported && <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">상품 외부 링크 기능을 사용하려면 `products.external_link_url` 컬럼이 필요합니다. `sql/add_products_external_link_url.sql`을 Supabase SQL Editor에서 1회 실행해주세요.</div>}
             {isOrdering && <div className="mb-4 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">행 왼쪽 핸들을 드래그해서 상품 노출 순서를 변경할 수 있습니다. <span className="ml-1 font-semibold text-[#001e45]">현재 범위: {currentOrderScopeLabel}</span> {isSavingOrder && <span className="ml-2 font-semibold text-[#001e45]">순서 저장 중...</span>}</div>}
 
             {parentMenusForFilter.length > 0 && (

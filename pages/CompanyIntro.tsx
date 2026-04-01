@@ -150,7 +150,7 @@ export const CompanyIntro: React.FC = () => {
       alert(`${activeTab.label} 콘텐츠를 저장했습니다.`);
     } catch (error) {
       console.error('Failed to save company content:', error);
-      alert('저장에 실패했습니다. Supabase에서 `create_page_contents_table.sql`을 먼저 실행해 주세요.');
+      alert('저장에 실패했습니다. Supabase에서 `sql/create_page_contents_table.sql`을 먼저 실행해 주세요.');
     } finally {
       setSaving(false);
     }
