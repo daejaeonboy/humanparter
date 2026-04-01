@@ -3,6 +3,7 @@ import { Building2, ExternalLink, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { CompanySectionsEditor } from '../../components/company/CompanySectionsEditor';
 import { getCompanyPageContent, saveCompanyPageContent } from '../../src/api/companyContentApi';
+import { invalidatePublicDataCache } from '../../src/api/publicDataApi';
 import {
   defaultCompanyPageContent,
   normalizeCompanyPageContent,
@@ -34,6 +35,7 @@ export const CompanyContentManager: React.FC = () => {
     setSaving(true);
     try {
       const saved = await saveCompanyPageContent(content);
+      invalidatePublicDataCache();
       setContent(normalizeCompanyPageContent(saved));
       alert('회사소개 본문을 저장했습니다.');
     } catch (error) {
@@ -59,10 +61,10 @@ export const CompanyContentManager: React.FC = () => {
           <div>
             <h1 className="flex items-center gap-2 text-2xl font-bold text-slate-900">
               <Building2 size={22} className="text-[#001e45]" />
-              회사소개 본문 관리
+              회사소개 콘텐츠 관리
             </h1>
             <p className="mt-2 text-sm leading-6 text-slate-500">
-              회사소개는 공개 페이지에서도 바로 수정할 수 있습니다. 아래 에디터와 공개 페이지는 같은 본문 데이터를 사용합니다.
+              회사소개 상단 히어로, 회사 개요 대표 이미지, 각 탭 본문까지 공개 페이지와 같은 데이터로 함께 관리합니다.
             </p>
           </div>
 
@@ -81,8 +83,8 @@ export const CompanyContentManager: React.FC = () => {
         onChange={setContent}
         onSave={handleSave}
         saving={saving}
-        title="회사소개 수정"
-        description="회사 개요, 사업영역, 비전, 오시는길 본문을 텍스트와 이미지 중심으로 관리합니다."
+        title="회사소개 콘텐츠 수정"
+        description="회사소개 상단 히어로와 회사 개요 대표 이미지, 회사 개요·사업영역·비전·오시는길 본문을 한 곳에서 관리합니다."
       />
     </div>
   );

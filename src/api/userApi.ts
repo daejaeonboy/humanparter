@@ -44,25 +44,37 @@ export const createUserProfile = async (profile: Omit<UserProfile, 'id' | 'creat
 
 // Firebase UID로 사용자 프로필 조회
 export const getUserProfileByFirebaseUid = async (firebaseUid: string): Promise<UserProfile | null> => {
+    if (!firebaseUid?.trim()) {
+        return null;
+    }
+
     const { data, error } = await supabase
         .from('user_profiles')
         .select('*')
         .eq('firebase_uid', firebaseUid)
-        .single();
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-    if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows
+    if (error) throw error;
     return data;
 };
 
 export const getUserProfileByEmail = async (email: string): Promise<UserProfile | null> => {
     const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) {
+        return null;
+    }
+
     const { data, error } = await supabase
         .from('user_profiles')
         .select('*')
         .ilike('email', normalizedEmail)
-        .single();
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-    if (error && error.code !== 'PGRST116') throw error;
+    if (error) throw error;
     return data;
 };
 
@@ -94,15 +106,13 @@ export const resolveUserProfileForAuthIdentity = async ({
     uid,
     email,
     displayName,
-    providerIds = [],
 }: AuthIdentity): Promise<UserProfile | null> => {
     const profileByUid = await getUserProfileByFirebaseUid(uid);
     if (profileByUid) {
         return profileByUid;
     }
 
-    const canMatchByEmail = Boolean(email && providerIds.includes('google.com'));
-    if (!canMatchByEmail || !email) {
+    if (!email) {
         return null;
     }
 

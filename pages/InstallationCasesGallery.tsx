@@ -4,32 +4,18 @@ import { Loader2 } from 'lucide-react';
 import { PublicPageEditButton } from '../components/admin/PublicPageEditButton';
 import { PublicCollectionHero } from '../components/PublicCollectionHero';
 import { Seo } from '../components/Seo';
+import { ResponsiveImage } from '../components/ui/ResponsiveImage';
 import { Container } from '../components/ui/Container';
-import { getInstallationCases, InstallationCase } from '../src/api/cmsApi';
+import { InstallationCase } from '../src/api/cmsApi';
+import { getPublicCasesData, type PublicCaseSummary } from '../src/api/publicDataApi';
 import { INSTALLATION_CASE_FILTER_TABS, getInstallationCaseTabValue } from '../src/config/publicMegaMenu';
+import { getCollectionHeroVisual } from '../src/content/publicVisualsContent';
+import { usePublicVisuals } from '../src/hooks/usePublicVisuals';
 import { usePrerenderData } from '../src/prerender/context';
 import { stripInstallationCaseMetadata } from '../src/utils/installationCaseContent';
 import { buildBreadcrumbStructuredData, toAbsoluteUrl } from '../src/utils/seo';
 
-const CASES_PER_PAGE = 4;
-const CASE_GALLERY_HERO_CONTENT: Record<string, { title: string; description: string; imageUrl: string }> = {
-  all: {
-    title: '설치 사례',
-    description: '기업, 공공기관, 교육기관 등 다양한 업무 환경에 맞춘 휴먼파트너의 실제 설치 사례를 확인해보세요.',
-    imageUrl: 'https://images.unsplash.com/photo-1497366412874-3415097a27e7?auto=format&fit=crop&w=1600&q=80',
-  },
-  'temporary-office': {
-    title: '임시사무실',
-    description: '단기 프로젝트와 임시 업무공간에 맞춘 렌탈 구성 사례를 빠르게 비교해보세요.',
-    imageUrl: 'https://images.unsplash.com/photo-1497366412874-3415097a27e7?auto=format&fit=crop&w=1600&q=80',
-  },
-  'public-institution': {
-    title: '공공기관',
-    description: '공공기관과 교육 현장 중심의 설치 사례를 통해 실제 운영 구성을 확인할 수 있습니다.',
-    imageUrl: 'https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1600&q=80',
-  },
-};
-
+const CASES_PER_PAGE = 12;
 const formatDisplayDate = (value?: string) => {
   if (!value) return '';
   const parsed = new Date(value);
@@ -40,14 +26,23 @@ const formatDisplayDate = (value?: string) => {
 export const InstallationCasesGallery: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const prerenderData = usePrerenderData();
+  const publicVisuals = usePublicVisuals();
   const preloadedCases = prerenderData?.installationCases?.cases;
   const [loading, setLoading] = useState(!preloadedCases);
-  const [cases, setCases] = useState<InstallationCase[]>(preloadedCases || []);
+  const [cases, setCases] = useState<Array<InstallationCase | PublicCaseSummary>>(preloadedCases || []);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const requestedTab = searchParams.get('tab') || 'all';
   const activeTab = INSTALLATION_CASE_FILTER_TABS.some((tab) => tab.value === requestedTab) ? requestedTab : 'all';
-  const heroContent = CASE_GALLERY_HERO_CONTENT[activeTab] || CASE_GALLERY_HERO_CONTENT.all;
+  const heroContent = getCollectionHeroVisual(
+    publicVisuals,
+    'cases',
+    activeTab === 'temporary-office'
+      ? 'temporaryOffice'
+      : activeTab === 'public-institution'
+        ? 'publicInstitution'
+        : 'all',
+  );
 
   const filteredCases = cases.filter((item) => {
     const plainContent = stripInstallationCaseMetadata(item.content);
@@ -81,13 +76,12 @@ export const InstallationCasesGallery: React.FC = () => {
     if (preloadedCases) {
       setCases(preloadedCases);
       setLoading(false);
-      return;
     }
 
     const loadCases = async () => {
       try {
-        const data = await getInstallationCases();
-        const activeCases = data.filter((item) => item.is_active && item.image_url);
+        const data = await getPublicCasesData();
+        const activeCases = data.cases.filter((item) => item.is_active && item.image_url);
         setCases(activeCases);
       } catch (error) {
         console.error('Failed to load installation cases:', error);
@@ -167,7 +161,8 @@ export const InstallationCasesGallery: React.FC = () => {
       <Seo
         title="휴먼파트너 설치사례 갤러리"
         description="기업, 공공기관, 교육기관 등 다양한 업무 환경에 맞춘 휴먼파트너의 실제 설치 사례를 확인해보세요."
-        canonicalPath={activeTab === 'all' ? '/cases' : `/cases?tab=${encodeURIComponent(activeTab)}`}
+        canonicalPath="/cases"
+        urlPath="/cases"
         structuredData={[
           buildBreadcrumbStructuredData([
             { name: '홈', path: '/' },
@@ -178,7 +173,7 @@ export const InstallationCasesGallery: React.FC = () => {
             '@type': 'CollectionPage',
             name: '휴먼파트너 설치사례 갤러리',
             description: '기업, 공공기관, 교육기관 등 다양한 업무 환경에 맞춘 휴먼파트너의 실제 설치 사례를 확인해보세요.',
-            url: toAbsoluteUrl(activeTab === 'all' ? '/cases' : `/cases?tab=${encodeURIComponent(activeTab)}`),
+            url: toAbsoluteUrl('/cases'),
             mainEntity: {
               '@type': 'ItemList',
               itemListElement: pagedCases
@@ -195,13 +190,13 @@ export const InstallationCasesGallery: React.FC = () => {
       />
 
       <PublicCollectionHero
-        title={heroContent.title}
+        title={heroContent.title || '설치 사례'}
         description={heroContent.description}
         imageUrl={heroContent.imageUrl}
         tabs={INSTALLATION_CASE_FILTER_TABS.map((tab) => ({ label: tab.label, value: tab.value }))}
         activeValue={activeTab}
         onSelect={(value) => setSearchParams(value === 'all' ? {} : { tab: value })}
-        topRightAction={<PublicPageEditButton to="/admin/cases" />}
+        topRightAction={<PublicPageEditButton to="/admin/public-visuals" label="상단 배너 수정" />}
       />
 
       <Container size="layout">
@@ -218,10 +213,13 @@ export const InstallationCasesGallery: React.FC = () => {
                   item,
                   <>
                     <div className="relative aspect-[4/3] w-full overflow-hidden rounded-[8px] bg-white shadow-sm ring-1 ring-slate-900/5 transition-all duration-300 group-hover:shadow-md">
-                      <img
+                      <ResponsiveImage
                         src={item.image_url}
                         alt={item.title}
+                        kind="card"
+                        sizes="(min-width: 1280px) 24vw, (min-width: 640px) 50vw, 100vw"
                         className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                        priority={index === 0}
                         loading={index < CASES_PER_PAGE ? 'eager' : 'lazy'}
                       />
                     </div>

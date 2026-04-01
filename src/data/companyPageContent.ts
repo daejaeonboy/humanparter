@@ -96,6 +96,32 @@ const escapeAttribute = (value: string) => escapeHtml(value);
 
 const ensureString = (value: unknown, fallback: string) => (typeof value === 'string' && value.trim() ? value : fallback);
 
+const LOCAL_ASSET_HOSTNAMES = new Set(['localhost', '127.0.0.1', 'humanpartner.kr', 'www.humanpartner.kr']);
+
+const STATIC_ASSET_PATH_PATTERN = /^\/.+\.(?:png|jpe?g|svg|webp|gif|ico)$/i;
+
+const normalizeManagedAssetUrl = (value: string) => {
+  const trimmed = value.trim();
+  if (!trimmed || !/^https?:\/\//i.test(trimmed)) return trimmed;
+
+  try {
+    const parsed = new URL(trimmed);
+    if (!LOCAL_ASSET_HOSTNAMES.has(parsed.hostname.toLowerCase())) return trimmed;
+    if (!parsed.pathname.startsWith('/company/') && !STATIC_ASSET_PATH_PATTERN.test(parsed.pathname)) return trimmed;
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return trimmed;
+  }
+};
+
+const ensureAssetString = (value: unknown, fallback: string) => normalizeManagedAssetUrl(ensureString(value, fallback));
+
+const normalizeManagedAssetHtml = (html: string) =>
+  html.replace(/(src|href)=(['"])(.*?)\2/gi, (match, attribute, quote, url) => {
+    const normalizedUrl = normalizeManagedAssetUrl(url);
+    return `${attribute}=${quote}${normalizedUrl}${quote}`;
+  });
+
 const renderParagraphs = (paragraphs: string[]) =>
   paragraphs
     .filter((item) => item.trim())
@@ -289,7 +315,7 @@ export const normalizeCompanyPageContent = (value: unknown): CompanyPageContent 
     hero: {
       title: ensureString(raw.hero?.title, defaultCompanyPageContent.hero.title),
       description: ensureString(raw.hero?.description, defaultCompanyPageContent.hero.description),
-      imageUrl: ensureString(raw.hero?.imageUrl, defaultCompanyPageContent.hero.imageUrl),
+      imageUrl: ensureAssetString(raw.hero?.imageUrl, defaultCompanyPageContent.hero.imageUrl),
     },
     overview: {
       eyebrow: ensureString(raw.overview?.eyebrow, defaultCompanyPageContent.overview.eyebrow),
@@ -306,7 +332,7 @@ export const normalizeCompanyPageContent = (value: unknown): CompanyPageContent 
               ensureString(item, defaultCompanyPageContent.overview.paragraphs[index] || ''),
             )
           : defaultCompanyPageContent.overview.paragraphs,
-      imageUrl: ensureString(raw.overview?.imageUrl, defaultCompanyPageContent.overview.imageUrl),
+      imageUrl: ensureAssetString(raw.overview?.imageUrl, defaultCompanyPageContent.overview.imageUrl),
     },
     stats:
       Array.isArray(raw.stats) && raw.stats.length > 0
@@ -327,7 +353,7 @@ export const normalizeCompanyPageContent = (value: unknown): CompanyPageContent 
         Array.isArray(raw.business?.cards) && raw.business.cards.length > 0
           ? raw.business.cards.map((item, index) => ({
               title: ensureString(item?.title, defaultCompanyPageContent.business.cards[index]?.title || ''),
-              image: ensureString(item?.image, defaultCompanyPageContent.business.cards[index]?.image || ''),
+              image: ensureAssetString(item?.image, defaultCompanyPageContent.business.cards[index]?.image || ''),
               highlight: ensureString(
                 item?.highlight,
                 defaultCompanyPageContent.business.cards[index]?.highlight || '',
@@ -373,10 +399,10 @@ export const normalizeCompanyPageContent = (value: unknown): CompanyPageContent 
   return {
     ...normalizedStructured,
     bodySections: {
-      overviewHtml: ensureString(raw.bodySections?.overviewHtml, fallbackBodySections.overviewHtml),
-      businessHtml: ensureString(raw.bodySections?.businessHtml, fallbackBodySections.businessHtml),
-      visionHtml: ensureString(raw.bodySections?.visionHtml, fallbackBodySections.visionHtml),
-      locationHtml: ensureString(raw.bodySections?.locationHtml, fallbackBodySections.locationHtml),
+      overviewHtml: normalizeManagedAssetHtml(ensureString(raw.bodySections?.overviewHtml, fallbackBodySections.overviewHtml)),
+      businessHtml: normalizeManagedAssetHtml(ensureString(raw.bodySections?.businessHtml, fallbackBodySections.businessHtml)),
+      visionHtml: normalizeManagedAssetHtml(ensureString(raw.bodySections?.visionHtml, fallbackBodySections.visionHtml)),
+      locationHtml: normalizeManagedAssetHtml(ensureString(raw.bodySections?.locationHtml, fallbackBodySections.locationHtml)),
     },
   };
 };

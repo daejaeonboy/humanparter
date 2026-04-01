@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { X, ChevronRight, Phone, Mail } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { NavMenuItem, getAllNavMenuItems } from '../../src/api/cmsApi';
+import type { NavMenuItem } from '../../src/api/cmsApi';
+import { getPublicBootstrapData } from '../../src/api/publicDataApi';
 import { Container } from '../ui/Container';
 import { useAuth } from '../../src/context/AuthContext';
+import { usePrerenderData } from '../../src/prerender/context';
 
 interface FullMenuProps {
     onClose: () => void;
@@ -12,11 +14,17 @@ interface FullMenuProps {
 }
 
 export const FullMenu: React.FC<FullMenuProps> = ({ onClose, variant = 'mobile', items }) => {
+    const preloadedNavItems = usePrerenderData()?.bootstrap?.navItems;
     const [menuItems, setMenuItems] = useState<NavMenuItem[]>([]);
     const [loading, setLoading] = useState(true);
     const { user, userProfile, logout } = useAuth();
 
     useEffect(() => {
+        if (preloadedNavItems?.length && !items) {
+            setMenuItems(preloadedNavItems);
+            setLoading(false);
+        }
+
         if (items) {
             setMenuItems(items);
             setLoading(false);
@@ -25,8 +33,8 @@ export const FullMenu: React.FC<FullMenuProps> = ({ onClose, variant = 'mobile',
 
         const loadMenu = async () => {
             try {
-                const data = await getAllNavMenuItems();
-                setMenuItems(data);
+                const data = await getPublicBootstrapData();
+                setMenuItems(data.navItems);
             } catch (error) {
                 console.error('Failed to load menu:', error);
             } finally {
@@ -42,7 +50,7 @@ export const FullMenu: React.FC<FullMenuProps> = ({ onClose, variant = 'mobile',
                 document.body.style.overflow = 'unset';
             };
         }
-    }, [variant, items]);
+    }, [variant, items, preloadedNavItems]);
 
     // Grouping: Parent (items with no category or unique category names) -> Children
     const groups = React.useMemo(() => {

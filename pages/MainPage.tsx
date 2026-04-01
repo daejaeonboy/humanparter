@@ -10,7 +10,7 @@ import { PromoSection } from "../components/PromoSection";
 import { RentalProcessSection } from "../components/RentalProcessSection";
 import { ClientLogoMarqueeSection } from "../components/ClientLogoMarqueeSection";
 import { PopupManager } from "../components/Layout/PopupManager";
-import { buildOrganizationStructuredData, buildWebsiteStructuredData } from "../src/utils/seo";
+import { buildLocalBusinessStructuredData, buildOrganizationStructuredData, buildWebsiteStructuredData } from "../src/utils/seo";
 
 export const MainPage: React.FC = () => {
   return (
@@ -19,7 +19,7 @@ export const MainPage: React.FC = () => {
         title="휴먼파트너 | 종합렌탈 전문기업"
         description="기업 환경에 맞춘 사무가구 렌탈부터 설치, 운영 지원까지 제공하는 휴먼파트너의 B2B 렌탈 서비스입니다."
         canonicalPath="/"
-        structuredData={[buildOrganizationStructuredData(), buildWebsiteStructuredData()]}
+        structuredData={[buildOrganizationStructuredData(), buildWebsiteStructuredData(), buildLocalBusinessStructuredData()]}
       />
       <PopupManager />
 

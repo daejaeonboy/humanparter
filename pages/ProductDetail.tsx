@@ -4,7 +4,9 @@ import { ArrowLeft, Boxes, CheckCircle2, Loader2, Package, Phone } from 'lucide-
 import { PublicPageEditButton } from '../components/admin/PublicPageEditButton';
 import { Seo } from '../components/Seo';
 import { Container } from '../components/ui/Container';
-import { getProductById, getProductNavigationTarget, getProducts, normalizeExternalLinkUrl, Product } from '../src/api/productApi';
+import { ResponsiveImage } from '../components/ui/ResponsiveImage';
+import { getProductNavigationTarget, normalizeExternalLinkUrl, Product } from '../src/api/productApi';
+import { getPublicProductDetailData } from '../src/api/publicDataApi';
 import { usePrerenderData } from '../src/prerender/context';
 import { buildBreadcrumbStructuredData, normalizeMetaText, toAbsoluteUrl } from '../src/utils/seo';
 
@@ -83,7 +85,8 @@ export const ProductDetailPage: React.FC = () => {
       setError(null);
 
       try {
-        const [productData, allProducts] = await Promise.all([getProductById(id), getProducts()]);
+        const detail = await getPublicProductDetailData(id);
+        const productData = detail.product;
 
         if (!productData) {
           setError('상품 정보를 찾을 수 없습니다.');
@@ -93,11 +96,7 @@ export const ProductDetailPage: React.FC = () => {
         }
 
         setProduct(productData);
-        setRelatedProducts(
-          allProducts
-            .filter((item) => item.id !== productData.id && item.category === productData.category)
-            .slice(0, 4),
-        );
+        setRelatedProducts(detail.relatedProducts);
       } catch (loadError) {
         console.error('Failed to load product detail:', loadError);
         setError('상품 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
@@ -129,6 +128,14 @@ export const ProductDetailPage: React.FC = () => {
   if (!product || error) {
     return (
       <main className="bg-white py-20">
+        <Seo
+          title="상품을 찾을 수 없습니다 | 휴먼파트너"
+          description="요청하신 상품 정보를 찾을 수 없습니다."
+          canonicalPath={false}
+          urlPath={false}
+          noindex
+          nofollow
+        />
         <Container className="max-w-3xl text-center">
           <h1 className="text-2xl font-bold text-slate-900">{error || '상품 정보를 찾을 수 없습니다.'}</h1>
           <p className="mt-4 text-slate-500">상품 목록으로 돌아가 다른 제품을 확인해보세요.</p>
@@ -197,9 +204,12 @@ export const ProductDetailPage: React.FC = () => {
 
         <section className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr]">
           <div className="overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-sm">
-            <img
+            <ResponsiveImage
               src={product.image_url || fallbackImage}
               alt={product.name}
+              kind="detail"
+              priority
+              sizes="(min-width: 1024px) 58vw, 100vw"
               className="aspect-[4/3] w-full object-cover"
             />
           </div>
@@ -304,9 +314,11 @@ export const ProductDetailPage: React.FC = () => {
                     const navigation = getProductNavigationTarget(related);
                     const itemContent = (
                       <>
-                        <img
+                        <ResponsiveImage
                           src={related.image_url || fallbackImage}
                           alt={related.name}
+                          kind="thumbnail"
+                          sizes="64px"
                           className="h-16 w-16 rounded-xl object-cover"
                         />
                         <div className="min-w-0">

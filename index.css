@@ -4,7 +4,7 @@
 
 @layer base {
   /* Force maximum font weight to 500 for consistency as per user preference */
-  b, strong, .font-bold, .font-semibold, .font-extrabold, .font-black {
+  b, strong, h1, h2, h3, h4, h5, h6, .font-bold, .font-semibold, .font-extrabold, .font-black {
     font-weight: 500 !important;
   }
 
@@ -43,6 +43,16 @@
   @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
+  }
+
+  /* Marquee Animation */
+  .animate-marquee-left {
+    animation: marquee-left var(--duration, 40s) linear infinite;
+  }
+
+  @keyframes marquee-left {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
   }
 
   .text-display { @apply text-[40px] md:text-[72px] font-medium leading-[1.1] tracking-tight; }

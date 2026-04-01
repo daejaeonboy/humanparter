@@ -23,6 +23,7 @@ import {
   InstallationCase,
   updateInstallationCase,
 } from '../../src/api/cmsApi';
+import { invalidatePublicDataCache } from '../../src/api/publicDataApi';
 import { uploadImage } from '../../src/api/storageApi';
 import {
   buildInstallationCaseContentFromBlocks,
@@ -297,6 +298,7 @@ export const InstallationCasesManager: React.FC = () => {
         await addInstallationCase(payload);
       }
 
+      invalidatePublicDataCache();
       await loadData();
       closeModal();
     } catch (error) {
@@ -312,6 +314,7 @@ export const InstallationCasesManager: React.FC = () => {
 
     try {
       await deleteInstallationCase(id);
+      invalidatePublicDataCache();
       await loadData();
     } catch (error) {
       console.error('Failed to delete installation case:', error);
@@ -322,6 +325,7 @@ export const InstallationCasesManager: React.FC = () => {
   const handleToggleActive = async (item: InstallationCase) => {
     try {
       await updateInstallationCase(item.id!, { is_active: !item.is_active });
+      invalidatePublicDataCache();
       await loadData();
     } catch (error) {
       console.error('Failed to toggle installation case status:', error);

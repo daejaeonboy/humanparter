@@ -33,6 +33,7 @@ import {
   updatePopup,
   updateQuickMenuItem,
 } from '../../src/api/cmsApi';
+import { invalidatePublicDataCache } from '../../src/api/publicDataApi';
 import { uploadImage } from '../../src/api/storageApi';
 import { CompanyContentManager } from './CompanyContentManager';
 import { NoticeManager } from './NoticeManager';
@@ -324,6 +325,7 @@ const CMSManagerInternal: React.FC = () => {
         else await addPopup(payload);
       }
 
+      invalidatePublicDataCache();
       await loadData();
       closeModal();
     } catch (error) {
@@ -342,6 +344,7 @@ const CMSManagerInternal: React.FC = () => {
       else if (tab === 'banners') await deleteBanner(id);
       else if (tab === 'quickmenu') await deleteQuickMenuItem(id);
       else await deletePopup(id);
+      invalidatePublicDataCache();
       await loadData();
     } catch {
       alert('삭제에 실패했습니다.');
@@ -354,6 +357,7 @@ const CMSManagerInternal: React.FC = () => {
       else if (tab === 'banners') await updateBanner(item.id, { is_active: !item.is_active });
       else if (tab === 'quickmenu') await updateQuickMenuItem(item.id, { is_active: !item.is_active });
       else await updatePopup(item.id, { is_active: !item.is_active });
+      invalidatePublicDataCache();
       await loadData();
     } catch {
       alert('노출 상태 변경에 실패했습니다.');

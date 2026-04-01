@@ -1,9 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { searchProducts, Product, getProductNavigationTarget } from '../src/api/productApi';
+import { Product, getProductNavigationTarget, searchProducts } from '../src/api/productApi';
 import { Seo } from '../components/Seo';
 import { Container } from '../components/ui/Container';
+import { ResponsiveImage } from '../components/ui/ResponsiveImage';
 import { Loader2, Search } from 'lucide-react';
+import { getPublicProductsData } from '../src/api/publicDataApi';
 
 export const ProductSearchResult: React.FC = () => {
     const [searchParams] = useSearchParams();
@@ -17,8 +19,34 @@ export const ProductSearchResult: React.FC = () => {
             setLoading(true);
             try {
                 if (query) {
-                    const results = await searchProducts(query);
-                    setProducts(results);
+                    try {
+                        const { products: allProducts } = await getPublicProductsData();
+                        const normalizedQuery = query.trim().toLowerCase();
+                        const results = allProducts.filter((product) => {
+                            const name = product.name?.toLowerCase() || '';
+                            const shortDescription = product.short_description?.toLowerCase() || '';
+                            const description = product.description?.toLowerCase() || '';
+                            const isBasicProduct =
+                                product.product_type === 'basic' ||
+                                (!product.product_type &&
+                                    !String(product.category || '').includes('추가') &&
+                                    !String(product.category || '').includes('장소') &&
+                                    !String(product.category || '').includes('음식'));
+
+                            if (!isBasicProduct) return false;
+
+                            return (
+                                name.includes(normalizedQuery) ||
+                                shortDescription.includes(normalizedQuery) ||
+                                description.includes(normalizedQuery)
+                            );
+                        });
+                        setProducts(results);
+                    } catch (cacheError) {
+                        console.warn('Falling back to direct Supabase product search:', cacheError);
+                        const results = await searchProducts(query);
+                        setProducts(results);
+                    }
                 } else {
                     setProducts([]);
                 }
@@ -31,6 +59,8 @@ export const ProductSearchResult: React.FC = () => {
 
         fetchResults();
     }, [query]);
+
+    const resultCount = useMemo(() => products.length, [products.length]);
 
     return (
         <div className="min-h-screen bg-slate-50 py-8 md:py-12">
@@ -49,7 +79,7 @@ export const ProductSearchResult: React.FC = () => {
                         <Search className="text-[#001e45]" />
                         <span>{query ? `'${query}' 검색 결과` : '검색 결과'}</span>
                         <span className="text-sm font-medium text-slate-500 bg-white px-3 py-1 rounded-full border ml-2">
-                            총 {products.length}개
+                            총 {resultCount}개
                         </span>
                     </h1>
                 </div>
@@ -86,9 +116,11 @@ export const ProductSearchResult: React.FC = () => {
                                 <>
                                     <div className="aspect-[16/10] relative overflow-hidden bg-slate-100">
                                         {product.image_url ? (
-                                            <img
+                                            <ResponsiveImage
                                                 src={product.image_url}
                                                 alt={product.name}
+                                                kind="card"
+                                                sizes="(min-width: 1024px) 25vw, 50vw"
                                                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                                             />
                                         ) : (

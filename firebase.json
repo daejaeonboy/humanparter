@@ -17,11 +17,30 @@
       "target": "enterprise",
       "public": "dist",
       "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+      "headers": [
+        {
+          "source": "**",
+          "headers": [
+            {
+              "key": "Cross-Origin-Opener-Policy",
+              "value": "same-origin-allow-popups"
+            }
+          ]
+        }
+      ],
       "rewrites": [
         {
           "source": "/api/email/send",
           "function": {
             "functionId": "sendSiteEmailV2",
+            "region": "us-central1",
+            "pinTag": true
+          }
+        },
+        {
+          "source": "/api/public{,/**}",
+          "function": {
+            "functionId": "publicDataV1",
             "region": "us-central1",
             "pinTag": true
           }

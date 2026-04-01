@@ -3,6 +3,7 @@ import {
     Plus, Edit2, Trash2, X, Save, Loader2, HelpCircle, Tag, Check
 } from 'lucide-react';
 import { getFAQs, addFAQ, updateFAQ, deleteFAQ, FAQ, getFAQCategories, addFAQCategory, updateFAQCategory, deleteFAQCategory, FAQCategory } from '../../src/api/faqApi';
+import { invalidatePublicDataCache } from '../../src/api/publicDataApi';
 
 const DEFAULT_CATEGORIES = ['자주 묻는 질문', '공통', '이용문의', '견적/결제', '취소/환불', '상품문의', '기타'];
 
@@ -90,6 +91,7 @@ export const FAQManager: React.FC = () => {
             } else {
                 await addFAQ(formData);
             }
+            invalidatePublicDataCache();
             await loadFAQs();
             setShowModal(false);
         } catch (error) {
@@ -104,6 +106,7 @@ export const FAQManager: React.FC = () => {
         if (!confirm('이 FAQ를 삭제하시겠습니까?')) return;
         try {
             await deleteFAQ(id);
+            invalidatePublicDataCache();
             await loadFAQs();
         } catch (error) {
             console.error('Failed to delete FAQ:', error);
@@ -121,6 +124,7 @@ export const FAQManager: React.FC = () => {
                 display_order: dbCategories.length + 1
             });
             setNewCategoryName('');
+            invalidatePublicDataCache();
             await loadCategories();
         } catch (error) {
             console.error('Failed to add category:', error);
@@ -147,6 +151,7 @@ export const FAQManager: React.FC = () => {
 
             setEditingCategoryId(null);
             setEditingCategoryName('');
+            invalidatePublicDataCache();
             await Promise.all([loadCategories(), loadFAQs()]);
         } catch (error) {
             console.error('Failed to update category:', error);
@@ -167,6 +172,7 @@ export const FAQManager: React.FC = () => {
         setCategoryLoading(true);
         try {
             await deleteFAQCategory(id);
+            invalidatePublicDataCache();
             await loadCategories();
         } catch (error) {
             console.error('Failed to delete category:', error);

@@ -1,8 +1,9 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { Seo } from "../components/Seo";
 import { Container } from "../components/ui/Container";
+import { ResponsiveImage } from "../components/ui/ResponsiveImage";
 import { PublicPageEditButton } from "../components/admin/PublicPageEditButton";
 import {
   buildBreadcrumbStructuredData,
@@ -11,16 +12,18 @@ import {
   SITE_URL,
   toAbsoluteUrl,
 } from "../src/utils/seo";
-import { getPublicNoticePostById, getPublicNoticePosts, NoticePost, stripNoticeHtml } from "../src/api/noticeApi";
+import { NoticePost, stripNoticeHtml } from "../src/api/noticeApi";
+import { getPublicNoticeDetailData, type PublicNoticeSummary } from "../src/api/publicDataApi";
+import { usePrerenderData } from "../src/prerender/context";
 
 const TEXT = {
   notFoundTitle: "게시글을 찾을 수 없습니다.",
-  notFoundDescription: "삭제되었거나 비공개 처리된 공지사항입니다.",
+  notFoundDescription: "삭제되었거나 비공개 처리된 정보센터입니다.",
   backToList: "목록으로 돌아가기",
-  backToNoticeList: "공지사항 목록으로",
+  backToNoticeList: "정보센터 목록으로",
   prevPost: "이전글",
   nextPost: "다음글",
-  pageTitleSuffix: "휴먼파트너 공지사항",
+  pageTitleSuffix: "휴먼파트너 정보센터",
   pageDescriptionFallback: "휴먼파트너의 주요 공지 및 운영 안내입니다.",
 };
 
@@ -33,9 +36,17 @@ const formatDate = (value: string) => {
 export const NoticeDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [post, setPost] = useState<NoticePost | null>(null);
-  const [allNotices, setAllNotices] = useState<NoticePost[]>([]);
-  const [loading, setLoading] = useState(true);
+  const prerenderData = usePrerenderData();
+  const preloadedDetail = prerenderData?.noticeDetail;
+  const hasPreloadedDetail = !!(id && preloadedDetail?.post?.id === id);
+  const [post, setPost] = useState<NoticePost | null>(hasPreloadedDetail ? preloadedDetail?.post || null : null);
+  const [previousNotice, setPreviousNotice] = useState<PublicNoticeSummary | null>(
+    hasPreloadedDetail ? preloadedDetail?.previousNotice || null : null,
+  );
+  const [nextNotice, setNextNotice] = useState<PublicNoticeSummary | null>(
+    hasPreloadedDetail ? preloadedDetail?.nextNotice || null : null,
+  );
+  const [loading, setLoading] = useState(!hasPreloadedDetail);
 
   useEffect(() => {
     if (!id) {
@@ -43,36 +54,37 @@ export const NoticeDetail: React.FC = () => {
       return;
     }
 
+    if (hasPreloadedDetail && preloadedDetail) {
+      setPost(preloadedDetail.post);
+      setPreviousNotice(preloadedDetail.previousNotice);
+      setNextNotice(preloadedDetail.nextNotice);
+      setLoading(false);
+      return;
+    }
+
     const loadNotice = async () => {
       setLoading(true);
       try {
-        const [targetPost, notices] = await Promise.all([
-          getPublicNoticePostById(id),
-          getPublicNoticePosts(),
-        ]);
-        setPost(targetPost);
-        setAllNotices(notices);
+        const detail = await getPublicNoticeDetailData(id);
+        setPost(detail.post);
+        setPreviousNotice(detail.previousNotice);
+        setNextNotice(detail.nextNotice);
       } catch (error) {
         console.error("Failed to load notice detail:", error);
         setPost(null);
-        setAllNotices([]);
+        setPreviousNotice(null);
+        setNextNotice(null);
       } finally {
         setLoading(false);
       }
     };
 
     void loadNotice();
-  }, [id]);
+  }, [hasPreloadedDetail, id, preloadedDetail]);
 
   const pageDescription =
     normalizeMetaText(post?.excerpt || (post ? stripNoticeHtml(post.contentHtml) : "")) ||
     TEXT.pageDescriptionFallback;
-  const currentIndex = useMemo(
-    () => allNotices.findIndex((item) => item.id === id),
-    [allNotices, id],
-  );
-  const previousNotice = currentIndex > 0 ? allNotices[currentIndex - 1] : null;
-  const nextNotice = currentIndex >= 0 && currentIndex < allNotices.length - 1 ? allNotices[currentIndex + 1] : null;
 
   if (loading) {
     return (
@@ -85,6 +97,14 @@ export const NoticeDetail: React.FC = () => {
   if (!post) {
     return (
       <main className="min-h-screen bg-white pb-20 pt-20 text-center">
+        <Seo
+          title="정보센터를 찾을 수 없습니다 | 휴먼파트너"
+          description={TEXT.notFoundDescription}
+          canonicalPath={false}
+          urlPath={false}
+          noindex
+          nofollow
+        />
         <h1 className="text-2xl font-bold text-slate-800">{TEXT.notFoundTitle}</h1>
         <p className="mt-4 text-slate-500">{TEXT.notFoundDescription}</p>
         <button
@@ -109,7 +129,7 @@ export const NoticeDetail: React.FC = () => {
         structuredData={[
           buildBreadcrumbStructuredData([
             { name: "홈", path: "/" },
-            { name: "공지사항", path: "/notice" },
+            { name: "정보센터", path: "/notice" },
             { name: post.title, path: `/notice/${post.id}` },
           ]),
           {
@@ -151,7 +171,14 @@ export const NoticeDetail: React.FC = () => {
           </header>
 
           <div className="mt-8">
-            <img src={post.imageUrl} alt={post.title} className="h-auto max-h-[760px] w-full object-cover" />
+            <ResponsiveImage
+              src={post.imageUrl}
+              alt={post.title}
+              kind="detail"
+              priority
+              sizes="(min-width: 1024px) 1000px, 100vw"
+              className="h-auto max-h-[760px] w-full object-cover"
+            />
           </div>
 
           <div

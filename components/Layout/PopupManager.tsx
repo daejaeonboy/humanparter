@@ -1,46 +1,51 @@
 import React, { useEffect, useState } from 'react';
-import { getPopups, Popup } from '../../src/api/cmsApi';
+import { Popup } from '../../src/api/cmsApi';
 import { X } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { getPublicHomeData } from '../../src/api/publicDataApi';
+import { usePrerenderData } from '../../src/prerender/context';
+import { ResponsiveImage } from '../ui/ResponsiveImage';
+
+const getVisiblePopups = (items: Popup[]) => {
+    const now = new Date();
+
+    return items.filter((popup) => {
+        if (!popup.is_active) return false;
+
+        if (popup.start_date) {
+            const start = new Date(popup.start_date);
+            start.setHours(0, 0, 0, 0);
+            if (now < start) return false;
+        }
+
+        if (popup.end_date) {
+            const end = new Date(popup.end_date);
+            end.setHours(23, 59, 59, 999);
+            if (now > end) return false;
+        }
+
+        const hideDate = localStorage.getItem(`hide_popup_${popup.id}`);
+        if (!hideDate) return true;
+
+        return hideDate !== new Date().toDateString();
+    });
+};
 
 export const PopupManager: React.FC = () => {
+    const preloadedPopups = usePrerenderData()?.home?.popups as Popup[] | undefined;
     const [popups, setPopups] = useState<Popup[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(!preloadedPopups);
 
     useEffect(() => {
         const fetchPopups = async () => {
             try {
-                const now = new Date();
-                const data = await getPopups();
+                if (preloadedPopups) {
+                    setPopups(getVisiblePopups(preloadedPopups));
+                    setLoading(false);
+                }
 
-                // Client-side filtering for active status and date range
-                // Also check LocalStorage for "Don't show today"
-                const activePopups = data.filter(p => {
-                    if (!p.is_active) return false;
-
-                    // Date Check
-                    if (p.start_date) {
-                        const start = new Date(p.start_date);
-                        start.setHours(0, 0, 0, 0);
-                        if (now < start) return false;
-                    }
-                    if (p.end_date) {
-                        const end = new Date(p.end_date);
-                        end.setHours(23, 59, 59, 999);
-                        if (now > end) return false;
-                    }
-
-                    // LocalStorage Check
-                    const hideDate = localStorage.getItem(`hide_popup_${p.id}`);
-                    if (hideDate) {
-                        const today = new Date().toDateString();
-                        if (hideDate === today) return false;
-                    }
-
-                    return true;
-                });
-
-                setPopups(activePopups);
+                const { popups: nextPopups } = await getPublicHomeData();
+                setPopups(getVisiblePopups(nextPopups as Popup[]));
             } catch (error) {
                 console.error("Failed to load popups", error);
             } finally {
@@ -49,7 +54,7 @@ export const PopupManager: React.FC = () => {
         };
 
         fetchPopups();
-    }, []);
+    }, [preloadedPopups]);
 
     const closePopup = (id: string, hideToday: boolean = false) => {
         if (hideToday) {
@@ -92,9 +97,12 @@ export const PopupManager: React.FC = () => {
                                     className="w-full h-full block"
                                     onClick={() => closePopup(popup.id!)}
                                 >
-                                    <img
+                                    <ResponsiveImage
                                         src={popup.image_url || 'https://via.placeholder.com/400x400?text=Popup'}
                                         alt={popup.title}
+                                        kind="popup"
+                                        priority={index === 0}
+                                        sizes="(min-width: 640px) 400px, 90vw"
                                         className="w-full h-auto object-contain"
                                     />
                                 </a>
@@ -104,17 +112,23 @@ export const PopupManager: React.FC = () => {
                                     className='w-full h-full block'
                                     onClick={() => closePopup(popup.id!)}
                                 >
-                                    <img
+                                    <ResponsiveImage
                                         src={popup.image_url || 'https://via.placeholder.com/400x400?text=Popup'}
                                         alt={popup.title}
+                                        kind="popup"
+                                        priority={index === 0}
+                                        sizes="(min-width: 640px) 400px, 90vw"
                                         className="w-full h-auto object-contain"
                                     />
                                 </Link>
                             )
                         ) : (
-                            <img
+                            <ResponsiveImage
                                 src={popup.image_url || 'https://via.placeholder.com/400x400?text=Popup'}
                                 alt={popup.title}
+                                kind="popup"
+                                priority={index === 0}
+                                sizes="(min-width: 640px) 400px, 90vw"
                                 className="w-full h-auto object-contain"
                             />
                         )}

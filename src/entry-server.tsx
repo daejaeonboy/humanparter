@@ -4,6 +4,7 @@ import { HelmetProvider } from 'react-helmet-async';
 import { StaticRouter } from 'react-router';
 import { AppContent, AppProviders } from '../App';
 import type { PrerenderData } from './prerender/context';
+import { AuthProvider } from './context/AuthContext';
 
 export function render(url: string, prerenderData?: PrerenderData | null) {
   const helmetContext = {} as { helmet?: any };
@@ -11,7 +12,9 @@ export function render(url: string, prerenderData?: PrerenderData | null) {
     <HelmetProvider context={helmetContext}>
       <AppProviders prerenderData={prerenderData}>
         <StaticRouter location={url}>
-          <AppContent />
+          <AuthProvider>
+            <AppContent />
+          </AuthProvider>
         </StaticRouter>
       </AppProviders>
     </HelmetProvider>,

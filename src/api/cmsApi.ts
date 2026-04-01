@@ -126,6 +126,8 @@ export interface NavMenuItem {
     name: string;
     link: string;
     category?: string; // 연결할 상품 카테고리
+    image_url?: string;
+    description?: string;
     display_order: number;
     is_active: boolean;
     created_at?: string;

@@ -43,33 +43,33 @@ const steps: ProcessStep[] = [
 
 export const RentalProcessSection: React.FC = () => {
   return (
-    <section className="bg-white py-16 md:py-24">
+    <section className="bg-slate-50 py-12 md:py-24">
       <Container>
-        <div className="mb-12 md:mb-16">
-          <h2 className="text-3xl font-medium leading-tight tracking-tight text-black md:text-4xl">
+        <div className="mb-10 md:mb-16">
+          <h2 className="text-[24px] font-medium leading-tight tracking-tight text-black md:text-4xl">
             체계적인 렌탈 프로세스
           </h2>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="flex gap-4 overflow-x-auto pb-8 no-scrollbar -mx-4 px-4 md:mx-0 md:px-0 md:grid md:grid-cols-2 md:pb-0 lg:grid-cols-4 lg:gap-6">
           {steps.map((item) => {
             const Icon = item.icon;
             return (
               <article
                 key={item.step}
-                className="group relative flex flex-col items-center rounded-2xl border border-gray-100 bg-white p-10 text-center transition-all hover:border-brand-primary/10 hover:shadow-xl hover:shadow-black/[0.03] md:items-start md:text-left"
+                className="group relative flex min-w-[280px] flex-col items-center rounded-[8px] border border-slate-200 bg-white p-10 text-center transition-all hover:border-brand-primary/10 hover:shadow-xl hover:shadow-black/[0.03] md:min-w-0 md:items-start md:text-left"
               >
-                <div className="mb-8 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-50 text-slate-400 transition-colors group-hover:bg-brand-primary/5 group-hover:text-brand-primary">
+                <div className="mb-8 flex h-14 w-14 items-center justify-center rounded-[8px] bg-slate-50 text-slate-600 transition-colors group-hover:bg-brand-primary/5 group-hover:text-brand-primary">
                   <Icon size={28} strokeWidth={1.5} />
                 </div>
                 
-                <span className="mb-2 block text-sm font-medium tracking-wider text-brand-primary opacity-50">
+                <span className="mb-2 block text-sm font-bold tracking-wider text-brand-primary/80">
                   STEP {item.step}
                 </span>
-                <h3 className="mb-4 text-xl font-medium text-black transition-colors group-hover:text-brand-primary">
+                <h3 className="mb-4 text-xl font-bold text-slate-900 transition-colors group-hover:text-brand-primary">
                   {item.title}
                 </h3>
-                <p className="text-[15px] font-normal leading-relaxed text-black/60">
+                <p className="text-[16px] font-normal leading-relaxed text-slate-700">
                   {item.description}
                 </p>
               </article>

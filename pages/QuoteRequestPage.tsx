@@ -1,7 +1,4 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import DatePicker from "react-datepicker";
-import { ko } from "date-fns/locale";
-import "react-datepicker/dist/react-datepicker.css";
 import {
   Boxes,
   Building2,
@@ -20,6 +17,7 @@ import {
 import { Link } from "react-router-dom";
 import { Seo } from "../components/Seo";
 import { Container } from "../components/ui/Container";
+import { DeferredDatePicker } from "../components/ui/DeferredDatePicker";
 import { useAuth } from "../src/context/AuthContext";
 import {
   createQuoteInquiry,
@@ -27,9 +25,10 @@ import {
   QuoteInquiryPayload,
 } from "../src/api/inquiryApi";
 import { getQuoteNotificationRecipientEmails } from "../src/api/quoteNotificationApi";
-import { getAllNavMenuItems } from "../src/api/cmsApi";
+import { getPublicBootstrapData } from "../src/api/publicDataApi";
+import { usePrerenderData } from "../src/prerender/context";
 import { sendQuoteInquiryNotificationEmail } from "../src/utils/email";
-import { buildBreadcrumbStructuredData, toAbsoluteUrl } from "../src/utils/seo";
+import { buildBreadcrumbStructuredData, buildLocalBusinessStructuredData, toAbsoluteUrl } from "../src/utils/seo";
 
 type CategoryGroup = {
   parentName: string;
@@ -125,6 +124,7 @@ const RequiredDot = () => <span className="inline-block h-1.5 w-1.5 rounded-full
 
 export const QuoteRequestPage: React.FC = () => {
   const { user, userProfile } = useAuth();
+  const preloadedNavItems = usePrerenderData()?.bootstrap?.navItems;
   const [formData, setFormData] = useState<QuoteInquiryPayload>(initialForm);
   const [categoryGroups, setCategoryGroups] = useState<CategoryGroup[]>([]);
   const [etcProduct, setEtcProduct] = useState("");
@@ -147,40 +147,53 @@ export const QuoteRequestPage: React.FC = () => {
   }, [user?.email, userProfile?.company_name, userProfile?.email, userProfile?.name, userProfile?.phone]);
 
   useEffect(() => {
+    const buildCategoryGroups = (navItems: typeof preloadedNavItems) => {
+      if (!navItems) {
+        setCategoryGroups([]);
+        return;
+      }
+
+      const sorted = navItems
+        .filter((item) => item.is_active !== false)
+        .sort((a, b) => {
+          const aOrder = typeof a.display_order === "number" ? a.display_order : 999;
+          const bOrder = typeof b.display_order === "number" ? b.display_order : 999;
+          return aOrder - bOrder;
+        });
+
+      const parentNames: string[] = [];
+      const childMap: Record<string, string[]> = {};
+
+      sorted.forEach((item) => {
+        const name = item.name?.trim();
+        const parent = item.category?.trim();
+        if (!name) return;
+
+        if (!parent) {
+          if (!parentNames.includes(name)) parentNames.push(name);
+          return;
+        }
+
+        if (!childMap[parent]) childMap[parent] = [];
+        if (!childMap[parent].includes(name)) childMap[parent].push(name);
+      });
+
+      const groups = parentNames
+        .filter((parentName) => childMap[parentName] && childMap[parentName].length > 0)
+        .map((parentName) => ({ parentName, children: childMap[parentName] }));
+
+      setCategoryGroups(groups);
+    };
+
     const loadCategories = async () => {
       setLoadingCategories(true);
       try {
-        const navItems = await getAllNavMenuItems();
-        const sorted = navItems
-          .filter((item) => item.is_active !== false)
-          .sort((a, b) => {
-            const aOrder = typeof a.display_order === "number" ? a.display_order : 999;
-            const bOrder = typeof b.display_order === "number" ? b.display_order : 999;
-            return aOrder - bOrder;
-          });
+        if (preloadedNavItems) {
+          buildCategoryGroups(preloadedNavItems);
+        }
 
-        const parentNames: string[] = [];
-        const childMap: Record<string, string[]> = {};
-
-        sorted.forEach((item) => {
-          const name = item.name?.trim();
-          const parent = item.category?.trim();
-          if (!name) return;
-
-          if (!parent) {
-            if (!parentNames.includes(name)) parentNames.push(name);
-            return;
-          }
-
-          if (!childMap[parent]) childMap[parent] = [];
-          if (!childMap[parent].includes(name)) childMap[parent].push(name);
-        });
-
-        const groups = parentNames
-          .filter((parentName) => childMap[parentName] && childMap[parentName].length > 0)
-          .map((parentName) => ({ parentName, children: childMap[parentName] }));
-
-        setCategoryGroups(groups);
+        const { navItems } = await getPublicBootstrapData();
+        buildCategoryGroups(navItems);
       } catch (error) {
         console.error("Failed to load categories:", error);
         setCategoryGroups([]);
@@ -190,7 +203,7 @@ export const QuoteRequestPage: React.FC = () => {
     };
 
     void loadCategories();
-  }, []);
+  }, [preloadedNavItems]);
 
   useEffect(() => {
     if (!showCategoryModal) return;
@@ -367,9 +380,10 @@ export const QuoteRequestPage: React.FC = () => {
               description: TEXT.pageDescription,
               url: toAbsoluteUrl('/quote-request'),
             },
+            buildLocalBusinessStructuredData(),
           ]}
         />
-        <Container>
+        <Container size="narrow">
           <div className="mx-auto max-w-3xl rounded-3xl border border-slate-200 bg-slate-50 p-8 text-center md:p-12">
             <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-[#001e45]/10 text-[#001e45]">
               <CheckCircle2 size={28} />
@@ -407,10 +421,11 @@ export const QuoteRequestPage: React.FC = () => {
             description: TEXT.pageDescription,
             url: toAbsoluteUrl('/quote-request'),
           },
+          buildLocalBusinessStructuredData(),
         ]}
       />
 
-      <Container>
+      <Container size="narrow">
         <section className="relative overflow-hidden rounded-[8px]">
           <div
             className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-50"
@@ -627,14 +642,9 @@ export const QuoteRequestPage: React.FC = () => {
                   {TEXT.rentalStart}
                   <RequiredDot />
                 </span>
-                <DatePicker
+                <DeferredDatePicker
                   selected={formData.rentalStart ? new Date(formData.rentalStart) : null}
                   onChange={handleRentalStartChange}
-                  dateFormat="yyyy-MM-dd"
-                  locale={ko}
-                  showYearDropdown
-                  showMonthDropdown
-                  dropdownMode="select"
                   minDate={new Date()}
                   maxDate={new Date(2030, 11, 31)}
                   placeholderText="시작일을 선택해 주세요."
@@ -648,14 +658,9 @@ export const QuoteRequestPage: React.FC = () => {
                   {TEXT.rentalEnd}
                   <RequiredDot />
                 </span>
-                <DatePicker
+                <DeferredDatePicker
                   selected={formData.rentalEnd ? new Date(formData.rentalEnd) : null}
                   onChange={handleRentalEndChange}
-                  dateFormat="yyyy-MM-dd"
-                  locale={ko}
-                  showYearDropdown
-                  showMonthDropdown
-                  dropdownMode="select"
                   minDate={formData.rentalStart ? new Date(formData.rentalStart) : new Date()}
                   maxDate={new Date(2030, 11, 31)}
                   placeholderText="종료일을 선택해 주세요."

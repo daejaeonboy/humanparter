@@ -27,6 +27,7 @@ import {
     updateProductsCategoryBatch,
 } from '../../src/api/productApi';
 import { getAllNavMenuItems, addNavMenuItem, deleteNavMenuItem, updateNavMenuItem, NavMenuItem } from '../../src/api/cmsApi';
+import { invalidatePublicDataCache } from '../../src/api/publicDataApi';
 import { uploadImage } from '../../src/api/storageApi';
 
 const SimpleEditor = ({ initialValue, onChange }: { initialValue: string; onChange: (val: string) => void }) => {
@@ -104,6 +105,11 @@ type ProductFormData = {
     food_components: any[];
 };
 
+type CategoryVisualDraft = {
+    image_url: string;
+    description: string;
+};
+
 const createInitialFormData = (productType: any = 'basic'): ProductFormData => ({
     name: '',
     category: '',
@@ -172,6 +178,9 @@ export const ProductManager = () => {
     const [newSubCategoryName, setNewSubCategoryName] = useState('');
     const [selectedParentForSubCategory, setSelectedParentForSubCategory] = useState('');
     const [addingSubCategory, setAddingSubCategory] = useState(false);
+    const [categoryVisualDrafts, setCategoryVisualDrafts] = useState<Record<string, CategoryVisualDraft>>({});
+    const [savingCategoryVisualId, setSavingCategoryVisualId] = useState<string | null>(null);
+    const [uploadingCategoryVisualId, setUploadingCategoryVisualId] = useState<string | null>(null);
 
     const [formData, setFormData] = useState<ProductFormData>(createInitialFormData());
     const [selectedParentCategoryFilter, setSelectedParentCategoryFilter] = useState<string | null>(null);
@@ -222,6 +231,20 @@ export const ProductManager = () => {
             setSelectedParentForSubCategory(parentMenuItems[0].name);
         }
     }, [menuItems, selectedParentForSubCategory]);
+
+    useEffect(() => {
+        setCategoryVisualDrafts((prev) => {
+            const next: Record<string, CategoryVisualDraft> = {};
+            parentMenuItems.forEach((item) => {
+                if (!item.id) return;
+                next[item.id] = {
+                    image_url: prev[item.id]?.image_url ?? item.image_url ?? '',
+                    description: prev[item.id]?.description ?? item.description ?? '',
+                };
+            });
+            return next;
+        });
+    }, [parentMenuItems]);
 
     const getActiveProductKey = () => (editingProduct?.id ? `product:${editingProduct.id}` : null);
 
@@ -393,7 +416,7 @@ export const ProductManager = () => {
             });
 
             const file = new File([blob], cropFileName || 'product-image.jpg', { type: 'image/jpeg' });
-            const imageUrl = await uploadImage(file, 'product-images');
+            const imageUrl = await uploadImage(file, 'product-images', { skipOptimization: true });
             setFormData((prev) => ({ ...prev, image_url: imageUrl }));
 
             const appliedSettings = { zoom: cropZoom, position: cropPosition };
@@ -485,6 +508,7 @@ export const ProductManager = () => {
                 if (created.id && latestAppliedCropSettingsRef.current) saveCropSettings(`product:${created.id}`, latestAppliedCropSettingsRef.current);
             }
 
+            invalidatePublicDataCache();
             await loadData();
             resetForm();
             alert('저장되었습니다.');
@@ -499,6 +523,7 @@ export const ProductManager = () => {
         if (!confirm('정말 삭제하시겠습니까?')) return;
         try {
             await deleteProduct(id);
+            invalidatePublicDataCache();
             await loadData();
         } catch (error) {
             console.error(error);
@@ -520,11 +545,14 @@ export const ProductManager = () => {
             await addNavMenuItem({
                 name: parentName,
                 link: `/products?category=${encodeURIComponent(parentName)}&title=${encodeURIComponent(parentName)}`,
+                image_url: '',
+                description: '',
                 display_order: maxOrder + 1,
                 is_active: true,
             });
             setNewCategoryName('');
             setSelectedParentForSubCategory((prev) => prev || parentName);
+            invalidatePublicDataCache();
             await loadData();
         } catch (error) {
             console.error(error);
@@ -555,10 +583,13 @@ export const ProductManager = () => {
                 name: childName,
                 category: parentName,
                 link: `/products?category=${encodeURIComponent(childName)}&title=${encodeURIComponent(parentName)}`,
+                image_url: '',
+                description: '',
                 display_order: maxOrder + 1,
                 is_active: true,
             });
             setNewSubCategoryName('');
+            invalidatePublicDataCache();
             await loadData();
         } catch (error) {
             console.error(error);
@@ -582,6 +613,7 @@ export const ProductManager = () => {
         try {
             for (const child of children) if (child.id) await deleteNavMenuItem(child.id);
             await deleteNavMenuItem(targetId);
+            invalidatePublicDataCache();
             await loadData();
             if (selectedParentCategoryFilter === name) {
                 setSelectedParentCategoryFilter(null);
@@ -603,6 +635,7 @@ export const ProductManager = () => {
         if (!id) return;
         try {
             await deleteNavMenuItem(id);
+            invalidatePublicDataCache();
             await loadData();
             if (selectedCategoryFilter === name) {
                 setSelectedCategoryFilter(null);
@@ -619,6 +652,51 @@ export const ProductManager = () => {
         const matchedChild = menuItems.find((item) => normalizeCategory(item.name) === normalized && !!normalizeCategory(item.category));
         if (matchedChild?.category) return `${normalizeCategory(matchedChild.category)} > ${normalized}`;
         return normalized;
+    };
+
+    const updateCategoryVisualDraft = (id: string, updates: Partial<CategoryVisualDraft>) => {
+        setCategoryVisualDrafts((prev) => ({
+            ...prev,
+            [id]: {
+                image_url: prev[id]?.image_url || '',
+                description: prev[id]?.description || '',
+                ...updates,
+            },
+        }));
+    };
+
+    const handleCategoryVisualUpload = async (id: string, file: File) => {
+        setUploadingCategoryVisualId(id);
+        try {
+            const imageUrl = await uploadImage(file, 'banners');
+            updateCategoryVisualDraft(id, { image_url: imageUrl });
+        } catch (error) {
+            console.error(error);
+            alert('카테고리 이미지 업로드에 실패했습니다.');
+        } finally {
+            setUploadingCategoryVisualId(null);
+        }
+    };
+
+    const handleSaveCategoryVisual = async (item: NavMenuItem) => {
+        if (!item.id) return;
+        const draft = categoryVisualDrafts[item.id];
+        if (!draft) return;
+
+        setSavingCategoryVisualId(item.id);
+        try {
+            await updateNavMenuItem(item.id, {
+                image_url: draft.image_url.trim(),
+                description: draft.description.trim(),
+            });
+            invalidatePublicDataCache();
+            await loadData();
+        } catch (error) {
+            console.error(error);
+            alert('카테고리 비주얼 저장에 실패했습니다.');
+        } finally {
+            setSavingCategoryVisualId(null);
+        }
     };
 
     const isMainProduct = (product: Product) => product.product_type === 'basic' || !product.product_type;
@@ -800,6 +878,7 @@ export const ProductManager = () => {
         setIsSavingOrder(true);
         try {
             await updateProductsDisplayOrder(nextAllMainIds);
+            invalidatePublicDataCache();
         } catch (error) {
             console.error(error);
             alert('순서 저장에 실패했습니다. SQL 컬럼 적용 여부를 확인해주세요.');
@@ -930,6 +1009,7 @@ export const ProductManager = () => {
             await updateProductsCategoryBatch(originalName, newName);
             
             setEditingSubCategoryId(null);
+            invalidatePublicDataCache();
             await loadData();
             
             // If the filtered category was renamed, update the filter
@@ -961,11 +1041,75 @@ export const ProductManager = () => {
                             <input type="text" value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} placeholder="새 대분류" className="flex-1 rounded-lg border px-4 py-2 outline-none focus:ring-2 focus:ring-[#001e45]" />
                             <button type="submit" disabled={addingCategory || !newCategoryName.trim()} className="flex items-center gap-2 rounded-lg bg-[#001e45] px-4 py-2 text-white disabled:bg-slate-300">{addingCategory ? <Loader2 size={18} className="animate-spin" /> : <Plus size={18} />}추가</button>
                         </form>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="mb-3 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-xs leading-5 text-blue-800">
+                            여기서 저장한 이미지와 설명은 메인 카테고리 섹션, 제품 페이지 상단 배너, 헤더 제품 메가메뉴 프리뷰에 함께 반영됩니다.
+                        </div>
+                        <div className="grid gap-4">
                             {parentMenuItems.map((cat) => (
-                                <div key={cat.id} className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5">
-                                    <span className="font-semibold text-slate-700">{cat.name}</span>
-                                    <button type="button" onClick={() => void handleDeleteCategory(cat.id, cat.name)} className="rounded-md p-1 text-slate-300 hover:bg-red-50 hover:text-red-500"><Trash2 size={14} /></button>
+                                <div key={cat.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <div className="mb-4 flex items-center justify-between gap-3">
+                                        <div>
+                                            <p className="text-sm font-bold text-slate-900">{cat.name}</p>
+                                            <p className="mt-1 text-xs text-slate-500">부모 카테고리 비주얼</p>
+                                        </div>
+                                        <button type="button" onClick={() => void handleDeleteCategory(cat.id, cat.name)} className="rounded-md p-1.5 text-slate-300 hover:bg-red-50 hover:text-red-500"><Trash2 size={14} /></button>
+                                    </div>
+
+                                    <div className="grid gap-4 lg:grid-cols-[220px_1fr]">
+                                        <div className="space-y-3">
+                                            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+                                                {categoryVisualDrafts[cat.id!]?.image_url ? (
+                                                    <img src={categoryVisualDrafts[cat.id!]?.image_url} alt={cat.name} className="h-40 w-full object-cover" />
+                                                ) : (
+                                                    <div className="flex h-40 items-center justify-center text-sm font-medium text-slate-400">이미지 없음</div>
+                                                )}
+                                            </div>
+
+                                            <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+                                                {uploadingCategoryVisualId === cat.id ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+                                                이미지 업로드
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    className="hidden"
+                                                    onChange={(event) => {
+                                                        const file = event.target.files?.[0];
+                                                        event.target.value = '';
+                                                        if (!file || !cat.id) return;
+                                                        void handleCategoryVisualUpload(cat.id, file);
+                                                    }}
+                                                />
+                                            </label>
+                                        </div>
+
+                                        <div className="space-y-3">
+                                            <input
+                                                type="url"
+                                                value={categoryVisualDrafts[cat.id!]?.image_url || ''}
+                                                onChange={(event) => cat.id && updateCategoryVisualDraft(cat.id, { image_url: event.target.value })}
+                                                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-[#001e45]"
+                                                placeholder="이미지 URL"
+                                            />
+                                            <textarea
+                                                value={categoryVisualDrafts[cat.id!]?.description || ''}
+                                                onChange={(event) => cat.id && updateCategoryVisualDraft(cat.id, { description: event.target.value })}
+                                                rows={4}
+                                                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 outline-none focus:border-[#001e45]"
+                                                placeholder="카테고리 설명"
+                                            />
+                                            <div className="flex justify-end">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => void handleSaveCategoryVisual(cat)}
+                                                    disabled={savingCategoryVisualId === cat.id}
+                                                    className="inline-flex items-center gap-2 rounded-lg bg-[#001e45] px-4 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
+                                                >
+                                                    {savingCategoryVisualId === cat.id ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                                                    비주얼 저장
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             ))}
                         </div>

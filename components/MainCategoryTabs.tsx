@@ -1,40 +1,48 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Container } from "./ui/Container";
+import { ResponsiveImage } from "./ui/ResponsiveImage";
 import { ArrowRight } from "lucide-react";
-import { getNavMenuItems } from "../src/api/cmsApi";
 import { buildCategoryTabItems, FALLBACK_CATEGORY_TAB_ITEMS } from "../src/config/categoryTabs";
+import { getPublicBootstrapData } from "../src/api/publicDataApi";
+import { usePrerenderData } from "../src/prerender/context";
 
 interface MainCategoryTabsProps {
   variant?: "default" | "compact";
 }
 
 export const MainCategoryTabs: React.FC<MainCategoryTabsProps> = ({ variant = "default" }) => {
-  const [categoryItems, setCategoryItems] = useState(FALLBACK_CATEGORY_TAB_ITEMS);
+  const preloadedNavItems = usePrerenderData()?.bootstrap?.navItems;
+  const [categoryItems, setCategoryItems] = useState(
+    preloadedNavItems ? buildCategoryTabItems(preloadedNavItems) : FALLBACK_CATEGORY_TAB_ITEMS,
+  );
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(0);
   const isCompact = variant === "compact";
 
   useEffect(() => {
     let isMounted = true;
 
+    const applyNavItems = (navItems: typeof preloadedNavItems) => {
+      if (!navItems || !isMounted) return;
+      setCategoryItems(buildCategoryTabItems(navItems));
+    };
+
     const loadCategoryTabs = async () => {
       try {
-        const navItems = await getNavMenuItems();
-        const nextItems = buildCategoryTabItems(navItems);
-        if (isMounted) {
-          setCategoryItems(nextItems);
-        }
+        const { navItems } = await getPublicBootstrapData();
+        applyNavItems(navItems);
       } catch (error) {
         console.error("Failed to load category tabs:", error);
       }
     };
 
+    applyNavItems(preloadedNavItems);
     void loadCategoryTabs();
 
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [preloadedNavItems]);
 
   useEffect(() => {
     setHoveredIndex((current) => {
@@ -65,22 +73,46 @@ export const MainCategoryTabs: React.FC<MainCategoryTabsProps> = ({ variant = "d
   }
 
   return (
-    <section className="bg-white py-16 md:py-24">
+    <section className="bg-white py-12 md:py-24">
       <Container>
-        <div className="mb-12 flex items-end justify-between md:mb-14">
-          <h2 className="text-2xl font-bold tracking-tight text-black md:text-[32px]">카테고리</h2>
-          <Link to="/products" className="flex items-center gap-1.5 text-sm font-bold text-gray-500 hover:text-black transition-colors">
+        <div className="mb-10 flex items-end justify-between md:mb-14">
+          <h2 className="text-[24px] font-medium leading-tight tracking-tight text-black md:text-4xl">카테고리</h2>
+          <Link to="/products" className="flex items-center gap-1.5 text-[15px] font-bold text-slate-700 hover:text-black transition-colors">
             전체보기 <ArrowRight size={16} />
           </Link>
         </div>
 
-        {/* 
-          비율 계산: 5개 아이템
-          확대된 아이템 flex-[3.2], 나머지 4개 flex-[1] => 총합 7.2
-          전체 컨테이너 aspect-[3/1] 설정 시
-          확대 아이템 비율: (3.2 / 7.2 * 3) / 1 = 1.333 (정확히 4:3)
-        */}
-        <div className="flex aspect-[4/3] w-full gap-4 overflow-hidden md:aspect-[3/1]">
+        {/* Mobile Horizontal Scroll */}
+        <div className="flex gap-4 overflow-x-auto pb-8 no-scrollbar -mx-4 px-4 md:hidden">
+          {categoryItems.map((item) => (
+            <Link
+              key={item.name}
+              to={item.to}
+              className="relative aspect-[4/5] min-w-[240px] overflow-hidden rounded-[8px]"
+            >
+              <ResponsiveImage
+                src={item.imageUrl}
+                alt={item.name}
+                kind="card"
+                sizes="240px"
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+              <div className="absolute bottom-0 left-0 w-full p-6">
+                <span className="block text-xl font-bold text-white">
+                  {item.name}
+                </span>
+                <div className="mt-2 flex items-center gap-1.5 text-xs font-medium text-white/90">
+                  <span>품목 보기</span>
+                  <ArrowRight size={12} />
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+
+        {/* Desktop Accordion Style */}
+        <div className="hidden md:flex aspect-[3/1] w-full gap-4 overflow-hidden">
           {categoryItems.map((item, index) => {
             const isHovered = hoveredIndex === index;
             return (
@@ -88,14 +120,16 @@ export const MainCategoryTabs: React.FC<MainCategoryTabsProps> = ({ variant = "d
                 key={item.name}
                 to={item.to}
                 onMouseEnter={() => setHoveredIndex(index)}
-                className={`relative h-full overflow-hidden rounded-2xl transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] ${
+                className={`relative h-full overflow-hidden rounded-[8px] transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] ${
                   isHovered ? "flex-[3.2] shadow-2xl" : "flex-1 grayscale opacity-70 hover:opacity-100"
                 }`}
               >
                 {/* Background Image */}
-                <img
+                <ResponsiveImage
                   src={item.imageUrl}
                   alt={item.name}
+                  kind="card"
+                  sizes="(min-width: 768px) 25vw, 240px"
                   className="absolute inset-0 h-full w-full object-cover transition-transform duration-700"
                   style={{ transform: isHovered ? "scale(1.05)" : "scale(1)" }}
                 />
@@ -110,7 +144,7 @@ export const MainCategoryTabs: React.FC<MainCategoryTabsProps> = ({ variant = "d
                   </span>
                   
                   {isHovered && (
-                    <div className="mt-3 flex items-center gap-2 text-[12px] font-medium text-white/80 md:text-sm">
+                    <div className="mt-3 flex items-center gap-2 text-[12px] font-medium text-white/95 md:text-sm">
                       <span>자세히 보기</span>
                       <ArrowRight size={14} />
                     </div>

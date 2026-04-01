@@ -1,6 +1,7 @@
 {
     "compilerOptions": {
         "module": "commonjs",
+        "lib": ["es2020", "dom"],
         "noImplicitReturns": true,
         "noUnusedLocals": true,
         "outDir": "lib",

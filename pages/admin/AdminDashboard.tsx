@@ -40,6 +40,12 @@ const navItems: NavItem[] = [
     icon: Building2,
   },
   {
+    path: '/admin/public-visuals',
+    label: '공개 비주얼 관리',
+    description: '상단 배너와 메가 메뉴 이미지 관리',
+    icon: ImageIcon,
+  },
+  {
     path: '/admin/products',
     label: '상품 관리',
     description: '상품 등록, 수정, 삭제',
@@ -83,8 +89,8 @@ const navItems: NavItem[] = [
   },
   {
     path: '/admin/notices',
-    label: '공지사항 관리',
-    description: '공지사항 게시글 관리',
+    label: '정보센터 관리',
+    description: '정보센터 게시글 관리',
     icon: FileText,
   },
   {

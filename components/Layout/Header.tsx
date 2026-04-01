@@ -2,65 +2,60 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { ChevronDown, ChevronRight, Menu, X } from "lucide-react";
 import { Container } from "../ui/Container";
+import { ResponsiveImage } from "../ui/ResponsiveImage";
 import { siteBrand } from "../../src/config/siteBrand";
-import { getNavMenuItems } from "../../src/api/cmsApi";
 import { buildCategoryTabItems, FALLBACK_CATEGORY_TAB_ITEMS, type CategoryTabItem } from "../../src/config/categoryTabs";
-import { STATIC_PUBLIC_MEGA_MENU_ITEMS, type MegaMenuLinkItem } from "../../src/config/publicMegaMenu";
+import { buildPublicMegaMenuItems, STATIC_PUBLIC_MEGA_MENU_ITEMS, type MegaMenuLinkItem } from "../../src/config/publicMegaMenu";
 import { isPublicNavActive, PUBLIC_NAV_ITEMS, type PublicNavItem } from "../../src/config/publicNavigation";
 import { useAuth } from "../../src/context/AuthContext";
-
-const DEFAULT_PRODUCT_MEGA_MENU_ITEM: MegaMenuLinkItem = {
-  label: "전체",
-  to: "/products",
-  description: "휴먼파트너의 전체 렌탈 품목을 한눈에 확인해보세요.",
-  imageUrl:
-    FALLBACK_CATEGORY_TAB_ITEMS[0]?.imageUrl ||
-    "https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=800&q=80",
-};
-
-const PRODUCT_MEGA_MENU_COPY: Record<string, string> = {
-  IT장비: "노트북과 모니터 등 업무용 IT 장비를 빠르게 구성할 수 있습니다.",
-  사무기기: "프린터, 복합기 등 사무 운영에 필요한 기기를 모아볼 수 있습니다.",
-  사무가구: "책상, 의자, 수납장 등 기본 오피스 가구 구성을 확인해보세요.",
-  가전제품: "업무 공간에 필요한 생활가전과 편의 장비를 둘러볼 수 있습니다.",
-  행사용품: "행사와 단기 프로젝트에 맞는 운영 물품을 빠르게 찾을 수 있습니다.",
-};
-
-const getMegaMenuDescription = (name: string) =>
-  PRODUCT_MEGA_MENU_COPY[name] || `${name} 카테고리 렌탈 품목을 바로 확인해보세요.`;
+import { getPublicBootstrapData } from "../../src/api/publicDataApi";
+import { getProductDefaultVisual, type PublicVisualsContent } from "../../src/content/publicVisualsContent";
+import { usePrerenderData } from "../../src/prerender/context";
 
 export const Header: React.FC = () => {
   const location = useLocation();
   const { user, isAdmin, loading, logout } = useAuth();
+  const preloadedNavItems = usePrerenderData()?.bootstrap?.navItems;
+  const preloadedPublicVisuals = usePrerenderData()?.bootstrap?.publicVisuals;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileMenuMounted, setMobileMenuMounted] = useState(false);
   const [expandedMobileItem, setExpandedMobileItem] = useState<string | null>(null);
   const [activeMegaMenuPath, setActiveMegaMenuPath] = useState<string | null>(null);
   const [activeMegaMenuIndex, setActiveMegaMenuIndex] = useState(0);
-  const [productMegaMenuItems, setProductMegaMenuItems] = useState<CategoryTabItem[]>(FALLBACK_CATEGORY_TAB_ITEMS);
+  const [productMegaMenuItems, setProductMegaMenuItems] = useState<CategoryTabItem[]>(
+    preloadedNavItems ? buildCategoryTabItems(preloadedNavItems) : FALLBACK_CATEGORY_TAB_ITEMS,
+  );
+  const [publicVisuals, setPublicVisuals] = useState<PublicVisualsContent | null>(preloadedPublicVisuals || null);
   const primaryNavItems = PUBLIC_NAV_ITEMS.filter((item) => !item.cta);
   const ctaNavItem = PUBLIC_NAV_ITEMS.find((item) => item.cta);
   const loginPath = "/admin/login";
   const isAdminSession = !loading && !!user && isAdmin;
   const activeMegaMenuItem = primaryNavItems.find((item) => item.path === activeMegaMenuPath) || null;
+  const megaMenuLookup = useMemo(() => buildPublicMegaMenuItems(publicVisuals), [publicVisuals]);
+  const defaultProductHero = getProductDefaultVisual(publicVisuals);
 
   const megaMenuItems = useMemo<MegaMenuLinkItem[]>(() => {
     if (!activeMegaMenuItem?.megaMenuType) return [];
 
     if (activeMegaMenuItem.megaMenuType === "productCategories") {
       return [
-        DEFAULT_PRODUCT_MEGA_MENU_ITEM,
+        {
+          label: "전체",
+          to: "/products",
+          imageUrl: defaultProductHero.imageUrl,
+          description: defaultProductHero.description,
+        },
         ...productMegaMenuItems.map((item) => ({
           label: item.name,
           to: item.to,
           imageUrl: item.imageUrl,
-          description: getMegaMenuDescription(item.name),
+          description: item.description,
         })),
       ];
     }
 
-    return STATIC_PUBLIC_MEGA_MENU_ITEMS[activeMegaMenuItem.megaMenuType] || [];
-  }, [activeMegaMenuItem, productMegaMenuItems]);
+    return megaMenuLookup[activeMegaMenuItem.megaMenuType] || [];
+  }, [activeMegaMenuItem, defaultProductHero.description, defaultProductHero.imageUrl, megaMenuLookup, productMegaMenuItems]);
 
   const activeMegaMenuPreview = megaMenuItems[Math.min(activeMegaMenuIndex, Math.max(megaMenuItems.length - 1, 0))] || null;
 
@@ -68,37 +63,74 @@ export const Header: React.FC = () => {
     if (!megaMenuType) return [];
     if (megaMenuType === "productCategories") {
       return [
-        DEFAULT_PRODUCT_MEGA_MENU_ITEM,
+        {
+          label: "전체",
+          to: "/products",
+          imageUrl: defaultProductHero.imageUrl,
+          description: defaultProductHero.description,
+        },
         ...productMegaMenuItems.map((item) => ({
           label: item.name,
           to: item.to,
           imageUrl: item.imageUrl,
-          description: getMegaMenuDescription(item.name),
+          description: item.description,
         })),
       ];
     }
-    return (STATIC_PUBLIC_MEGA_MENU_ITEMS as any)[megaMenuType] || [];
+    return megaMenuLookup[megaMenuType] || STATIC_PUBLIC_MEGA_MENU_ITEMS[megaMenuType] || [];
+  };
+
+  const getMobileSubMenuItems = (item: PublicNavItem) => {
+    const subMenuItems = getSubMenuItems(item.megaMenuType);
+    const hasDirectEntry = subMenuItems.some((subItem) => subItem.to === item.path);
+
+    if (hasDirectEntry || !item.megaMenuType) {
+      return subMenuItems;
+    }
+
+    return [
+      {
+        label: "전체",
+        to: item.path,
+        imageUrl: "",
+        description: "",
+      },
+      ...subMenuItems,
+    ];
   };
 
   useEffect(() => {
     let isMounted = true;
 
+    const applyBootstrapData = (
+      navItems: typeof preloadedNavItems,
+      nextPublicVisuals: PublicVisualsContent | null | undefined,
+    ) => {
+      if (!isMounted) return;
+      if (navItems) {
+        setProductMegaMenuItems(buildCategoryTabItems(navItems));
+      }
+      if (nextPublicVisuals) {
+        setPublicVisuals(nextPublicVisuals);
+      }
+    };
+
     const loadMegaMenuItems = async () => {
       try {
-        const navItems = await getNavMenuItems();
-        if (!isMounted) return;
-        setProductMegaMenuItems(buildCategoryTabItems(navItems));
+        const { navItems, publicVisuals: nextPublicVisuals } = await getPublicBootstrapData();
+        applyBootstrapData(navItems, nextPublicVisuals);
       } catch (error) {
         console.error("Failed to load mega menu items:", error);
       }
     };
 
+    applyBootstrapData(preloadedNavItems, preloadedPublicVisuals);
     void loadMegaMenuItems();
 
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [preloadedNavItems, preloadedPublicVisuals]);
 
   useEffect(() => {
     if (!mobileMenuMounted) return;
@@ -175,7 +207,7 @@ export const Header: React.FC = () => {
                 <img
                   src="/logo.png"
                   alt={siteBrand.header.logoText}
-                  className="h-[48px] w-auto object-contain"
+                  className="h-[36px] w-auto object-contain md:h-[48px]"
                 />
               </Link>
 
@@ -250,7 +282,7 @@ export const Header: React.FC = () => {
               className="inline-flex h-10 w-10 items-center justify-center rounded-none text-black md:hidden"
               aria-label="모바일 메뉴 열기"
             >
-              <Menu size={24} />
+              <Menu size={28} />
             </button>
           </div>
         </Container>
@@ -294,9 +326,11 @@ export const Header: React.FC = () => {
                 </div>
 
                 <div className="w-[55%] lg:w-[50%] xl:w-[48%] h-full pr-4 md:pr-8 relative">
-                  <img
+                  <ResponsiveImage
                     src={activeMegaMenuPreview.imageUrl}
                     alt={activeMegaMenuPreview.label}
+                    kind="card"
+                    sizes="(min-width: 1280px) 48vw, 55vw"
                     className="h-full w-full object-cover transition-opacity duration-500"
                   />
                   <div className="absolute inset-0 right-4 md:right-8 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
@@ -328,7 +362,7 @@ export const Header: React.FC = () => {
           >
             <div className="flex items-center justify-between border-b border-gray-100 p-5">
               <span className="text-lg font-medium tracking-tight text-black">
-                <img src="/logo.png" alt={siteBrand.header.logoText} className="h-[32px] w-auto object-contain" />
+                <img src="/logo.png" alt={siteBrand.header.logoText} className="h-[36px] w-auto object-contain" />
               </span>
               <button
                 onClick={closeMobileMenu}
@@ -343,34 +377,38 @@ export const Header: React.FC = () => {
               <nav className="space-y-1">
                 {primaryNavItems.map((item) => {
                   const isActive = isPublicNavActive(location.pathname, item);
-                  const subMenuItems = getSubMenuItems(item.megaMenuType);
+                  const subMenuItems = getMobileSubMenuItems(item);
                   const isExpanded = expandedMobileItem === item.label;
 
                   return (
                     <div key={item.path} className="border-b border-slate-50 last:border-0">
-                      <div className="flex items-center justify-between">
+                      {subMenuItems.length > 0 ? (
+                        <button
+                          type="button"
+                          onClick={() => toggleMobileItem(item.label)}
+                          className={`flex w-full items-center justify-between py-4 text-left text-[17px] font-semibold transition ${
+                            isActive ? "text-[#001E45]" : "text-slate-900"
+                          }`}
+                          aria-expanded={isExpanded}
+                          aria-label={`${item.label} 하위 메뉴 열기`}
+                        >
+                          <span>{item.label}</span>
+                          <ChevronDown
+                            size={20}
+                            className={`shrink-0 text-slate-400 transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`}
+                          />
+                        </button>
+                      ) : (
                         <Link
                           to={item.path}
                           onClick={closeMobileMenu}
-                          className={`flex-1 py-4 text-[17px] font-semibold transition ${
+                          className={`block py-4 text-[17px] font-semibold transition ${
                             isActive ? "text-[#001E45]" : "text-slate-900"
                           }`}
                         >
                           {item.label}
                         </Link>
-                        {subMenuItems.length > 0 && (
-                          <button
-                            onClick={() => toggleMobileItem(item.label)}
-                            className="p-4 text-slate-400"
-                            aria-label={`${item.label} 하위 메뉴 열기`}
-                          >
-                            <ChevronDown
-                              size={20}
-                              className={`transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`}
-                            />
-                          </button>
-                        )}
-                      </div>
+                      )}
                       
                       {isExpanded && subMenuItems.length > 0 && (
                         <div className="bg-slate-50/50 rounded-xl mb-4 py-2">

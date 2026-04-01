@@ -9,6 +9,7 @@ import {
   updateNoticePost,
   deleteNoticePost,
 } from '../../src/api/noticeApi';
+import { invalidatePublicDataCache } from '../../src/api/publicDataApi';
 import { uploadImage } from '../../src/api/storageApi';
 
 type NoticeFormState = Omit<NoticePost, 'id' | 'created_at' | 'updated_at'>;
@@ -112,7 +113,7 @@ export const NoticeManager: React.FC = () => {
     try {
       if (editingItem?.id) {
         if (usingFallback) {
-          alert('먼저 Supabase에서 `create_notice_posts_table.sql`을 실행해 실제 공지사항 테이블을 만든 뒤 수정해 주세요.');
+          alert('먼저 Supabase에서 `create_notice_posts_table.sql`을 실행해 실제 정보센터 테이블을 만든 뒤 수정해 주세요.');
           return;
         }
         await updateNoticePost(editingItem.id, formData);
@@ -120,6 +121,7 @@ export const NoticeManager: React.FC = () => {
         await addNoticePost(formData);
       }
 
+      invalidatePublicDataCache();
       await loadData();
       closeModal();
     } catch (error) {
@@ -132,14 +134,15 @@ export const NoticeManager: React.FC = () => {
 
   const handleDelete = async (item: NoticePost) => {
     if (usingFallback) {
-      alert('먼저 Supabase에서 `create_notice_posts_table.sql`을 실행해 실제 공지사항 테이블을 만든 뒤 삭제해 주세요.');
+      alert('먼저 Supabase에서 `create_notice_posts_table.sql`을 실행해 실제 정보센터 테이블을 만든 뒤 삭제해 주세요.');
       return;
     }
 
-    if (!confirm(`'${item.title}' 공지사항을 삭제하시겠습니까?`)) return;
+    if (!confirm(`'${item.title}' 정보센터를 삭제하시겠습니까?`)) return;
 
     try {
       await deleteNoticePost(item.id);
+      invalidatePublicDataCache();
       await loadData();
     } catch (error) {
       console.error('Failed to delete notice post:', error);
@@ -149,12 +152,13 @@ export const NoticeManager: React.FC = () => {
 
   const handleToggleActive = async (item: NoticePost) => {
     if (usingFallback) {
-      alert('먼저 Supabase에서 `create_notice_posts_table.sql`을 실행해 실제 공지사항 테이블을 만든 뒤 노출 상태를 변경해 주세요.');
+      alert('먼저 Supabase에서 `create_notice_posts_table.sql`을 실행해 실제 정보센터 테이블을 만든 뒤 노출 상태를 변경해 주세요.');
       return;
     }
 
     try {
       await updateNoticePost(item.id, { isActive: !item.isActive });
+      invalidatePublicDataCache();
       await loadData();
     } catch (error) {
       console.error('Failed to toggle notice visibility:', error);
@@ -184,9 +188,9 @@ export const NoticeManager: React.FC = () => {
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-bold text-slate-900">
             <FileText size={22} className="text-[#001e45]" />
-            공지사항 관리
+            정보센터 관리
           </h1>
-          <p className="mt-2 text-sm text-slate-500">공지사항 목록과 게시글 본문을 관리합니다.</p>
+          <p className="mt-2 text-sm text-slate-500">정보센터 목록과 게시글 본문을 관리합니다.</p>
         </div>
         <button
           type="button"
@@ -194,13 +198,13 @@ export const NoticeManager: React.FC = () => {
           className="inline-flex items-center gap-2 rounded-xl bg-[#001e45] px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-[#153a82]"
         >
           <Plus size={16} />
-          공지사항 추가
+          정보센터 추가
         </button>
       </div>
 
       {usingFallback && (
         <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm leading-6 text-amber-900">
-          현재는 예시 공지사항 데이터를 보고 있습니다. 실제 저장, 수정, 삭제를 사용하려면 Supabase에서
+          현재는 예시 정보센터 데이터를 보고 있습니다. 실제 저장, 수정, 삭제를 사용하려면 Supabase에서
           <code className="mx-1 rounded bg-amber-100 px-1.5 py-0.5 text-[13px] font-semibold">create_notice_posts_table.sql</code>
           을 먼저 실행해 주세요.
         </div>
@@ -259,9 +263,9 @@ export const NoticeManager: React.FC = () => {
               <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4">
                 <div>
                   <h2 className="text-xl font-bold text-slate-900">
-                    {editingItem ? '공지사항 수정' : '공지사항 추가'}
+                    {editingItem ? '정보센터 수정' : '정보센터 추가'}
                   </h2>
-                  <p className="mt-1 text-sm text-slate-500">공개 공지사항 페이지와 상세 본문에 반영됩니다.</p>
+                  <p className="mt-1 text-sm text-slate-500">공개 정보센터 페이지와 상세 본문에 반영됩니다.</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
@@ -364,7 +368,7 @@ export const NoticeManager: React.FC = () => {
                   </div>
                   <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
                     {formData.imageUrl ? (
-                      <img src={formData.imageUrl} alt="공지사항 대표 이미지 미리보기" className="aspect-[4/3] h-full w-full object-cover" />
+                      <img src={formData.imageUrl} alt="정보센터 대표 이미지 미리보기" className="aspect-[4/3] h-full w-full object-cover" />
                     ) : (
                       <div className="flex aspect-[4/3] items-center justify-center text-slate-400">
                         <ImageIcon size={28} />

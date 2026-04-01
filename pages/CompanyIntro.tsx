@@ -1,11 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { PublicPageEditButton } from '../components/admin/PublicPageEditButton';
-import { RichTextEditor } from '../components/admin/RichTextEditor';
 import { NaverMapEmbed } from '../components/company/NaverMapEmbed';
+import { CompanySectionsEditor } from '../components/company/CompanySectionsEditor';
 import { Seo } from '../components/Seo';
 import { Container } from '../components/ui/Container';
-import { getCompanyPageContent, saveCompanyPageContent } from '../src/api/companyContentApi';
+import { ResponsiveImage } from '../components/ui/ResponsiveImage';
+import { saveCompanyPageContent } from '../src/api/companyContentApi';
+import { getPublicCompanyData, invalidatePublicDataCache } from '../src/api/publicDataApi';
 import { useAuth } from '../src/context/AuthContext';
 import {
   COMPANY_BODY_SECTION_KEY_BY_TAB,
@@ -13,8 +15,10 @@ import {
   type CompanyPageContent,
   type CompanySectionTabValue,
 } from '../src/data/companyPageContent';
+import { normalizeCompanyPageContent } from '../src/content/companyPageContent';
 import { COMPANY_SECTION_TABS } from '../src/config/publicMegaMenu';
-import { buildBreadcrumbStructuredData, SITE_URL, toAbsoluteUrl } from '../src/utils/seo';
+import { usePrerenderData } from '../src/prerender/context';
+import { buildBreadcrumbStructuredData, buildLocalBusinessStructuredData, SITE_URL, toAbsoluteUrl } from '../src/utils/seo';
 
 const COMPANY_SECTION_PATHS: Record<string, CompanySectionTabValue> = {
   '/company': 'company-overview',
@@ -53,60 +57,22 @@ const COMPANY_SECTION_META: Record<
   },
 };
 
-const FIRST_HEADING_PATTERN = /<h2\b[^>]*>([\s\S]*?)<\/h2>/i;
-
-const stripHtmlTags = (value: string) =>
-  value
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/\s+/g, ' ')
-    .trim();
-
-const escapeHtml = (value: string) =>
-  value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-
-const splitSectionHtml = (html: string, fallbackTitle: string) => {
-  const match = html.match(FIRST_HEADING_PATTERN);
-  if (!match) {
-    return {
-      title: fallbackTitle,
-      bodyHtml: html,
-    };
-  }
-
-  return {
-    title: stripHtmlTags(match[1]) || fallbackTitle,
-    bodyHtml: html.replace(FIRST_HEADING_PATTERN, '').trim(),
-  };
-};
-
-const mergeSectionHtml = (title: string, bodyHtml: string) => {
-  const safeTitle = title.trim() ? `<h2>${escapeHtml(title.trim())}</h2>` : '';
-  const safeBodyHtml = bodyHtml.trim();
-  return [safeTitle, safeBodyHtml].filter(Boolean).join('');
-};
-
 export const CompanyIntro: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, userProfile, isAdmin, loading: authLoading } = useAuth();
+  const preloadedCompanyContent = usePrerenderData()?.company?.content;
+  const normalizedPreloadedCompanyContent = preloadedCompanyContent
+    ? normalizeCompanyPageContent(preloadedCompanyContent)
+    : null;
   const activeSection = COMPANY_SECTION_PATHS[location.pathname] || 'company-overview';
   const activeTab = COMPANY_SECTION_TABS.find((tab) => tab.value === activeSection) || COMPANY_SECTION_TABS[0];
   const pageMeta = COMPANY_SECTION_META[activeSection];
 
-  const [companyContent, setCompanyContent] = useState<CompanyPageContent>(defaultCompanyPageContent);
-  const [draftSectionTitle, setDraftSectionTitle] = useState('');
-  const [draftSectionHtml, setDraftSectionHtml] = useState('');
+  const [companyContent, setCompanyContent] = useState<CompanyPageContent>(normalizedPreloadedCompanyContent || defaultCompanyPageContent);
+  const [draftContent, setDraftContent] = useState<CompanyPageContent | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [isTabOpen, setIsTabOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const editorRef = useRef<HTMLDivElement>(null);
 
@@ -136,7 +102,11 @@ export const CompanyIntro: React.FC = () => {
 
     const loadCompanyContent = async () => {
       try {
-        const content = await getCompanyPageContent();
+        if (normalizedPreloadedCompanyContent && mounted) {
+          setCompanyContent(normalizedPreloadedCompanyContent);
+        }
+
+        const { content } = await getPublicCompanyData();
         if (mounted) {
           setCompanyContent(content);
         }
@@ -150,26 +120,13 @@ export const CompanyIntro: React.FC = () => {
     return () => {
       mounted = false;
     };
-  }, []);
-
-  useEffect(() => {
-    const sectionKey = COMPANY_BODY_SECTION_KEY_BY_TAB[activeSection];
-    const sectionState = splitSectionHtml(companyContent.bodySections[sectionKey], activeTab.label);
-    setDraftSectionTitle(sectionState.title);
-    setDraftSectionHtml(sectionState.bodyHtml);
-    setIsEditing(false);
-  }, [activeSection, activeTab.label, companyContent]);
+  }, [normalizedPreloadedCompanyContent]);
 
   const canInlineEdit = !authLoading && !!user && !!userProfile && isAdmin;
   const activeHtml = companyContent.bodySections[COMPANY_BODY_SECTION_KEY_BY_TAB[activeSection]];
 
   const startInlineEdit = () => {
-    const sectionState = splitSectionHtml(
-      companyContent.bodySections[COMPANY_BODY_SECTION_KEY_BY_TAB[activeSection]],
-      activeTab.label,
-    );
-    setDraftSectionTitle(sectionState.title);
-    setDraftSectionHtml(sectionState.bodyHtml);
+    setDraftContent(companyContent);
     setIsEditing(true);
     window.requestAnimationFrame(() => {
       editorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -177,30 +134,20 @@ export const CompanyIntro: React.FC = () => {
   };
 
   const cancelInlineEdit = () => {
-    const sectionState = splitSectionHtml(
-      companyContent.bodySections[COMPANY_BODY_SECTION_KEY_BY_TAB[activeSection]],
-      activeTab.label,
-    );
-    setDraftSectionTitle(sectionState.title);
-    setDraftSectionHtml(sectionState.bodyHtml);
+    setDraftContent(null);
     setIsEditing(false);
   };
 
   const handleSaveInline = async () => {
+    if (!draftContent) return;
     setSaving(true);
     try {
-      const bodyKey = COMPANY_BODY_SECTION_KEY_BY_TAB[activeSection];
-      const nextContent: CompanyPageContent = {
-        ...companyContent,
-        bodySections: {
-          ...companyContent.bodySections,
-          [bodyKey]: mergeSectionHtml(draftSectionTitle, draftSectionHtml),
-        },
-      };
-      const saved = await saveCompanyPageContent(nextContent);
-      setCompanyContent(saved);
+      const saved = await saveCompanyPageContent(draftContent);
+      invalidatePublicDataCache();
+      setCompanyContent(normalizeCompanyPageContent(saved));
+      setDraftContent(null);
       setIsEditing(false);
-      alert(`${activeTab.label} 본문을 저장했습니다.`);
+      alert(`${activeTab.label} 콘텐츠를 저장했습니다.`);
     } catch (error) {
       console.error('Failed to save company content:', error);
       alert('저장에 실패했습니다. Supabase에서 `create_page_contents_table.sql`을 먼저 실행해 주세요.');
@@ -243,6 +190,7 @@ export const CompanyIntro: React.FC = () => {
               url: SITE_URL,
             },
           },
+          ...(activeSection === 'company-location' ? [buildLocalBusinessStructuredData()] : []),
         ]}
       />
 
@@ -259,12 +207,15 @@ export const CompanyIntro: React.FC = () => {
       `}</style>
 
       <section className="relative overflow-visible bg-slate-950 text-white">
-        <div className="relative flex h-[420px] items-center justify-center overflow-hidden md:h-[520px]">
+        <div className="relative flex h-[280px] items-center justify-center overflow-hidden md:h-[420px]">
           <div className="absolute inset-0 z-10 bg-[linear-gradient(90deg,rgba(0,18,46,0.95)_0%,rgba(1,12,34,0.84)_46%,rgba(0,7,22,0.96)_100%)]" />
           <div className="absolute inset-0 z-10 bg-[linear-gradient(180deg,rgba(0,0,0,0.16)_0%,rgba(0,0,0,0.22)_100%)]" />
-          <img
+          <ResponsiveImage
             src={companyContent.hero.imageUrl}
             alt={companyContent.hero.title}
+            kind="hero"
+            priority
+            sizes="100vw"
             className="absolute inset-0 h-full w-full object-cover opacity-48"
           />
 
@@ -274,19 +225,20 @@ export const CompanyIntro: React.FC = () => {
             </div>
           )}
 
-          <Container size="layout" className="relative z-20 flex flex-col items-center px-4 py-14 text-center md:py-16">
-            <h1 className="animate-on-scroll text-[40px] font-bold leading-[1.16] tracking-[-0.04em] text-white md:text-[78px]">
-              회사 소개
+          <Container size="layout" className="relative z-20 flex flex-col items-center px-4 py-6 text-center md:py-16">
+            <h1 className="animate-on-scroll text-[32px] font-bold leading-[1.2] tracking-[-0.04em] text-white md:text-[62px]">
+              {companyContent.hero.title}
             </h1>
             <div
-              className="animate-on-scroll mt-8 max-w-3xl break-keep text-[18px] leading-[1.75] text-slate-200 md:text-[22px] md:leading-[1.65]"
+              className="animate-on-scroll mt-3 max-w-3xl break-keep text-[16px] leading-[1.6] text-slate-200 md:mt-8 md:text-[22px] md:leading-[1.65]"
               dangerouslySetInnerHTML={{ __html: companyContent.hero.description.replace(/\n/g, '<br />') }}
             />
           </Container>
         </div>
 
-        <div className="absolute bottom-0 left-1/2 z-20 w-full max-w-[980px] -translate-x-1/2 translate-y-1/2">
-          <div className="overflow-x-auto border border-slate-200 bg-white">
+        <div className="absolute bottom-0 left-1/2 z-20 w-full max-w-[980px] -translate-x-1/2 translate-y-1/2 px-4 md:px-0">
+          {/* Desktop View */}
+          <div className="hidden border border-slate-200 bg-white md:block">
             <div className="flex min-w-max overflow-hidden md:min-w-0">
               {COMPANY_SECTION_TABS.map((tab, index) => {
                 const isLast = index === COMPANY_SECTION_TABS.length - 1;
@@ -308,6 +260,45 @@ export const CompanyIntro: React.FC = () => {
               })}
             </div>
           </div>
+
+          {/* Mobile Dropdown View */}
+          <div className="relative md:hidden">
+            <button
+              type="button"
+              onClick={() => setIsTabOpen(!isTabOpen)}
+              className="flex w-full items-center justify-between border border-slate-200 bg-white px-5 py-4 text-left text-sm font-semibold text-slate-900 shadow-lg"
+            >
+              <span>{activeTab.label}</span>
+              <div className={`transition-transform duration-300 ${isTabOpen ? 'rotate-180' : ''}`}>
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+            </button>
+            
+            {isTabOpen && (
+              <div className="absolute left-0 top-full mt-1 w-full border border-slate-200 bg-white shadow-xl">
+                {COMPANY_SECTION_TABS.map((tab) => {
+                  const isActive = activeSection === tab.value;
+                  return (
+                    <button
+                      key={tab.value}
+                      type="button"
+                      onClick={() => {
+                        navigate(tab.to);
+                        setIsTabOpen(false);
+                      }}
+                      className={`block w-full px-5 py-4 text-left text-sm font-semibold transition ${
+                        isActive ? 'bg-[#eeeeee] text-[#001e45]' : 'bg-white text-slate-700 active:bg-slate-50'
+                      } border-b border-slate-100 last:border-0`}
+                    >
+                      {tab.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </section>
 
@@ -316,54 +307,19 @@ export const CompanyIntro: React.FC = () => {
           <div className="mx-auto max-w-[980px]">
             {isEditing && (
               <div ref={editorRef} className="mb-12">
-                <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                  <div>
-                    <h2 className="text-2xl font-bold text-slate-900">{activeTab.label} 수정</h2>
-                    <p className="mt-2 text-sm leading-6 text-slate-500">홈페이지 안에서 현재 페이지 본문만 바로 수정합니다. 글과 이미지를 삽입해서 저장할 수 있습니다.</p>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={cancelInlineEdit}
-                      className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
-                    >
-                      취소
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => void handleSaveInline()}
-                      disabled={saving}
-                      className="inline-flex items-center rounded-xl bg-[#001e45] px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[#153a82] disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {saving ? '저장 중...' : '저장하기'}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="mb-3">
-                  <p className="mb-3 text-sm font-semibold text-slate-900">제목</p>
-                  <textarea
-                    value={draftSectionTitle}
-                    onChange={(event) => setDraftSectionTitle(event.target.value)}
-                    rows={3}
-                    className="w-full resize-y rounded-2xl border border-slate-200 bg-white px-4 py-4 text-lg font-semibold leading-8 text-slate-900 outline-none placeholder:text-slate-400"
-                    placeholder="섹션 제목을 입력해 주세요."
-                  />
-                </div>
-
-                <div className="mb-3">
-                  <p className="text-sm font-semibold text-slate-900">본문</p>
-                </div>
-
-                <div className="mt-6">
-                  <RichTextEditor
-                    value={draftSectionHtml}
-                    onChange={setDraftSectionHtml}
-                    minHeight={520}
-                    uploadFolder="company"
-                    variant="plain"
-                  />
-                </div>
+                <CompanySectionsEditor
+                  content={draftContent || companyContent}
+                  onChange={(nextContent) => setDraftContent(nextContent)}
+                  onSave={handleSaveInline}
+                  onCancel={cancelInlineEdit}
+                  saving={saving}
+                  defaultSection={activeSection}
+                  sectionValues={[activeSection]}
+                  title={`${activeTab.label} 수정`}
+                  description="현재 페이지 본문과 공통 상단 히어로, 회사 개요 대표 이미지를 함께 수정합니다."
+                  showHeroFields
+                  showOverviewImageField={activeSection === 'company-overview'}
+                />
               </div>
             )}
 

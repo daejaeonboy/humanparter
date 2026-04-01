@@ -1,5 +1,6 @@
-import { useEffect, type ReactNode } from 'react';
+import { Suspense, lazy, useEffect, type ReactNode } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
 import { Header } from './components/Layout/Header';
 import { Footer } from './components/Layout/Footer';
 import { MainPage } from './pages/MainPage';
@@ -20,20 +21,40 @@ import { NoticeGallery } from './pages/NoticeGallery';
 import { NoticeDetail } from './pages/NoticeDetail';
 import { PrerenderDataProvider, type PrerenderData } from './src/prerender/context';
 import { AuthProvider } from './src/context/AuthContext';
-import { AdminDashboard } from './pages/admin/AdminDashboard';
-import { ProductManager } from './pages/admin/ProductManager';
-import { BookingList } from './pages/admin/BookingList';
-import { CMSManager } from './pages/admin/CMSManager';
-import { UserManager } from './pages/admin/UserManager';
-import { AdminLogin } from './pages/admin/AdminLogin';
-import { AdminSignup } from './pages/admin/AdminSignup';
-import { FAQManager } from './pages/admin/FAQManager';
-import { InquiryManager } from './pages/admin/InquiryManager';
-import { InstallationCasesManager } from './pages/admin/InstallationCasesManager';
-import { MainReviewCardsManager } from './pages/admin/MainReviewCardsManager';
-import { CompanyContentManager } from './pages/admin/CompanyContentManager';
-import { NoticeManager } from './pages/admin/NoticeManager';
 import { AdminRoute } from './src/components/AdminRoute';
+
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard').then((module) => ({ default: module.AdminDashboard })));
+const ProductManager = lazy(() => import('./pages/admin/ProductManager').then((module) => ({ default: module.ProductManager })));
+const BookingList = lazy(() => import('./pages/admin/BookingList').then((module) => ({ default: module.BookingList })));
+const CMSManager = lazy(() => import('./pages/admin/CMSManager').then((module) => ({ default: module.CMSManager })));
+const UserManager = lazy(() => import('./pages/admin/UserManager').then((module) => ({ default: module.UserManager })));
+const AdminLogin = lazy(() => import('./pages/admin/AdminLogin').then((module) => ({ default: module.AdminLogin })));
+const AdminSignup = lazy(() => import('./pages/admin/AdminSignup').then((module) => ({ default: module.AdminSignup })));
+const FAQManager = lazy(() => import('./pages/admin/FAQManager').then((module) => ({ default: module.FAQManager })));
+const InquiryManager = lazy(() => import('./pages/admin/InquiryManager').then((module) => ({ default: module.InquiryManager })));
+const InstallationCasesManager = lazy(() =>
+  import('./pages/admin/InstallationCasesManager').then((module) => ({ default: module.InstallationCasesManager })),
+);
+const MainReviewCardsManager = lazy(() =>
+  import('./pages/admin/MainReviewCardsManager').then((module) => ({ default: module.MainReviewCardsManager })),
+);
+const PublicVisualsManager = lazy(() =>
+  import('./pages/admin/PublicVisualsManager').then((module) => ({ default: module.PublicVisualsManager })),
+);
+const CompanyContentManager = lazy(() =>
+  import('./pages/admin/CompanyContentManager').then((module) => ({ default: module.CompanyContentManager })),
+);
+const NoticeManager = lazy(() => import('./pages/admin/NoticeManager').then((module) => ({ default: module.NoticeManager })));
+
+const AdminChunkFallback = () => (
+  <div className="flex min-h-[40vh] items-center justify-center bg-white">
+    <Loader2 className="animate-spin text-[#001e45]" size={36} />
+  </div>
+);
+
+const AdminChunkBoundary = ({ children }: { children: ReactNode }) => (
+  <Suspense fallback={<AdminChunkFallback />}>{children}</Suspense>
+);
 
 function ScrollToTop() {
   const { pathname, search, hash } = useLocation();
@@ -65,7 +86,7 @@ export const AppProviders = ({
 }) => {
   return (
     <PrerenderDataProvider initialData={prerenderData}>
-      <AuthProvider>{children}</AuthProvider>
+      {children}
     </PrerenderDataProvider>
   );
 };
@@ -76,23 +97,24 @@ export function AppContent() {
       <ScrollToTop />
       <Routes>
         {/* Admin Routes - Protected */}
-        <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>}>
-          <Route path="cms" element={<CMSManager />} />
-          <Route path="sections" element={<CMSManager />} />
-          <Route path="products" element={<ProductManager />} />
-          <Route path="bookings" element={<BookingList />} />
-          <Route path="users" element={<UserManager />} />
-          <Route path="cases" element={<InstallationCasesManager />} />
-          <Route path="main-reviews" element={<MainReviewCardsManager />} />
-          <Route path="faqs" element={<FAQManager />} />
-          <Route path="inquiries" element={<InquiryManager />} />
-          <Route path="company" element={<CompanyContentManager />} />
-          <Route path="notices" element={<NoticeManager />} />
+        <Route path="/admin" element={<AdminRoute><AdminChunkBoundary><AdminDashboard /></AdminChunkBoundary></AdminRoute>}>
+          <Route path="cms" element={<AdminChunkBoundary><CMSManager /></AdminChunkBoundary>} />
+          <Route path="sections" element={<AdminChunkBoundary><CMSManager /></AdminChunkBoundary>} />
+          <Route path="products" element={<AdminChunkBoundary><ProductManager /></AdminChunkBoundary>} />
+          <Route path="bookings" element={<AdminChunkBoundary><BookingList /></AdminChunkBoundary>} />
+          <Route path="users" element={<AdminChunkBoundary><UserManager /></AdminChunkBoundary>} />
+          <Route path="cases" element={<AdminChunkBoundary><InstallationCasesManager /></AdminChunkBoundary>} />
+          <Route path="main-reviews" element={<AdminChunkBoundary><MainReviewCardsManager /></AdminChunkBoundary>} />
+          <Route path="public-visuals" element={<AdminChunkBoundary><PublicVisualsManager /></AdminChunkBoundary>} />
+          <Route path="faqs" element={<AdminChunkBoundary><FAQManager /></AdminChunkBoundary>} />
+          <Route path="inquiries" element={<AdminChunkBoundary><InquiryManager /></AdminChunkBoundary>} />
+          <Route path="company" element={<AdminChunkBoundary><CompanyContentManager /></AdminChunkBoundary>} />
+          <Route path="notices" element={<AdminChunkBoundary><NoticeManager /></AdminChunkBoundary>} />
         </Route>
 
         {/* Admin Login - Separate Route */}
-        <Route path="/admin/login" element={<AdminLogin />} />
-        <Route path="/admin/signup" element={<AdminSignup />} />
+        <Route path="/admin/login" element={<AdminChunkBoundary><AdminLogin /></AdminChunkBoundary>} />
+        <Route path="/admin/signup" element={<AdminChunkBoundary><AdminSignup /></AdminChunkBoundary>} />
 
         {/* Public Routes */}
         <Route
@@ -138,7 +160,9 @@ function App() {
   return (
     <AppProviders>
       <BrowserRouter>
-        <AppContent />
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
       </BrowserRouter>
     </AppProviders>
   );

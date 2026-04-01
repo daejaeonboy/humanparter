@@ -4,7 +4,9 @@ import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { PublicPageEditButton } from '../components/admin/PublicPageEditButton';
 import { Seo } from '../components/Seo';
 import { Container } from '../components/ui/Container';
-import { getAllInstallationCases, InstallationCase } from '../src/api/cmsApi';
+import { ResponsiveImage } from '../components/ui/ResponsiveImage';
+import { InstallationCase } from '../src/api/cmsApi';
+import { getPublicCaseDetailData, type PublicCaseSummary } from '../src/api/publicDataApi';
 import { usePrerenderData } from '../src/prerender/context';
 import { extractInstallationCaseContent } from '../src/utils/installationCaseContent';
 import { buildBreadcrumbStructuredData, normalizeMetaText, SITE_NAME, SITE_URL, toAbsoluteUrl } from '../src/utils/seo';
@@ -36,27 +38,33 @@ export const InstallationCaseDetail: React.FC = () => {
   const hasPreloadedDetail = !!(id && preloadedDetail?.post?.id === id);
   const [loading, setLoading] = useState(!hasPreloadedDetail);
   const [post, setPost] = useState<InstallationCase | null>(hasPreloadedDetail ? preloadedDetail?.post || null : null);
-  const [allCases, setAllCases] = useState<InstallationCase[]>(hasPreloadedDetail ? preloadedDetail?.allCases || [] : []);
+  const [previousCase, setPreviousCase] = useState<PublicCaseSummary | null>(
+    hasPreloadedDetail ? preloadedDetail?.previousCase || null : null,
+  );
+  const [nextCase, setNextCase] = useState<PublicCaseSummary | null>(
+    hasPreloadedDetail ? preloadedDetail?.nextCase || null : null,
+  );
 
   useEffect(() => {
     if (hasPreloadedDetail && preloadedDetail) {
       setPost(preloadedDetail.post);
-      setAllCases(preloadedDetail.allCases);
+      setPreviousCase(preloadedDetail.previousCase);
+      setNextCase(preloadedDetail.nextCase);
       setLoading(false);
       return;
     }
 
     const loadPost = async () => {
       try {
-        const data = await getAllInstallationCases();
-        const activeCases = data.filter((item) => item.is_active);
-        const found = activeCases.find((item) => item.id === id) || null;
-        setAllCases(activeCases);
-        setPost(found);
+        const detail = await getPublicCaseDetailData(id);
+        setPost(detail.post);
+        setPreviousCase(detail.previousCase);
+        setNextCase(detail.nextCase);
       } catch (error) {
         console.error('Failed to load post detail:', error);
-        setAllCases([]);
         setPost(null);
+        setPreviousCase(null);
+        setNextCase(null);
       } finally {
         setLoading(false);
       }
@@ -78,13 +86,6 @@ export const InstallationCaseDetail: React.FC = () => {
         .join(' '),
     ) || TEXT.pageDescriptionFallback;
 
-  const currentIndex = useMemo(
-    () => allCases.findIndex((item) => item.id === post?.id),
-    [allCases, post?.id],
-  );
-  const previousCase = currentIndex > 0 ? allCases[currentIndex - 1] : null;
-  const nextCase = currentIndex >= 0 && currentIndex < allCases.length - 1 ? allCases[currentIndex + 1] : null;
-
   if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-white pb-20 pt-10">
@@ -96,6 +97,14 @@ export const InstallationCaseDetail: React.FC = () => {
   if (!post) {
     return (
       <main className="min-h-screen bg-white pb-20 pt-20 text-center">
+        <Seo
+          title="설치사례를 찾을 수 없습니다 | 휴먼파트너"
+          description={TEXT.notFoundDescription}
+          canonicalPath={false}
+          urlPath={false}
+          noindex
+          nofollow
+        />
         <h1 className="text-2xl font-bold text-slate-800">{TEXT.notFoundTitle}</h1>
         <p className="mt-4 text-slate-500">{TEXT.notFoundDescription}</p>
         <button
@@ -170,7 +179,14 @@ export const InstallationCaseDetail: React.FC = () => {
 
           {post.image_url && (
             <div className="mt-8">
-              <img src={post.image_url} alt={post.title} className="h-auto max-h-[760px] w-full object-cover" />
+              <ResponsiveImage
+                src={post.image_url}
+                alt={post.title}
+                kind="detail"
+                priority
+                sizes="(min-width: 1024px) 1000px, 100vw"
+                className="h-auto max-h-[760px] w-full object-cover"
+              />
             </div>
           )}
 
@@ -191,7 +207,14 @@ export const InstallationCaseDetail: React.FC = () => {
                 if (block.type === 'image' && block.imageUrl) {
                   return (
                     <figure key={block.id} className="space-y-4">
-                      <img src={block.imageUrl} alt={block.caption || post.title} className="w-full object-cover" loading="lazy" />
+                      <ResponsiveImage
+                        src={block.imageUrl}
+                        alt={block.caption || post.title}
+                        kind="inline"
+                        sizes="(min-width: 1024px) 900px, 100vw"
+                        className="w-full object-cover"
+                        loading="lazy"
+                      />
                       {block.caption && <figcaption className="text-sm leading-6 text-slate-500">{block.caption}</figcaption>}
                     </figure>
                   );

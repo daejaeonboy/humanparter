@@ -12,6 +12,7 @@ export const getCompanyPageContent = async (): Promise<CompanyPageContent> => {
 };
 
 export const saveCompanyPageContent = async (content: CompanyPageContent): Promise<CompanyPageContent> => {
-  const saved = await upsertPageContentEntry(COMPANY_CONTENT_PAGE_KEY, content);
+  const normalizedContent = normalizeCompanyPageContent(content);
+  const saved = await upsertPageContentEntry(COMPANY_CONTENT_PAGE_KEY, normalizedContent);
   return normalizeCompanyPageContent(saved?.content || content);
 };

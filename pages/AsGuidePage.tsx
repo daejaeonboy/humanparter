@@ -1,10 +1,13 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronDown, MessageCircle, Phone } from 'lucide-react';
+import { PublicPageEditButton } from '../components/admin/PublicPageEditButton';
 import { PublicCollectionHero } from '../components/PublicCollectionHero';
 import { Container } from '../components/ui/Container';
 import { Seo } from '../components/Seo';
 import { CS_SECTION_TABS } from '../src/config/publicMegaMenu';
+import { getCollectionHeroVisual } from '../src/content/publicVisualsContent';
+import { usePublicVisuals } from '../src/hooks/usePublicVisuals';
 import { buildBreadcrumbStructuredData } from '../src/utils/seo';
 
 type AsGuideItem = {
@@ -74,16 +77,13 @@ const AS_GUIDE_ITEMS: AsGuideItem[] = [
 ];
 
 const AS_GUIDE_CATEGORIES = ['접수안내', '처리절차', '방문지원', '유의사항'];
-const AS_GUIDE_HERO_CONTENT = {
-  title: 'A/S 안내',
-  description: '접수 방법부터 처리 절차, 방문 지원 범위까지 운영 중 필요한 유지관리 안내를 확인해보세요.',
-  imageUrl: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1600&q=80',
-};
 
 export const AsGuidePage: React.FC = () => {
   const navigate = useNavigate();
+  const publicVisuals = usePublicVisuals();
   const [activeCategory, setActiveCategory] = useState(AS_GUIDE_CATEGORIES[0]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const heroContent = getCollectionHeroVisual(publicVisuals, 'cs', 'asGuide');
 
   const filteredItems = useMemo(
     () => AS_GUIDE_ITEMS.filter((item) => item.category === activeCategory),
@@ -110,9 +110,9 @@ export const AsGuidePage: React.FC = () => {
       />
 
       <PublicCollectionHero
-        title={AS_GUIDE_HERO_CONTENT.title}
-        description={AS_GUIDE_HERO_CONTENT.description}
-        imageUrl={AS_GUIDE_HERO_CONTENT.imageUrl}
+        title={heroContent.title || 'A/S 안내'}
+        description={heroContent.description}
+        imageUrl={heroContent.imageUrl}
         tabs={CS_SECTION_TABS.map((tab) => ({ label: tab.label, value: tab.value }))}
         activeValue="as-guide"
         onSelect={(value) => {
@@ -121,18 +121,19 @@ export const AsGuidePage: React.FC = () => {
             navigate(selectedTab.to);
           }
         }}
+        topRightAction={<PublicPageEditButton to="/admin/public-visuals" label="상단 배너 수정" />}
       />
 
       <Container size="layout">
         <div className="mt-20 md:mt-24">
-        <div className="mb-12 flex flex-col items-center justify-between gap-6 rounded-3xl bg-slate-50 p-6 md:flex-row md:p-10">
+        <div className="mb-12 flex flex-col items-center justify-between gap-6 rounded-[8px] bg-slate-50 p-6 md:flex-row md:p-10">
           <div className="flex w-full items-center gap-5 md:w-auto">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-slate-400 shadow-sm md:h-16 md:w-16">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-slate-600 shadow-sm md:h-16 md:w-16">
               <Phone size={24} className="md:h-8 md:w-8" />
             </div>
             <div>
               <div className="mb-1 text-2xl font-extrabold text-slate-900 md:text-3xl">1800-1985</div>
-              <div className="space-y-0.5 text-xs font-medium text-slate-500 md:text-sm">
+              <div className="space-y-0.5 text-xs font-medium text-slate-700 md:text-sm">
                 <p>고객행복센터(전화): <br className="md:hidden" />오전 9시 ~ 오후 6시 운영</p>
                 <p>채팅 상담 문의: 24시간 운영</p>
               </div>
@@ -145,21 +146,21 @@ export const AsGuidePage: React.FC = () => {
             rel="noopener noreferrer"
             className="flex w-full items-center justify-center gap-2 border border-slate-200 bg-white px-8 py-4 font-bold text-slate-700 transition-all hover:bg-slate-50 hover:scale-[1.02] active:scale-[0.98] md:w-auto"
           >
-            <MessageCircle size={20} className="text-slate-400" />
+            <MessageCircle size={20} className="text-slate-600" />
             채팅 상담
           </a>
         </div>
 
         <div id="as-guide" className="mb-6 scroll-mt-28">
-          <div className="mb-8 flex gap-2 overflow-x-auto pb-2 no-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
+          <div className="mb-8 grid grid-cols-2 gap-2 md:flex md:flex-wrap md:items-center">
             {AS_GUIDE_CATEGORIES.map((category) => (
               <button
                 key={category}
                 onClick={() => setActiveCategory(category)}
-                className={`min-h-12 whitespace-nowrap rounded-[8px] border px-4 py-2.5 text-sm font-bold transition-all ${
+                className={`min-h-[44px] rounded-[4px] border px-4 py-2 text-sm font-bold transition-all md:min-h-12 md:rounded-[8px] md:px-5 md:py-2.5 ${
                   activeCategory === category
                     ? 'border-[#001e45] bg-[#001e45] text-white'
-                    : 'border-slate-200 bg-white text-slate-500 hover:border-[#001e45]/20 hover:bg-slate-50'
+                    : 'border-slate-200 bg-white text-slate-700 hover:border-[#001e45]/20 hover:bg-slate-50'
                 }`}
               >
                 {category}
@@ -178,14 +179,14 @@ export const AsGuidePage: React.FC = () => {
                   <span className="flex-1 text-[15px] font-bold leading-snug text-slate-800 md:text-base">
                     {item.question}
                   </span>
-                  <span className={`text-slate-300 transition-transform ${expandedId === item.id ? 'rotate-180' : ''}`}>
+                  <span className={`text-slate-600 transition-transform ${expandedId === item.id ? 'rotate-180' : ''}`}>
                     <ChevronDown size={20} />
                   </span>
                 </button>
 
                 {expandedId === item.id && (
                   <div className="animate-fadeIn px-10 pb-6 pt-1">
-                    <div className="rounded-2xl bg-slate-50 p-5 text-sm font-medium leading-relaxed text-slate-600 whitespace-pre-wrap md:text-[15px]">
+                    <div className="rounded-[8px] bg-slate-50 p-5 text-sm font-medium leading-relaxed text-slate-700 whitespace-pre-wrap md:text-[15px]">
                       {item.answer}
                     </div>
                   </div>

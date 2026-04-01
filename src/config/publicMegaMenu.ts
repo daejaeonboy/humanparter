@@ -1,3 +1,5 @@
+import { getMegaMenuVisual, type PublicVisualsContent } from '../content/publicVisualsContent';
+
 export interface MegaMenuLinkItem {
   label: string;
   to: string;
@@ -26,7 +28,7 @@ export const INSTALLATION_CASE_FILTER_TABS: FilterTabItem[] = [
 
 export const NOTICE_FILTER_TABS: FilterTabItem[] = [
   { label: '전체', value: 'all', to: '/notice' },
-  { label: '새 소식', value: 'news', to: '/notice?tab=news' },
+  { label: '공지사항', value: 'news', to: '/notice?tab=news' },
   { label: '자료실', value: 'resources', to: '/notice?tab=resources' },
 ];
 
@@ -78,7 +80,7 @@ export const STATIC_PUBLIC_MEGA_MENU_ITEMS = {
   ],
   notice: [
     {
-      label: '새 소식',
+      label: '공지사항',
       to: '/notice?tab=news',
       imageUrl: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80',
       description: '운영 변경, 서비스 업데이트, 상담 안내 등 최신 공지를 모아볼 수 있습니다.',
@@ -105,6 +107,31 @@ export const STATIC_PUBLIC_MEGA_MENU_ITEMS = {
     },
   ],
 } satisfies Record<string, MegaMenuLinkItem[]>;
+
+export const buildPublicMegaMenuItems = (publicVisuals?: PublicVisualsContent | null) => {
+  if (!publicVisuals) {
+    return STATIC_PUBLIC_MEGA_MENU_ITEMS;
+  }
+
+  return {
+    company: STATIC_PUBLIC_MEGA_MENU_ITEMS.company.map((item) => ({
+      ...item,
+      ...getMegaMenuVisual(publicVisuals, 'company', item.to),
+    })),
+    cases: STATIC_PUBLIC_MEGA_MENU_ITEMS.cases.map((item) => ({
+      ...item,
+      ...getMegaMenuVisual(publicVisuals, 'cases', item.to),
+    })),
+    notice: STATIC_PUBLIC_MEGA_MENU_ITEMS.notice.map((item) => ({
+      ...item,
+      ...getMegaMenuVisual(publicVisuals, 'notice', item.to),
+    })),
+    cs: STATIC_PUBLIC_MEGA_MENU_ITEMS.cs.map((item) => ({
+      ...item,
+      ...getMegaMenuVisual(publicVisuals, 'cs', item.to),
+    })),
+  } satisfies Record<string, MegaMenuLinkItem[]>;
+};
 
 const PUBLIC_INSTITUTION_CASE_KEYWORDS = [
   '공공기관',

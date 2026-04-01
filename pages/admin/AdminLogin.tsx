@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Loader2, Shield } from 'lucide-react';
-import { signInWithEmailAndPassword, signInWithPopup, User } from 'firebase/auth';
+import { fetchSignInMethodsForEmail, signInWithEmailAndPassword, signInWithPopup, User } from 'firebase/auth';
 import { auth, googleProvider } from '../../src/firebase';
 import { resolveUserProfileForAuthIdentity } from '../../src/api/userApi';
 import { getAuthErrorMessage } from '../../src/utils/authErrors';
@@ -16,6 +16,37 @@ export const AdminLogin: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loadingMethod, setLoadingMethod] = useState<'password' | 'google' | null>(null);
   const [error, setError] = useState('');
+
+  const getLoginErrorMessage = async (err: any, attemptedEmail?: string) => {
+    const errorCode = typeof err?.code === 'string' ? err.code : '';
+    const normalizedEmail = attemptedEmail?.trim().toLowerCase() || '';
+
+    if (errorCode === 'auth/invalid-credential' && normalizedEmail) {
+      try {
+        const methods = await fetchSignInMethodsForEmail(auth, normalizedEmail);
+
+        if (methods.includes('google.com') && !methods.includes('password')) {
+          return '이 이메일은 Google 로그인 전용 관리자 계정입니다. 아래 Google로 로그인해 주세요.';
+        }
+
+        if (methods.length === 0) {
+          return '이 이메일로 등록된 로그인 계정을 찾지 못했습니다. 관리자 회원가입 또는 Google 로그인을 확인해 주세요.';
+        }
+      } catch (lookupError) {
+        console.error('Failed to inspect sign-in methods:', lookupError);
+      }
+    }
+
+    if (errorCode) {
+      return getAuthErrorMessage(errorCode);
+    }
+
+    if (typeof err?.message === 'string' && err.message.trim()) {
+      return err.message;
+    }
+
+    return '인증 처리 중 오류가 발생했습니다. 다시 시도해주세요.';
+  };
 
   const finishAdminLogin = async (firebaseUser: User) => {
     const profile = await resolveUserProfileForAuthIdentity({
@@ -52,7 +83,7 @@ export const AdminLogin: React.FC = () => {
       navigate(from, { replace: true });
     } catch (err: any) {
       console.error('Admin login failed:', err);
-      setError(err?.message || getAuthErrorMessage(err.code));
+      setError(await getLoginErrorMessage(err, email));
     } finally {
       setLoadingMethod(null);
     }
@@ -68,7 +99,7 @@ export const AdminLogin: React.FC = () => {
       navigate(from, { replace: true });
     } catch (err: any) {
       console.error('Admin Google login failed:', err);
-      setError(err?.message || getAuthErrorMessage(err.code));
+      setError(await getLoginErrorMessage(err, email));
     } finally {
       setLoadingMethod(null);
     }

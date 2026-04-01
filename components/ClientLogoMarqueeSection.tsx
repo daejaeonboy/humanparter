@@ -40,14 +40,16 @@ const ensureMinimumRowLength = (items: LogoItem[], minimum: number) => {
 };
 
 const MarqueeRow: React.FC<MarqueeRowProps> = ({ logos }) => {
-  const repeated = [...logos, ...logos];
-  const animationDuration = `${Math.max(24, logos.length * 5)}s`;
+  // Triple the logos to ensure enough width for continuous animation
+  const repeated = [...logos, ...logos, ...logos];
+  // Calculate duration based on single logo set length (one logos array is roughly what moves in duration)
+  const animationDuration = `${Math.max(20, logos.length * 4)}s`;
 
   return (
     <div className="w-full overflow-hidden">
       <div
         className="animate-marquee-left flex w-max items-center gap-6 py-4 will-change-transform md:gap-10 md:py-5"
-        style={{ animationDuration }}
+        style={{ "--duration": animationDuration } as React.CSSProperties}
       >
         {repeated.map((item, index) => (
           <div key={`${item.id || item.name}-${index}`} className={logoFrameClass}>
@@ -98,7 +100,7 @@ export const ClientLogoMarqueeSection: React.FC = () => {
   const marqueeLogos = ensureMinimumRowLength(logos.length > 0 ? logos : fallbackLogos, 6);
 
   return (
-    <section className="bg-white py-12 md:py-16">
+    <section className="bg-white py-8 md:py-16">
       <div className="w-full overflow-x-hidden">
         <MarqueeRow logos={marqueeLogos} />
       </div>

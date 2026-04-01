@@ -4,6 +4,7 @@ export interface CategoryTabItem {
   name: string;
   to: string;
   imageUrl: string;
+  description: string;
 }
 
 const CATEGORY_TAB_IMAGE_MAP: Record<string, string> = {
@@ -27,6 +28,8 @@ const DEFAULT_CATEGORY_ORDER = ['사무가구', 'IT장비', '사무기기', '가
 const DEFAULT_CATEGORY_IMAGE =
   'https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=800&q=80';
 
+const DEFAULT_CATEGORY_DESCRIPTION = CATEGORY_TAB_DESCRIPTION_MAP.전체;
+
 const createCategoryLink = (category?: string) => {
   const params = new URLSearchParams();
   if (category && category !== '전체') {
@@ -37,23 +40,35 @@ const createCategoryLink = (category?: string) => {
   return query ? `/products?${query}` : '/products';
 };
 
-const toCategoryTabItem = (name: string): CategoryTabItem => ({
-  name,
-  to: createCategoryLink(name),
-  imageUrl: CATEGORY_TAB_IMAGE_MAP[name] || DEFAULT_CATEGORY_IMAGE,
-});
+const findParentNavItem = (name: string | undefined, navItems: NavMenuItem[] = []) => {
+  const normalizedName = name?.trim();
+  if (!normalizedName) return undefined;
 
-export const getCategoryTabImage = (name?: string) => {
+  return navItems.find((item) => !item.category?.trim() && item.name?.trim() === normalizedName);
+};
+
+export const getCategoryTabImage = (name?: string, navItems: NavMenuItem[] = []) => {
+  const matched = findParentNavItem(name, navItems);
+  if (matched?.image_url?.trim()) return matched.image_url.trim();
   if (!name) return DEFAULT_CATEGORY_IMAGE;
   return CATEGORY_TAB_IMAGE_MAP[name] || DEFAULT_CATEGORY_IMAGE;
 };
 
-export const getCategoryTabDescription = (name?: string) => {
-  if (!name) return CATEGORY_TAB_DESCRIPTION_MAP.전체;
+export const getCategoryTabDescription = (name?: string, navItems: NavMenuItem[] = []) => {
+  const matched = findParentNavItem(name, navItems);
+  if (matched?.description?.trim()) return matched.description.trim();
+  if (!name) return DEFAULT_CATEGORY_DESCRIPTION;
   return CATEGORY_TAB_DESCRIPTION_MAP[name] || `${name} 카테고리의 기업용 렌탈 품목을 빠르게 확인해보세요.`;
 };
 
-export const FALLBACK_CATEGORY_TAB_ITEMS = DEFAULT_CATEGORY_ORDER.map(toCategoryTabItem);
+const toCategoryTabItem = (name: string, navItems: NavMenuItem[] = []): CategoryTabItem => ({
+  name,
+  to: createCategoryLink(name),
+  imageUrl: getCategoryTabImage(name, navItems),
+  description: getCategoryTabDescription(name, navItems),
+});
+
+export const FALLBACK_CATEGORY_TAB_ITEMS = DEFAULT_CATEGORY_ORDER.map((name) => toCategoryTabItem(name));
 
 export const buildCategoryTabItems = (navItems: NavMenuItem[]): CategoryTabItem[] => {
   const parentNames = navItems
@@ -72,5 +87,5 @@ export const buildCategoryTabItems = (navItems: NavMenuItem[]): CategoryTabItem[
     return FALLBACK_CATEGORY_TAB_ITEMS;
   }
 
-  return uniqueParentNames.map(toCategoryTabItem);
+  return uniqueParentNames.map((name) => toCategoryTabItem(name, navItems));
 };

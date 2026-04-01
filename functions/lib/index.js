@@ -1,9 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sendSiteEmailV2 = void 0;
+exports.publicDataV1 = exports.sendSiteEmailV2 = void 0;
 const nodemailer = require("nodemailer");
 const dotenv = require("dotenv");
 const https_1 = require("firebase-functions/v2/https");
+const publicData_1 = require("./publicData");
 dotenv.config();
 const normalizeEnvValue = (value) => {
     if (!value) {
@@ -85,5 +86,12 @@ exports.sendSiteEmailV2 = (0, https_1.onRequest)({
         console.error("Error sending email:", error);
         res.status(500).json({ error: "Failed to send email", details: error.message });
     }
+});
+exports.publicDataV1 = (0, https_1.onRequest)({
+    region: "us-central1",
+    cors: true,
+    invoker: "public",
+}, async (req, res) => {
+    await (0, publicData_1.handlePublicDataRequest)(req, res);
 });
 //# sourceMappingURL=index.js.map

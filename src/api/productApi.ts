@@ -2,6 +2,7 @@ import { supabase } from '../lib/supabase';
 
 export interface Product {
     id?: string;
+    product_code?: string;
     name: string;
     category?: string;
     _parent_category?: string;
@@ -26,6 +27,7 @@ export interface Product {
 
 let productDisplayOrderSupportedCache: boolean | null = null;
 let productExternalLinkSupportedCache: boolean | null = null;
+let reorderProductsRpcSupportedCache: boolean | null = null;
 
 const isDisplayOrderMissingError = (error: any): boolean => {
     const code = String(error?.code || '');
@@ -37,6 +39,18 @@ const isExternalLinkMissingError = (error: any): boolean => {
     const code = String(error?.code || '');
     const message = String(error?.message || '');
     return code === '42703' || message.includes('products.external_link_url');
+};
+
+const isMissingReorderProductsRpcError = (error: any): boolean => {
+    const code = String(error?.code || '');
+    const message = String(error?.message || '').toLowerCase();
+    return code === '42883' || message.includes('reorder_products_display_order');
+};
+
+const isForeignKeyConstraintError = (error: any): boolean => {
+    const code = String(error?.code || '');
+    const message = String(error?.message || '').toLowerCase();
+    return code === '23503' || message.includes('foreign key');
 };
 
 export const normalizeExternalLinkUrl = (value?: string | null): string => {
@@ -290,6 +304,23 @@ export const updateProductsDisplayOrder = async (orderedProductIds: string[]): P
         throw new Error('DISPLAY_ORDER_NOT_SUPPORTED');
     }
 
+    if (reorderProductsRpcSupportedCache !== false) {
+        const { error } = await supabase.rpc('reorder_products_display_order', {
+            ordered_product_ids: orderedProductIds,
+        });
+
+        if (!error) {
+            reorderProductsRpcSupportedCache = true;
+            return;
+        }
+
+        if (!isMissingReorderProductsRpcError(error)) {
+            throw error;
+        }
+
+        reorderProductsRpcSupportedCache = false;
+    }
+
     const updates = orderedProductIds.map((id, index) =>
         supabase
             .from('products')
@@ -314,15 +345,23 @@ export const updateProductsCategoryBatch = async (oldCategory: string, newCatego
 
 // Delete product
 export const deleteProduct = async (id: string): Promise<void> => {
-    await supabase.from('product_sections').delete().eq('product_id', id);
-    await supabase.from('bookings').delete().eq('product_id', id);
-
     const { error } = await supabase
         .from('products')
         .delete()
         .eq('id', id);
 
-    if (error) throw error;
+    if (!error) return;
+    if (!isForeignKeyConstraintError(error)) throw error;
+
+    await supabase.from('product_sections').delete().eq('product_id', id);
+    await supabase.from('bookings').delete().eq('product_id', id);
+
+    const retry = await supabase
+        .from('products')
+        .delete()
+        .eq('id', id);
+
+    if (retry.error) throw retry.error;
 };
 
 // Product by code

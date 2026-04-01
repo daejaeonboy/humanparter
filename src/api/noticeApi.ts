@@ -3,6 +3,7 @@ import { noticePosts as fallbackNoticePosts, type NoticePost as LegacyNoticePost
 import { stripHtmlTags } from '../utils/html';
 
 const TABLE_NAME = 'notice_posts';
+const TABLE_STATUS_STORAGE_KEY = 'hp_notice_posts_table_status';
 
 export interface NoticePost {
   id: string;
@@ -41,11 +42,51 @@ type NoticeRecord = {
 
 type NoticeFormInput = Omit<NoticePost, 'id' | 'created_at' | 'updated_at'>;
 type NoticeUpdateInput = Partial<NoticeFormInput>;
+type TableStatus = 'unknown' | 'available' | 'missing';
+
+let tableStatusCache: TableStatus = 'unknown';
 
 const isMissingTableError = (error: unknown) => {
   if (!error || typeof error !== 'object') return false;
   const maybeError = error as { code?: string; message?: string };
   return maybeError.code === '42P01' || String(maybeError.message || '').toLowerCase().includes(TABLE_NAME);
+};
+
+const createMissingTableError = () => ({
+  code: '42P01',
+  message: `${TABLE_NAME} table is missing`,
+});
+
+const readStoredTableStatus = (): TableStatus => {
+  if (typeof window === 'undefined') return 'unknown';
+
+  try {
+    const stored = window.sessionStorage.getItem(TABLE_STATUS_STORAGE_KEY);
+    return stored === 'available' || stored === 'missing' ? stored : 'unknown';
+  } catch {
+    return 'unknown';
+  }
+};
+
+const writeStoredTableStatus = (status: Exclude<TableStatus, 'unknown'>) => {
+  if (typeof window === 'undefined') return;
+
+  try {
+    window.sessionStorage.setItem(TABLE_STATUS_STORAGE_KEY, status);
+  } catch {
+    // Ignore sessionStorage write failures.
+  }
+};
+
+const getTableStatus = () => {
+  if (tableStatusCache !== 'unknown') return tableStatusCache;
+  tableStatusCache = readStoredTableStatus();
+  return tableStatusCache;
+};
+
+const setTableStatus = (status: Exclude<TableStatus, 'unknown'>) => {
+  tableStatusCache = status;
+  writeStoredTableStatus(status);
 };
 
 const escapeHtml = (value: string) =>
@@ -90,6 +131,21 @@ const formatDateForStorage = (value?: string) => {
 };
 
 const normalizeHtml = (value?: string | null) => (value && value.trim() ? value.trim() : '<p></p>');
+
+const sortNoticePosts = (items: NoticePost[]) =>
+  [...items].sort((a, b) => {
+    const aOrder = Number.isFinite(a.displayOrder) ? a.displayOrder : Number.MAX_SAFE_INTEGER;
+    const bOrder = Number.isFinite(b.displayOrder) ? b.displayOrder : Number.MAX_SAFE_INTEGER;
+    if (aOrder !== bOrder) return aOrder - bOrder;
+
+    const aPublishedAt = a.publishedAt ? new Date(a.publishedAt).getTime() : 0;
+    const bPublishedAt = b.publishedAt ? new Date(b.publishedAt).getTime() : 0;
+    if (aPublishedAt !== bPublishedAt) return bPublishedAt - aPublishedAt;
+
+    const aCreatedAt = a.created_at ? new Date(a.created_at).getTime() : 0;
+    const bCreatedAt = b.created_at ? new Date(b.created_at).getTime() : 0;
+    return bCreatedAt - aCreatedAt;
+  });
 
 const normalizeRecord = (record: Record<string, unknown>): NoticePost => ({
   id: String(record.id || ''),
@@ -143,15 +199,24 @@ const createNoticeId = (title: string) => {
 };
 
 const fetchAdminNoticeRows = async (): Promise<NoticePost[]> => {
+  if (getTableStatus() === 'missing') {
+    throw createMissingTableError();
+  }
+
   const { data, error } = await supabase
     .from(TABLE_NAME)
-    .select('*')
-    .order('display_order', { ascending: true })
-    .order('published_at', { ascending: false });
+    .select('*');
 
-  if (error) throw error;
+  if (error) {
+    if (isMissingTableError(error)) {
+      setTableStatus('missing');
+    }
+    throw error;
+  }
 
-  return (data || []).map((record) => normalizeRecord(record as Record<string, unknown>));
+  setTableStatus('available');
+
+  return sortNoticePosts((data || []).map((record) => normalizeRecord(record as Record<string, unknown>)));
 };
 
 const getFallbackNoticePosts = (): NoticePost[] =>

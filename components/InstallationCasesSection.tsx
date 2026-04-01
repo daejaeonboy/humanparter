@@ -2,7 +2,10 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { Container } from "./ui/Container";
-import { getInstallationCases, InstallationCase } from "../src/api/cmsApi";
+import { ResponsiveImage } from "./ui/ResponsiveImage";
+import { InstallationCase } from "../src/api/cmsApi";
+import { getPublicHomeData, type PublicCaseSummary } from "../src/api/publicDataApi";
+import { usePrerenderData } from "../src/prerender/context";
 
 const fallbackCases: InstallationCase[] = [
   {
@@ -32,15 +35,20 @@ const fallbackCases: InstallationCase[] = [
 ];
 
 export const InstallationCasesSection: React.FC = () => {
-  const [cases, setCases] = useState<InstallationCase[]>([]);
-  const [loading, setLoading] = useState(true);
+  const preloadedCases = usePrerenderData()?.home?.installationCases;
+  const [cases, setCases] = useState<Array<InstallationCase | PublicCaseSummary>>(preloadedCases || []);
+  const [loading, setLoading] = useState(!preloadedCases);
 
   useEffect(() => {
     const fetchCases = async () => {
       try {
-        const data = await getInstallationCases();
-        // 3단 구성을 위해 3개만 가져옴
-        setCases(data.length > 0 ? data.slice(0, 3) : fallbackCases);
+        if (preloadedCases) {
+          setCases(preloadedCases);
+          setLoading(false);
+        }
+
+        const { installationCases } = await getPublicHomeData();
+        setCases(installationCases.length > 0 ? installationCases : fallbackCases);
       } catch (error) {
         console.error("Failed to fetch installation cases:", error);
         setCases(fallbackCases);
@@ -49,7 +57,7 @@ export const InstallationCasesSection: React.FC = () => {
       }
     };
     fetchCases();
-  }, []);
+  }, [preloadedCases]);
 
   if (loading) {
     return (
@@ -64,34 +72,36 @@ export const InstallationCasesSection: React.FC = () => {
   }
 
   return (
-    <section className="bg-white py-16 md:py-24">
+    <section className="bg-white py-12 md:py-24">
       <Container>
         <div className="mb-10 flex items-end justify-between md:mb-12">
-          <h2 className="text-[28px] font-medium leading-tight text-black md:text-[32px]">
+          <h2 className="text-[24px] font-medium leading-tight text-black md:text-4xl">
             고객 사례
           </h2>
           <Link
             to="/cases"
-            className="text-[13px] font-semibold text-black/60 transition hover:text-black"
+            className="text-[15px] font-bold text-slate-700 transition hover:text-black"
           >
             전체보기
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div className="flex gap-4 overflow-x-auto pb-8 no-scrollbar -mx-4 px-4 md:mx-0 md:px-0 md:grid md:grid-cols-3 md:pb-0">
           {cases.map((item) => (
-            <Link key={item.id} to={item.link || `/cases/${item.id}`} className="group">
-              <div className="mb-4 overflow-hidden rounded-2xl bg-gray-100">
+            <Link key={item.id} to={item.link || `/cases/${item.id}`} className="group min-w-[280px] md:min-w-0">
+              <div className="mb-4 overflow-hidden rounded-[8px] bg-slate-100">
                 <div className="aspect-[4/3] w-full transition-transform duration-500 group-hover:scale-105">
-                  <img
+                  <ResponsiveImage
                     src={item.image_url}
                     alt={item.title}
+                    kind="card"
+                    sizes="(min-width: 768px) 33vw, 280px"
                     className="h-full w-full object-cover"
                   />
                 </div>
               </div>
               <div className="px-1">
-                <h3 className="text-[16px] font-medium text-black transition-colors group-hover:text-black/70">
+                <h3 className="text-[17px] font-bold text-slate-900 transition-colors group-hover:text-brand-primary">
                   {item.title}
                 </h3>
               </div>

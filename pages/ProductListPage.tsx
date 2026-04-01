@@ -1,13 +1,15 @@
 ﻿import React, { useState, useEffect, useCallback } from 'react';
 import { Container } from '../components/ui/Container';
+import { ResponsiveImage } from '../components/ui/ResponsiveImage';
 import { PublicPageEditButton } from '../components/admin/PublicPageEditButton';
 import { Loader2 } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Seo } from '../components/Seo';
-import { getProductNavigationTarget, getProducts, Product } from '../src/api/productApi';
-import { getAllNavMenuItems } from '../src/api/cmsApi';
+import { getProductNavigationTarget, Product } from '../src/api/productApi';
+import type { NavMenuItem } from '../src/api/cmsApi';
+import { getPublicBootstrapData, getPublicProductsData } from '../src/api/publicDataApi';
+import { getProductDefaultVisual, type PublicVisualsContent } from '../src/content/publicVisualsContent';
 import { usePrerenderData } from '../src/prerender/context';
-import { supabase } from '../src/lib/supabase';
 import { getCategoryTabDescription, getCategoryTabImage } from '../src/config/categoryTabs';
 import { buildBreadcrumbStructuredData, normalizeMetaText, toAbsoluteUrl } from '../src/utils/seo';
 
@@ -20,12 +22,17 @@ export const ProductListPage: React.FC = () => {
     const urlTitle = searchParams.get('title');
     const prerenderData = usePrerenderData();
     const preloadedList = prerenderData?.productList;
+    const preloadedBootstrap = prerenderData?.bootstrap;
 
     const [activeCategory, setActiveCategory] = useState(ALL_CATEGORY);
     const [products, setProducts] = useState<Product[]>(preloadedList?.products || []);
     const [loading, setLoading] = useState(!preloadedList);
     const [displayedCategories, setDisplayedCategories] = useState<string[]>([]);
     const [currentPage, setCurrentPage] = useState(1);
+    const [categoryNavItems, setCategoryNavItems] = useState<NavMenuItem[]>(
+        preloadedList?.navItems || preloadedBootstrap?.navItems || [],
+    );
+    const [publicVisuals, setPublicVisuals] = useState<PublicVisualsContent | null>(preloadedBootstrap?.publicVisuals || null);
 
     // Grouping State
     const [parentToChildMap, setParentToChildMap] = useState<Record<string, string[]>>({});
@@ -33,7 +40,7 @@ export const ProductListPage: React.FC = () => {
     const [parentCategories, setParentCategories] = useState<string[]>([]);
     const [currentGroup, setCurrentGroup] = useState<string | null>(null);
 
-    const applyProductData = useCallback((productData: Product[], navItems: Awaited<ReturnType<typeof getAllNavMenuItems>>) => {
+    const applyProductData = useCallback((productData: Product[], navItems: NavMenuItem[]) => {
             // Build category maps from nav_menu_items FIRST
             const pMap: Record<string, string[]> = {};
             const cMap: Record<string, string> = {};
@@ -117,6 +124,7 @@ export const ProductListPage: React.FC = () => {
                     return bCreated - aCreated;
                 })
             );
+            setCategoryNavItems(navItems);
 
             setParentToChildMap(pMap);
             setChildToParentMap(cMap);
@@ -160,14 +168,30 @@ export const ProductListPage: React.FC = () => {
     }, [urlCategory]);
 
     const fetchProducts = useCallback(async () => {
-        setLoading(true);
+        if (!preloadedList) {
+            setLoading(true);
+        }
         try {
-            const [productData, navItems] = preloadedList
-                ? [preloadedList.products, preloadedList.navItems]
-                : await Promise.all([
-                    getProducts(),
-                    getAllNavMenuItems()
+            let productData = preloadedList?.products;
+            let navItems = preloadedList?.navItems;
+            let bootstrapVisuals = publicVisuals;
+
+            if (!productData || !navItems || !bootstrapVisuals) {
+                const [publicData, bootstrapData] = await Promise.all([
+                    !productData || !navItems ? getPublicProductsData() : Promise.resolve(null),
+                    !bootstrapVisuals ? getPublicBootstrapData() : Promise.resolve(null),
                 ]);
+
+                if (publicData) {
+                    productData = publicData.products;
+                    navItems = publicData.navItems;
+                }
+
+                if (bootstrapData) {
+                    bootstrapVisuals = bootstrapData.publicVisuals;
+                    setPublicVisuals(bootstrapData.publicVisuals);
+                }
+            }
 
             applyProductData(productData, navItems);
         } catch (error) {
@@ -175,34 +199,10 @@ export const ProductListPage: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    }, [applyProductData, preloadedList]);
+    }, [applyProductData, preloadedList, publicVisuals]);
 
     useEffect(() => {
         fetchProducts();
-    }, [fetchProducts]);
-
-    useEffect(() => {
-        const channel = supabase
-            .channel('product-list-realtime')
-            .on(
-                'postgres_changes',
-                { event: '*', schema: 'public', table: 'nav_menu_items' },
-                () => {
-                    fetchProducts();
-                }
-            )
-            .on(
-                'postgres_changes',
-                { event: '*', schema: 'public', table: 'products' },
-                () => {
-                    fetchProducts();
-                }
-            )
-            .subscribe();
-
-        return () => {
-            supabase.removeChannel(channel);
-        };
     }, [fetchProducts]);
 
     // Enhanced Filter Logic
@@ -287,6 +287,8 @@ export const ProductListPage: React.FC = () => {
         },
     };
 
+    const [isMainCategoryOpen, setIsMainCategoryOpen] = useState(false);
+
     const handleParentCategorySelect = (category: string | null) => {
         if (!category) {
             setCurrentGroup(null);
@@ -299,14 +301,22 @@ export const ProductListPage: React.FC = () => {
         setCurrentGroup(category);
         setActiveCategory(ALL_CATEGORY);
         setDisplayedCategories(children);
+        setIsMainCategoryOpen(false);
     };
 
     const isSubcategoryFilterVisible = currentGroup !== null || (activeCategory !== ALL_CATEGORY && !!childToParentMap[activeCategory]);
     const visibleSubcategories = displayedCategories.filter((cat) => Boolean(cat?.trim()) && cat !== ALL_CATEGORY);
     const hasVisibleSubcategoryFilters = isSubcategoryFilterVisible && visibleSubcategories.length > 0;
-    const heroImageUrl = getCategoryTabImage(heroCategory || undefined);
-    const heroDescription = getCategoryTabDescription(heroCategory || undefined);
-    const heroTitle = currentGroup || (activeCategory !== ALL_CATEGORY ? activeCategory : '렌탈 품목');
+    const defaultHero = getProductDefaultVisual(publicVisuals);
+    const heroImageUrl = heroCategory
+        ? getCategoryTabImage(heroCategory || undefined, categoryNavItems)
+        : defaultHero?.imageUrl || getCategoryTabImage(undefined, categoryNavItems);
+    const heroDescription = heroCategory
+        ? getCategoryTabDescription(heroCategory || undefined, categoryNavItems)
+        : defaultHero?.description || getCategoryTabDescription(undefined, categoryNavItems);
+    const heroTitle = heroCategory
+        ? currentGroup || (activeCategory !== ALL_CATEGORY ? activeCategory : '렌탈 품목')
+        : '렌탈 품목';
 
     return (
         <main className="bg-white min-h-screen pb-24 pt-0">
@@ -325,32 +335,38 @@ export const ProductListPage: React.FC = () => {
 
             <section className="relative overflow-visible bg-transparent">
                 <div className="relative overflow-hidden">
-                    <div
-                        className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-50"
-                        style={{ backgroundImage: `url(${heroImageUrl})` }}
-                        aria-hidden="true"
-                    />
+                    <div className="absolute inset-0 opacity-50" aria-hidden="true">
+                        <ResponsiveImage
+                            src={heroImageUrl}
+                            alt=""
+                            kind="hero"
+                            priority
+                            className="h-full w-full object-cover"
+                            sizes="100vw"
+                        />
+                    </div>
                     <div className="absolute inset-0 z-10 bg-[linear-gradient(90deg,rgba(0,18,46,0.95)_0%,rgba(1,12,34,0.84)_46%,rgba(0,7,22,0.96)_100%)]" />
                     <div className="absolute inset-0 z-10 bg-[linear-gradient(180deg,rgba(0,0,0,0.16)_0%,rgba(0,0,0,0.22)_100%)]" />
 
                     <div className="absolute right-4 top-4 z-20 md:right-8 md:top-8">
-                        <PublicPageEditButton to="/admin/products" />
+                        <PublicPageEditButton to="/admin/products" label="카테고리 이미지 수정" />
                     </div>
 
-                    <div className="relative z-20 flex h-[320px] items-center justify-center px-6 py-16 text-center md:h-[420px] md:px-10 md:py-20">
+                    <div className="relative z-20 flex h-[280px] items-center justify-center px-6 py-6 text-center md:h-[420px] md:px-10 md:py-20">
                         <div className="max-w-3xl">
-                            <h1 className="text-[34px] font-extrabold tracking-tight text-white md:text-[62px] md:leading-[1.1]">
+                            <h1 className="text-[32px] font-extrabold tracking-tight text-white md:text-[62px] md:leading-[1.1]">
                                 {heroTitle}
                             </h1>
-                            <p className="mt-5 text-sm leading-7 text-white/80 md:text-lg md:leading-8">
+                            <p className="mt-3 text-[16px] leading-relaxed text-white/80 md:mt-5 md:text-lg md:leading-8">
                                 {heroDescription}
                             </p>
                         </div>
                     </div>
                 </div>
 
-                <div className="absolute bottom-0 left-1/2 z-20 w-full max-w-[1440px] -translate-x-1/2 translate-y-1/2 px-4 md:px-8">
-                    <div className="overflow-x-auto border border-slate-200 bg-white">
+                <div className="absolute bottom-0 left-1/2 z-30 w-full max-w-[1440px] -translate-x-1/2 translate-y-1/2 px-4 md:px-8">
+                    {/* Desktop View */}
+                    <div className="hidden md:block overflow-x-auto border border-slate-200 bg-white">
                         <div className="flex min-w-max overflow-hidden md:min-w-0">
                             {parentCategories.map((cat, index) => {
                                 const isActiveParent = (currentGroup || childToParentMap[activeCategory] || null) === cat;
@@ -373,6 +389,42 @@ export const ProductListPage: React.FC = () => {
                             })}
                         </div>
                     </div>
+
+                    {/* Mobile Dropdown View */}
+                    <div className="relative md:hidden">
+                        <button
+                            type="button"
+                            onClick={() => setIsMainCategoryOpen(!isMainCategoryOpen)}
+                            className="flex w-full items-center justify-between border border-slate-200 bg-white px-5 py-4 text-left text-sm font-semibold text-slate-900 shadow-lg"
+                        >
+                            <span>{currentGroup || '카테고리 선택'}</span>
+                            <div className={`transition-transform duration-300 ${isMainCategoryOpen ? 'rotate-180' : ''}`}>
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                            </div>
+                        </button>
+                        
+                        {isMainCategoryOpen && (
+                            <div className="absolute left-0 top-full mt-1 w-full border border-slate-200 bg-white shadow-xl">
+                                {parentCategories.map((cat) => {
+                                    const isActiveParent = (currentGroup || childToParentMap[activeCategory] || null) === cat;
+                                    return (
+                                        <button
+                                            key={cat}
+                                            type="button"
+                                            onClick={() => handleParentCategorySelect(cat)}
+                                            className={`block w-full px-5 py-4 text-left text-sm font-semibold transition ${
+                                                isActiveParent ? 'bg-[#eeeeee] text-[#001e45]' : 'bg-white text-slate-700 active:bg-slate-50'
+                                            } border-b border-slate-100 last:border-0`}
+                                        >
+                                            {cat}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
                 </div>
             </section>
 
@@ -380,15 +432,15 @@ export const ProductListPage: React.FC = () => {
 
                 {/* Category Filter */}
                 {hasVisibleSubcategoryFilters && (
-                    <div className="mb-12 mt-20 overflow-x-auto md:mt-24">
-                        <div className="flex min-w-max items-center gap-2">
+                    <div className="mb-12 mt-20 md:mt-24">
+                        <div className="grid grid-cols-2 gap-2 md:flex md:flex-wrap md:items-center md:gap-2">
                             {visibleSubcategories.map((cat, idx) => {
                                 const isActive = activeCategory === cat;
                                 return (
                                     <button
                                         key={`${cat}-${idx}`}
                                         onClick={() => setActiveCategory(cat)}
-                                        className={`min-h-12 rounded-[8px] border px-5 py-2.5 text-sm font-bold transition-all duration-300
+                                        className={`min-h-[44px] rounded-[4px] border px-4 py-2 text-sm font-bold transition-all duration-300 md:min-h-12 md:rounded-[8px] md:px-5 md:py-2.5
                                             ${isActive
                                                 ? 'border-[#001e45] bg-[#001e45] text-white'
                                                 : 'border-slate-200 bg-white text-slate-600 hover:border-[#001e45]/20 hover:bg-slate-50 hover:text-slate-900'
@@ -409,8 +461,8 @@ export const ProductListPage: React.FC = () => {
                             <Loader2 className="animate-spin text-[#001e45]" size={40} />
                         </div>
                     ) : filteredProducts.length === 0 ? (
-                        <div className="flex min-h-[400px] flex-col items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-white text-center">
-                            <p className="text-lg font-medium text-slate-500">등록된 상품이 없습니다.</p>
+                        <div className="flex min-h-[400px] flex-col items-center justify-center rounded-[8px] border border-dashed border-slate-300 bg-white text-center">
+                            <p className="text-lg font-medium text-slate-700">등록된 상품이 없습니다.</p>
                         </div>
                     ) : (
                         <>
@@ -420,9 +472,11 @@ export const ProductListPage: React.FC = () => {
                                     const cardContent = (
                                         <>
                                             <div className="relative aspect-[4/3] w-full overflow-hidden rounded-[8px] bg-white shadow-sm ring-1 ring-slate-900/5 transition-all duration-300 group-hover:shadow-md">
-                                                <img
+                                                <ResponsiveImage
                                                     src={product.image_url || 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80'}
                                                     alt={product.name}
+                                                    kind="card"
+                                                    sizes="(min-width: 1280px) 24vw, (min-width: 768px) 33vw, 50vw"
                                                     className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                                                 />
                                                 <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/5" />
@@ -435,7 +489,7 @@ export const ProductListPage: React.FC = () => {
                                             </div>
 
                                             <div className="mt-5 flex flex-col px-1">
-                                                <span className="mb-2 text-[11px] font-extrabold tracking-wider text-slate-400 uppercase">
+                                                <span className="mb-2 text-[11px] font-extrabold tracking-wider text-slate-600 uppercase">
                                                     {product.category || '기본 상품'}
                                                 </span>
                                                  

@@ -1,6 +1,7 @@
 import * as nodemailer from "nodemailer";
 import * as dotenv from "dotenv";
 import { onRequest } from "firebase-functions/v2/https";
+import { handlePublicDataRequest } from "./publicData";
 
 dotenv.config();
 
@@ -98,6 +99,17 @@ export const sendSiteEmailV2 = onRequest(
             console.error("Error sending email:", error);
             res.status(500).json({ error: "Failed to send email", details: error.message });
         }
+    },
+);
+
+export const publicDataV1 = onRequest(
+    {
+        region: "us-central1",
+        cors: true,
+        invoker: "public",
+    },
+    async (req, res) => {
+        await handlePublicDataRequest(req, res);
     },
 );
 

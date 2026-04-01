@@ -2,7 +2,10 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { Container } from './ui/Container';
-import { Banner, getHeroBanners } from '../src/api/cmsApi';
+import { ResponsiveImage } from './ui/ResponsiveImage';
+import { Banner } from '../src/api/cmsApi';
+import { getPublicHomeData } from '../src/api/publicDataApi';
+import { usePrerenderData } from '../src/prerender/context';
 
 interface VisualSlide {
     id: string;
@@ -17,32 +20,32 @@ interface VisualSlide {
 const fallbackSlides: VisualSlide[] = [
     {
         id: 'fallback-1',
-        title: 'B2B Rental Platform For Workplace',
-        subtitle: '기업 운영에 필요한 가구와 IT 장비를 빠르게 구성하고 설치합니다.',
+        title: '휴먼파트너 렌탈',
+        subtitle: '기업 사무가구와 IT 장비를 빠르게 구성하고 설치하는 종합 B2B 렌탈 솔루션입니다.',
         imageUrl:
             'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1900&q=80',
         link: '/products',
-        buttonText: '상품 보기',
+        buttonText: '렌탈 품목 보기',
         brandText: 'HUMAN PARTNER',
     },
     {
         id: 'fallback-2',
-        title: 'Corporate Project Setup In One Place',
-        subtitle: '상담부터 견적, 설치, 운영까지 단일 창구로 진행하세요.',
+        title: '기업 프로젝트 맞춤 렌탈',
+        subtitle: '상담부터 견적, 설치, 운영 지원까지 휴먼파트너가 한 번에 진행합니다.',
         imageUrl:
             'https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1900&q=80',
-        link: '/cs',
-        buttonText: '기업 제휴 문의',
+        link: '/quote-request',
+        buttonText: '견적 문의하기',
         brandText: 'ENTERPRISE RENTAL',
     },
     {
         id: 'fallback-3',
-        title: 'Fast Delivery. Stable Operation.',
-        subtitle: '프로젝트 일정에 맞춰 설치와 운영 지원을 제공합니다.',
+        title: '사무가구·복합기·노트북 종합렌탈',
+        subtitle: '프로젝트 일정과 공간 환경에 맞춰 설치와 운영 지원까지 안정적으로 제공합니다.',
         imageUrl:
             'https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=1900&q=80',
-        link: '/cs',
-        buttonText: '상담 접수',
+        link: '/cases',
+        buttonText: '설치 사례 보기',
         brandText: 'B2B SOLUTION',
     },
 ];
@@ -68,8 +71,13 @@ const mapBannerToSlide = (banner: Banner, index: number): VisualSlide | null => 
 const isExternalLink = (url: string) => /^https?:\/\//i.test(url);
 
 export const MainVisualSlider: React.FC = () => {
-    const [slides, setSlides] = useState<VisualSlide[]>([]);
-    const [loading, setLoading] = useState(true);
+    const preloadedHomeData = usePrerenderData()?.home;
+    const preloadedSlides = useMemo(
+        () => (preloadedHomeData?.heroBanners || []).map(mapBannerToSlide).filter((item): item is VisualSlide => item !== null),
+        [preloadedHomeData?.heroBanners],
+    );
+    const [slides, setSlides] = useState<VisualSlide[]>(preloadedSlides.length > 0 ? preloadedSlides : fallbackSlides);
+    const [loading, setLoading] = useState(false);
     const [activeIndex, setActiveIndex] = useState(0);
     const [paused, setPaused] = useState(false);
 
@@ -130,7 +138,13 @@ export const MainVisualSlider: React.FC = () => {
     useEffect(() => {
         const loadSlides = async () => {
             try {
-                const banners = await getHeroBanners();
+                if (preloadedSlides.length > 0) {
+                    setSlides(preloadedSlides);
+                    setLoading(false);
+                }
+
+                const { heroBanners } = await getPublicHomeData();
+                const banners = heroBanners as Banner[];
                 const mappedSlides = banners
                     .map(mapBannerToSlide)
                     .filter((item): item is VisualSlide => item !== null);
@@ -143,7 +157,7 @@ export const MainVisualSlider: React.FC = () => {
             }
         };
         loadSlides();
-    }, []);
+    }, [preloadedSlides]);
 
     const slideCount = slides.length;
 
@@ -170,7 +184,7 @@ export const MainVisualSlider: React.FC = () => {
         return Math.min(activeIndex, slideCount - 1);
     }, [activeIndex, slideCount]);
 
-    if (loading) {
+    if (loading && slides.length === 0) {
         return (
             <section className="relative h-[500px] bg-slate-900 md:h-[72vh] lg:h-[78vh]">
                 <div className="flex h-full items-center justify-center">
@@ -182,9 +196,9 @@ export const MainVisualSlider: React.FC = () => {
 
     return (
         <section className="bg-white py-0">
-            <Container size="wide">
+            <Container size="wide" className="!px-0 md:!px-8">
                 <div
-                    className={`relative h-[400px] overflow-hidden rounded-2xl bg-slate-900 md:h-[500px] lg:h-[600px] select-none touch-pan-y ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+                    className={`relative h-[280px] overflow-hidden bg-slate-900 md:h-[500px] md:rounded-2xl lg:h-[600px] select-none touch-pan-y ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
                     onMouseEnter={() => setPaused(true)}
                     onMouseLeave={() => {
                         setPaused(false);
@@ -200,22 +214,29 @@ export const MainVisualSlider: React.FC = () => {
                         const visible = safeIndex === index;
                         const overlayContent = (
                             <>
-                                <div
-                                    className="absolute inset-0 bg-cover bg-center transition-transform duration-[7000ms] ease-out pointer-events-none"
-                                    draggable="false"
-                                    style={{
-                                        backgroundImage: `url(${slide.imageUrl})`,
-                                        transform: visible ? 'scale(1.04)' : 'scale(1)',
-                                    }}
-                                />
+                                <div className="absolute inset-0 pointer-events-none">
+                                    <ResponsiveImage
+                                        src={slide.imageUrl}
+                                        alt={slide.title}
+                                        kind="hero"
+                                        priority={index === 0}
+                                        loading={index === 0 ? 'eager' : 'lazy'}
+                                        className="h-full w-full object-cover transition-transform duration-[7000ms] ease-out"
+                                        draggable={false}
+                                        sizes="100vw"
+                                        style={{
+                                            transform: visible ? 'scale(1.04)' : 'scale(1)',
+                                        }}
+                                    />
+                                </div>
                                 <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(0,0,0,0.55)_0%,rgba(0,0,0,0.3)_42%,rgba(0,0,0,0.1)_100%)] pointer-events-none" />
                                 <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.15)_0%,rgba(0,0,0,0.1)_34%,rgba(0,0,0,0.2)_100%)] pointer-events-none" />
                                 <div className="relative z-10 flex h-full items-center justify-center px-6 text-center">
                                     <div className="max-w-4xl text-white">
-                                        <h1 className="mt-3 md:mt-5 whitespace-pre-wrap break-keep text-2xl sm:text-3xl font-medium leading-[1.2] tracking-tight md:text-[4rem] md:leading-[1.1]">
+                                        <h1 className="mt-3 md:mt-5 whitespace-pre-wrap break-keep text-[32px] font-medium leading-[1.2] tracking-tight md:text-[4rem] md:leading-[1.1]">
                                             {slide.title}
                                         </h1>
-                                        <p className="mt-4 md:mt-6 mx-auto max-w-3xl whitespace-pre-wrap break-keep text-[15px] sm:text-lg font-medium leading-relaxed text-white/90 md:text-[1.25rem]">
+                                        <p className="mt-4 md:mt-6 mx-auto max-w-3xl whitespace-pre-wrap break-keep text-[16px] font-medium leading-relaxed text-white/90 md:text-[1.25rem]">
                                             {slide.subtitle}
                                         </p>
                                     </div>

@@ -11,17 +11,19 @@ type FooterLink = {
 
 const footerColumns: FooterLink[][] = [
   [
-    { label: "\uD648", to: "/" },
-    { label: "\uD68C\uC0AC\uC18C\uAC1C", to: "/company" },
+    { label: "회사 소개", to: "/company" },
+    { label: "사업영역", to: "/company/business" },
+    { label: "오시는길", to: "/company/location" },
   ],
   [
-    { label: "\uC81C\uD488\uC548\uB0B4", to: "/products" },
-    { label: "\uACE0\uAC1D\uC0AC\uB840", to: "/cases" },
+    { label: "렌탈 품목", to: "/products" },
+    { label: "설치 사례", to: "/cases" },
+    { label: "견적 요청", to: "/quote-request" },
   ],
   [
-    { label: "\uACAC\uC801\uBB38\uC758", to: "/quote-request" },
-    { label: "\uACE0\uAC1D\uC13C\uD130", to: "/cs" },
-    { label: "\uACF5\uC9C0\uC0AC\uD56D", to: "/notice" },
+    { label: "고객센터", to: "/cs" },
+    { label: "A/S 안내", to: "/cs/as-guide" },
+    { label: "정보센터", to: "/notice" },
   ],
 ];
 
@@ -59,7 +61,7 @@ export function Footer() {
   };
 
   return (
-    <footer className="relative mt-20 bg-[#222222] pb-20 text-white md:mt-28 md:pb-10">
+    <footer className="relative mt-20 bg-[#202936] pb-20 text-white md:mt-28 md:pb-10">
       <Container className="py-14 md:py-16">
         <div className="flex flex-col gap-12 border-b border-white/10 pb-10 md:gap-14 md:pb-12 lg:flex-row lg:items-start lg:justify-between">
           <Link

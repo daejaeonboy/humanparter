@@ -3,31 +3,17 @@ import { Link, useSearchParams } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { PublicCollectionHero } from "../components/PublicCollectionHero";
 import { Seo } from "../components/Seo";
+import { ResponsiveImage } from "../components/ui/ResponsiveImage";
 import { Container } from "../components/ui/Container";
 import { PublicPageEditButton } from "../components/admin/PublicPageEditButton";
 import { NOTICE_FILTER_TABS, getNoticeTabValue } from "../src/config/publicMegaMenu";
+import { getCollectionHeroVisual } from "../src/content/publicVisualsContent";
+import { usePublicVisuals } from "../src/hooks/usePublicVisuals";
 import { buildBreadcrumbStructuredData, toAbsoluteUrl } from "../src/utils/seo";
-import { NoticePost, getPublicNoticePosts } from "../src/api/noticeApi";
+import { getPublicNoticesData, type PublicNoticeSummary } from "../src/api/publicDataApi";
+import { usePrerenderData } from "../src/prerender/context";
 
-const NOTICES_PER_PAGE = 4;
-
-const NOTICE_GALLERY_HERO_CONTENT: Record<string, { title: string; description: string; imageUrl: string }> = {
-  all: {
-    title: "공지사항",
-    description: "휴먼파트너의 운영 소식, 상담 안내, 설치 및 렌탈 관련 주요 업데이트를 확인해보세요.",
-    imageUrl: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1600&q=80",
-  },
-  news: {
-    title: "새 소식",
-    description: "운영 변경, 서비스 업데이트, 상담 안내 등 최신 공지를 한 번에 확인할 수 있습니다.",
-    imageUrl: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1600&q=80",
-  },
-  resources: {
-    title: "자료실",
-    description: "설치 안내와 현장 체크리스트 같은 참고 자료형 공지를 빠르게 찾아볼 수 있습니다.",
-    imageUrl: "https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=1600&q=80",
-  },
-};
+const NOTICES_PER_PAGE = 12;
 
 const formatDisplayDate = (value?: string) => {
   if (!value) return "";
@@ -38,19 +24,32 @@ const formatDisplayDate = (value?: string) => {
 
 export const NoticeGallery: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [posts, setPosts] = useState<NoticePost[]>([]);
-  const [loading, setLoading] = useState(true);
+  const preloadedPosts = usePrerenderData()?.notices?.posts;
+  const publicVisuals = usePublicVisuals();
+  const [posts, setPosts] = useState<PublicNoticeSummary[]>(preloadedPosts || []);
+  const [loading, setLoading] = useState(!preloadedPosts);
   const [currentPage, setCurrentPage] = useState(1);
   const requestedTab = searchParams.get("tab") || "all";
   const activeTab = NOTICE_FILTER_TABS.some((tab) => tab.value === requestedTab) ? requestedTab : "all";
-  const heroContent = NOTICE_GALLERY_HERO_CONTENT[activeTab] || NOTICE_GALLERY_HERO_CONTENT.all;
+  const heroContent = getCollectionHeroVisual(
+    publicVisuals,
+    "notice",
+    activeTab as "all" | "news" | "resources",
+  );
 
   useEffect(() => {
     const loadPosts = async () => {
-      setLoading(true);
+      if (!preloadedPosts) {
+        setLoading(true);
+      }
       try {
-        const data = await getPublicNoticePosts();
-        setPosts(data);
+        if (preloadedPosts) {
+          setPosts(preloadedPosts);
+          setLoading(false);
+        }
+
+        const data = await getPublicNoticesData();
+        setPosts(data.posts);
       } catch (error) {
         console.error("Failed to load notice posts:", error);
       } finally {
@@ -59,7 +58,7 @@ export const NoticeGallery: React.FC = () => {
     };
 
     void loadPosts();
-  }, []);
+  }, [preloadedPosts]);
 
   const filteredNotices = useMemo(() => {
     if (activeTab === "all") return posts;
@@ -84,20 +83,21 @@ export const NoticeGallery: React.FC = () => {
   return (
     <main className="min-h-screen bg-white pb-20 pt-0">
       <Seo
-        title="휴먼파트너 공지사항"
+        title="휴먼파트너 정보센터"
         description="휴먼파트너의 운영 소식, 상담 안내, 설치 및 렌탈 관련 주요 업데이트를 확인해보세요."
-        canonicalPath={activeTab === "all" ? "/notice" : `/notice?tab=${encodeURIComponent(activeTab)}`}
+        canonicalPath="/notice"
+        urlPath="/notice"
         structuredData={[
           buildBreadcrumbStructuredData([
             { name: "홈", path: "/" },
-            { name: "공지사항", path: "/notice" },
+            { name: "정보센터", path: "/notice" },
           ]),
           {
             "@context": "https://schema.org",
             "@type": "CollectionPage",
-            name: "휴먼파트너 공지사항",
+            name: "휴먼파트너 정보센터",
             description: "휴먼파트너의 운영 소식, 상담 안내, 설치 및 렌탈 관련 주요 업데이트를 확인해보세요.",
-            url: toAbsoluteUrl(activeTab === "all" ? "/notice" : `/notice?tab=${encodeURIComponent(activeTab)}`),
+            url: toAbsoluteUrl("/notice"),
             mainEntity: {
               "@type": "ItemList",
               itemListElement: pagedNotices.map((item, index) => ({
@@ -112,13 +112,13 @@ export const NoticeGallery: React.FC = () => {
       />
 
       <PublicCollectionHero
-        title={heroContent.title}
+        title={heroContent.title || '정보센터'}
         description={heroContent.description}
         imageUrl={heroContent.imageUrl}
         tabs={NOTICE_FILTER_TABS.map((tab) => ({ label: tab.label, value: tab.value }))}
         activeValue={activeTab}
         onSelect={(value) => setSearchParams(value === "all" ? {} : { tab: value })}
-        topRightAction={<PublicPageEditButton to="/admin/notices" />}
+        topRightAction={<PublicPageEditButton to="/admin/public-visuals" label="상단 배너 수정" />}
       />
 
       <Container size="layout">
@@ -133,10 +133,13 @@ export const NoticeGallery: React.FC = () => {
               {pagedNotices.map((item, index) => (
                 <Link key={item.id} to={`/notice/${item.id}`} className="group block h-full">
                   <div className="relative aspect-[4/3] w-full overflow-hidden rounded-[8px] bg-white shadow-sm ring-1 ring-slate-900/5 transition-all duration-300 group-hover:shadow-md">
-                    <img
+                    <ResponsiveImage
                       src={item.imageUrl}
                       alt={item.title}
+                      kind="card"
+                      sizes="(min-width: 1280px) 24vw, (min-width: 640px) 50vw, 100vw"
                       className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                      priority={index === 0}
                       loading={index < NOTICES_PER_PAGE ? "eager" : "lazy"}
                     />
                   </div>
@@ -189,7 +192,7 @@ export const NoticeGallery: React.FC = () => {
           </>
         ) : (
           <div className="flex flex-col items-center justify-center rounded-[28px] border border-dashed border-slate-300 bg-white py-32 text-slate-500">
-            <p>등록된 공지사항이 없습니다.</p>
+            <p>등록된 정보센터가 없습니다.</p>
           </div>
         )}
         </div>
