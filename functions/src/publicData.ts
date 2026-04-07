@@ -3,7 +3,8 @@ const SUPABASE_URL =
 const SUPABASE_ANON_KEY =
     process.env.SUPABASE_ANON_KEY?.trim() || "sb_publishable_ed3YwBi-h_8cxpx5YO2lXQ_RhNhtvpv";
 
-const PUBLIC_CACHE_CONTROL = "public, max-age=60, s-maxage=600, stale-while-revalidate=86400";
+const DEFAULT_PUBLIC_CACHE_CONTROL = "public, max-age=60, s-maxage=600, stale-while-revalidate=86400";
+const HOME_PUBLIC_CACHE_CONTROL = "public, max-age=0, s-maxage=60, stale-while-revalidate=60";
 const MEMORY_CACHE_TTL_MS = 60 * 1000;
 
 const responseCache = new Map<string, { expiresAt: number; payload: unknown }>();
@@ -308,10 +309,13 @@ const getCachedPayload = async (key: string, loader: () => Promise<unknown>) => 
     return payload;
 };
 
+const getPublicCacheControl = (routePath: string) =>
+    routePath === "/home" ? HOME_PUBLIC_CACHE_CONTROL : DEFAULT_PUBLIC_CACHE_CONTROL;
+
 const setPublicResponseHeaders = (res: {
     setHeader: (name: string, value: string) => void;
-}) => {
-    res.setHeader("Cache-Control", PUBLIC_CACHE_CONTROL);
+}, routePath: string) => {
+    res.setHeader("Cache-Control", getPublicCacheControl(routePath));
     res.setHeader("Content-Type", "application/json; charset=utf-8");
 };
 
@@ -688,7 +692,7 @@ export const handlePublicDataRequest = async (
             return nextPayload;
         });
 
-        setPublicResponseHeaders(res);
+        setPublicResponseHeaders(res, routePath);
         res.json(payload);
     } catch (error) {
         if (error instanceof Error && error.message === "NOT_FOUND") {

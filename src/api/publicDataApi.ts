@@ -9,6 +9,7 @@ import { normalizeCompanyPageContent, type CompanyPageContent } from '../content
 import { normalizePublicVisualsContent, type PublicVisualsContent } from '../content/publicVisualsContent';
 
 const PUBLIC_DATA_TTL_MS = 10 * 60 * 1000;
+const HOME_PUBLIC_DATA_TTL_MS = 60 * 1000;
 const PUBLIC_API_BASE = '/api/public';
 
 const PUBLIC_CACHE_KEYS = {
@@ -216,7 +217,8 @@ export const primePublicHomeData = (data: PublicHomeData) => {
       ...data,
       companyIntroImageUrl: typeof data.companyIntroImageUrl === 'string' ? data.companyIntroImageUrl : '',
     },
-    PUBLIC_DATA_TTL_MS,
+    HOME_PUBLIC_DATA_TTL_MS,
+    false,
   );
 };
 
@@ -278,7 +280,9 @@ export const getPublicBootstrapData = () =>
 export const getPublicHomeData = () =>
   getCachedResource<PublicHomeData>({
     key: PUBLIC_CACHE_KEYS.home,
-    ttlMs: PUBLIC_DATA_TTL_MS,
+    ttlMs: HOME_PUBLIC_DATA_TTL_MS,
+    staleWhileRevalidate: false,
+    persistToSession: false,
     fetcher: async () => {
       try {
         const data = await fetchPublicEndpoint<Partial<PublicHomeData>>('/home');

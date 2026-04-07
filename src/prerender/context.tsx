@@ -4,7 +4,6 @@ import {
   primePublicCaseDetailData,
   primePublicCasesData,
   primePublicCompanyData,
-  primePublicHomeData,
   primePublicNoticeDetailData,
   primePublicNoticesData,
   primePublicProductDetailData,
@@ -63,10 +62,6 @@ export const PrerenderDataProvider = ({
 
     if (value.bootstrap) {
       primePublicBootstrapData(value.bootstrap);
-    }
-
-    if (value.home) {
-      primePublicHomeData(value.home);
     }
 
     if (value.productList) {

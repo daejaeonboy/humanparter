@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { DeliveryImageKind, getResponsiveImageSources } from '../../src/utils/imageDelivery';
 
 type ResponsiveImageProps = Omit<React.ImgHTMLAttributes<HTMLImageElement>, 'src' | 'srcSet'> & {
@@ -18,18 +18,24 @@ export const ResponsiveImage: React.FC<ResponsiveImageProps> = ({
   loading,
   decoding,
   fetchPriority,
+  onError,
   ...rest
 }) => {
+  const [useOriginalSource, setUseOriginalSource] = useState(false);
   const sources = useMemo(
     () =>
-      unoptimized
+      unoptimized || useOriginalSource
         ? {
             src,
             sizes: sizes || '100vw',
           }
         : getResponsiveImageSources(src, kind, sizes),
-    [kind, sizes, src, unoptimized],
+    [kind, sizes, src, unoptimized, useOriginalSource],
   );
+
+  useEffect(() => {
+    setUseOriginalSource(false);
+  }, [src]);
 
   return (
     <img
@@ -41,6 +47,13 @@ export const ResponsiveImage: React.FC<ResponsiveImageProps> = ({
       loading={loading || (priority ? 'eager' : 'lazy')}
       decoding={decoding || 'async'}
       fetchPriority={fetchPriority || (priority ? 'high' : 'auto')}
+      onError={(event) => {
+        if (!useOriginalSource && sources.src !== src) {
+          setUseOriginalSource(true);
+        }
+
+        onError?.(event);
+      }}
     />
   );
 };

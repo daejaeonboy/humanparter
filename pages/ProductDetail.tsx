@@ -244,6 +244,8 @@ export const ProductDetailPage: React.FC = () => {
               {externalProductUrl && (
                 <a
                   href={externalProductUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="inline-flex items-center justify-center rounded-2xl border border-[#001e45] bg-white px-6 py-4 text-sm font-bold text-[#001e45] transition hover:bg-[#001e45]/5"
                 >
                   외부 사이트로 이동
@@ -332,6 +334,8 @@ export const ProductDetailPage: React.FC = () => {
                       <a
                         key={related.id}
                         href={navigation.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="flex items-center gap-3 rounded-2xl border border-slate-100 p-3 transition hover:border-slate-200 hover:bg-slate-50"
                       >
                         {itemContent}

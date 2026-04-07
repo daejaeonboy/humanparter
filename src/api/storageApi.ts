@@ -307,13 +307,6 @@ export const uploadImage = async (
               getImageDeliveryVariants(folder).map(async ({ name, preset }) => {
                   const variantFile = await transformImageForPreset(uploadFile, preset);
 
-                  if (
-                      variantFile === uploadFile ||
-                      (variantFile.size === uploadFile.size && variantFile.type === uploadFile.type)
-                  ) {
-                      return null;
-                  }
-
                   return {
                       file: variantFile,
                       filePath: buildVariantFilePath({
@@ -325,7 +318,7 @@ export const uploadImage = async (
                       variantName: name,
                   };
               }),
-          ).then((items) => items.filter((item): item is NonNullable<typeof item> => item !== null))
+          )
         : [];
 
     for (const bucket of uniqueBuckets) {

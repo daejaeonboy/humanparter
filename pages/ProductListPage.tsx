@@ -504,7 +504,13 @@ export const ProductListPage: React.FC = () => {
                                     );
 
                                     return navigation.external ? (
-                                        <a href={navigation.href} key={product.id} className="group flex flex-col">
+                                        <a
+                                            href={navigation.href}
+                                            key={product.id}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="group flex flex-col"
+                                        >
                                             {cardContent}
                                         </a>
                                     ) : (

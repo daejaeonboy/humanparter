@@ -129,7 +129,7 @@ const getDefaultFormData = (
     title: '',
     subtitle: '',
     image_url: '',
-    link: '/',
+    link: '',
     start_date: '',
     end_date: '',
     display_order: counts.popups + 1,
@@ -193,7 +193,14 @@ const CMSManagerInternal: React.FC = () => {
 
   const openEdit = (item: any) => {
     setEditingItem(item);
-    setFormData({ ...item });
+    setFormData(
+      tab === 'popups'
+        ? {
+            ...item,
+            link: item.link === '/' ? '' : item.link || '',
+          }
+        : { ...item },
+    );
     setShowModal(true);
   };
 
@@ -313,7 +320,7 @@ const CMSManagerInternal: React.FC = () => {
         const payload: Omit<Popup, 'id' | 'created_at'> = {
           title: formData.title.trim(),
           image_url: formData.image_url,
-          link: formData.link?.trim() || '/',
+          link: formData.link?.trim() || '',
           start_date: formData.start_date || '',
           end_date: formData.end_date || '',
           display_order: Number(formData.display_order) || 1,
@@ -494,7 +501,7 @@ const CMSManagerInternal: React.FC = () => {
                 required
               />
 
-              {(tab === 'banners' || tab === 'popups') && (
+              {tab === 'banners' && (
                 <input
                   value={formData.subtitle || ''}
                   onChange={(e) => setFormData((prev) => ({ ...prev, subtitle: e.target.value }))}
@@ -537,14 +544,14 @@ const CMSManagerInternal: React.FC = () => {
                     으로 맞춰집니다.
                   </p>
                 </>
-              ) : (
+              ) : tab !== 'popups' ? (
                 <input
                   value={formData.link || ''}
                   onChange={(e) => setFormData((prev) => ({ ...prev, link: e.target.value }))}
                   placeholder="/ 경로 또는 https://..."
                   className="w-full rounded border px-3 py-2"
                 />
-              )}
+              ) : null}
 
               {tab === 'quickmenu' && (
                 <div className="grid grid-cols-2 gap-2">
@@ -587,20 +594,35 @@ const CMSManagerInternal: React.FC = () => {
               )}
 
               {tab === 'popups' && (
-                <div className="grid grid-cols-2 gap-2">
-                  <input
-                    type="date"
-                    value={formData.start_date || ''}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, start_date: e.target.value }))}
-                    className="rounded border px-3 py-2"
-                  />
-                  <input
-                    type="date"
-                    value={formData.end_date || ''}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, end_date: e.target.value }))}
-                    className="rounded border px-3 py-2"
-                  />
-                </div>
+                <>
+                  <label className="block space-y-1">
+                    <span className="text-sm font-medium text-slate-700">팝업 클릭 링크</span>
+                    <input
+                      value={formData.link || ''}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, link: e.target.value }))}
+                      placeholder="예: /quote-request 또는 https://example.com"
+                      className="w-full rounded border px-3 py-2"
+                    />
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="date"
+                      value={formData.start_date || ''}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, start_date: e.target.value }))}
+                      className="rounded border px-3 py-2"
+                    />
+                    <input
+                      type="date"
+                      value={formData.end_date || ''}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, end_date: e.target.value }))}
+                      className="rounded border px-3 py-2"
+                    />
+                  </div>
+                  <p className="text-xs leading-5 text-slate-500">
+                    링크를 비워두면 팝업 이미지는 클릭되지 않습니다. 외부 주소는 <span className="font-semibold text-slate-700">https://...</span>,
+                    내부 페이지는 <span className="font-semibold text-slate-700">/경로</span> 형식으로 입력해 주세요.
+                  </p>
+                </>
               )}
 
               <div>

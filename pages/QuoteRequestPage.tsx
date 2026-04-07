@@ -17,6 +17,8 @@ import {
 import { Link } from "react-router-dom";
 import { Seo } from "../components/Seo";
 import { Container } from "../components/ui/Container";
+import { PublicCollectionHero } from "../components/PublicCollectionHero";
+import { PublicPageEditButton } from "../components/admin/PublicPageEditButton";
 import { DeferredDatePicker } from "../components/ui/DeferredDatePicker";
 import { useAuth } from "../src/context/AuthContext";
 import {
@@ -383,13 +385,13 @@ export const QuoteRequestPage: React.FC = () => {
             buildLocalBusinessStructuredData(),
           ]}
         />
-        <Container size="narrow">
-          <div className="mx-auto max-w-3xl rounded-3xl border border-slate-200 bg-slate-50 p-8 text-center md:p-12">
+        <Container size="detail" className="max-w-4xl mx-auto">
+          <div className="mx-auto rounded-3xl bg-slate-50 px-0 py-12 text-center md:p-12">
             <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-[#001e45]/10 text-[#001e45]">
               <CheckCircle2 size={28} />
             </div>
             <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 md:text-3xl">{TEXT.successTitle}</h1>
-            <p className="mt-4 text-sm leading-relaxed text-slate-600 md:text-base">{TEXT.successDescription}</p>
+            <p className="mt-4 text-sm leading-relaxed text-slate-600 md:text-base px-6 md:px-0">{TEXT.successDescription}</p>
             <button
               type="button"
               onClick={() => setSubmitted(false)}
@@ -404,7 +406,7 @@ export const QuoteRequestPage: React.FC = () => {
   }
 
   return (
-    <main className="bg-white pb-20 pt-8 md:pt-12">
+    <main className="bg-white pb-20 pt-0">
       <Seo
         title={TEXT.pageTitle}
         description={TEXT.pageDescription}
@@ -425,29 +427,15 @@ export const QuoteRequestPage: React.FC = () => {
         ]}
       />
 
-      <Container size="narrow">
-        <section className="relative overflow-hidden rounded-[8px]">
-          <div
-            className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-50"
-            style={{
-              backgroundImage:
-                "url(https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1600&q=80)",
-            }}
-            aria-hidden="true"
-          />
-          <div className="absolute inset-0 z-10 bg-[linear-gradient(90deg,rgba(0,18,46,0.95)_0%,rgba(1,12,34,0.84)_46%,rgba(0,7,22,0.96)_100%)]" />
-          <div className="absolute inset-0 z-10 bg-[linear-gradient(180deg,rgba(0,0,0,0.16)_0%,rgba(0,0,0,0.22)_100%)]" />
+      <PublicCollectionHero
+        title={TEXT.heroTitle}
+        description={TEXT.heroDescription}
+        imageUrl="https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1600&q=80"
+        topRightAction={<PublicPageEditButton to="/admin/public-visuals" label="상단 배너 수정" />}
+      />
 
-          <div className="relative z-20 px-6 py-10 md:px-10 md:py-14">
-            <p className="text-[11px] font-bold tracking-[0.15em] text-white/72">{TEXT.eyebrow}</p>
-            <h1 className="mt-3 break-keep text-[22px] font-extrabold tracking-tight text-white md:text-[40px] md:leading-[1.25]">
-              {TEXT.heroTitle}
-            </h1>
-            <p className="mt-5 max-w-3xl text-sm leading-relaxed text-white/80 md:text-base">{TEXT.heroDescription}</p>
-          </div>
-        </section>
-
-        <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-10">
+      <Container size="detail" className="max-w-4xl mx-auto">
+        <section className="mt-20 md:mt-24 rounded-3xl bg-white px-0 py-10 md:p-10">
           <form className="space-y-7" onSubmit={handleSubmit}>
             <p className="text-sm font-medium text-slate-500">{TEXT.requiredGuide}</p>
 

@@ -4,7 +4,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.handlePublicDataRequest = void 0;
 const SUPABASE_URL = ((_a = process.env.SUPABASE_URL) === null || _a === void 0 ? void 0 : _a.trim()) || "https://mnxsvjrqrayhbcmhwddz.supabase.co";
 const SUPABASE_ANON_KEY = ((_b = process.env.SUPABASE_ANON_KEY) === null || _b === void 0 ? void 0 : _b.trim()) || "sb_publishable_ed3YwBi-h_8cxpx5YO2lXQ_RhNhtvpv";
-const PUBLIC_CACHE_CONTROL = "public, max-age=60, s-maxage=600, stale-while-revalidate=86400";
+const DEFAULT_PUBLIC_CACHE_CONTROL = "public, max-age=60, s-maxage=600, stale-while-revalidate=86400";
+const HOME_PUBLIC_CACHE_CONTROL = "public, max-age=0, s-maxage=60, stale-while-revalidate=60";
 const MEMORY_CACHE_TTL_MS = 60 * 1000;
 const responseCache = new Map();
 const NAV_ITEM_SELECT = "id,name,link,category,image_url,description,display_order,is_active,created_at";
@@ -232,8 +233,9 @@ const getCachedPayload = async (key, loader) => {
     });
     return payload;
 };
-const setPublicResponseHeaders = (res) => {
-    res.setHeader("Cache-Control", PUBLIC_CACHE_CONTROL);
+const getPublicCacheControl = (routePath) => routePath === "/home" ? HOME_PUBLIC_CACHE_CONTROL : DEFAULT_PUBLIC_CACHE_CONTROL;
+const setPublicResponseHeaders = (res, routePath) => {
+    res.setHeader("Cache-Control", getPublicCacheControl(routePath));
     res.setHeader("Content-Type", "application/json; charset=utf-8");
 };
 const getNormalizedRoutePath = (rawPath) => {
@@ -545,7 +547,7 @@ const handlePublicDataRequest = async (req, res) => {
             }
             return nextPayload;
         });
-        setPublicResponseHeaders(res);
+        setPublicResponseHeaders(res, routePath);
         res.json(payload);
     }
     catch (error) {
