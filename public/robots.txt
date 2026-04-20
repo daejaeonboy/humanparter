@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /mypage/
+Disallow: /login
+Disallow: /signup
+Disallow: /search
+Disallow: /p/
+
+Sitemap: https://humanpartner.kr/sitemap.xml

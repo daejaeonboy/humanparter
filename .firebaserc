@@ -1,0 +1,15 @@
+{
+  "projects": {
+    "default": "humanpartner-77b4c"
+  },
+  "targets": {
+    "humanpartner-77b4c": {
+      "hosting": {
+        "enterprise": [
+          "humanpartner-ent"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}
