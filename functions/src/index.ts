@@ -2,9 +2,26 @@ import * as nodemailer from "nodemailer";
 import * as dotenv from "dotenv";
 import type { Request, Response } from "express";
 import { onRequest } from "firebase-functions/v2/https";
+import { defineSecret } from "firebase-functions/params";
 import { handlePublicDataRequest } from "./publicData";
 
 dotenv.config();
+
+const emailUserSecret = defineSecret("EMAIL_USER");
+const emailPassSecret = defineSecret("EMAIL_PASS");
+const emailFromNameSecret = defineSecret("EMAIL_FROM_NAME");
+const smtpHostSecret = defineSecret("SMTP_HOST");
+const smtpPortSecret = defineSecret("SMTP_PORT");
+const smtpSecureSecret = defineSecret("SMTP_SECURE");
+
+const LOCAL_ENV_KEYS = {
+    emailUser: "LOCAL_EMAIL_USER",
+    emailPass: "LOCAL_EMAIL_PASS",
+    emailFromName: "LOCAL_EMAIL_FROM_NAME",
+    smtpHost: "LOCAL_SMTP_HOST",
+    smtpPort: "LOCAL_SMTP_PORT",
+    smtpSecure: "LOCAL_SMTP_SECURE",
+} as const;
 
 const normalizeEnvValue = (value?: string) => {
     if (!value) {
@@ -35,6 +52,14 @@ export const sendSiteEmailV2 = onRequest(
         region: "us-central1",
         cors: true,
         invoker: "public",
+        secrets: [
+            emailUserSecret,
+            emailPassSecret,
+            emailFromNameSecret,
+            smtpHostSecret,
+            smtpPortSecret,
+            smtpSecureSecret,
+        ],
     },
     async (req: Request, res: Response) => {
         if (req.method !== "POST") {
@@ -51,12 +76,13 @@ export const sendSiteEmailV2 = onRequest(
             return;
         }
 
-        const emailUser = normalizeEnvValue(process.env.EMAIL_USER);
-        const emailPass = normalizeEnvValue(process.env.EMAIL_PASS);
-        const emailFromName = normalizeEnvValue(process.env.EMAIL_FROM_NAME) || "\uD734\uBA3C\uD30C\uD2B8\uB108";
-        const smtpHost = normalizeEnvValue(process.env.SMTP_HOST);
-        const smtpPort = parseInt(normalizeEnvValue(process.env.SMTP_PORT) || "587", 10);
-        const smtpSecure = normalizeEnvValue(process.env.SMTP_SECURE) === "true";
+        const emailUser = normalizeEnvValue(emailUserSecret.value() || process.env[LOCAL_ENV_KEYS.emailUser]);
+        const emailPass = normalizeEnvValue(emailPassSecret.value() || process.env[LOCAL_ENV_KEYS.emailPass]);
+        const emailFromName =
+            normalizeEnvValue(emailFromNameSecret.value() || process.env[LOCAL_ENV_KEYS.emailFromName]) || "\uD734\uBA3C\uD30C\uD2B8\uB108";
+        const smtpHost = normalizeEnvValue(smtpHostSecret.value() || process.env[LOCAL_ENV_KEYS.smtpHost]);
+        const smtpPort = parseInt(normalizeEnvValue(smtpPortSecret.value() || process.env[LOCAL_ENV_KEYS.smtpPort]) || "587", 10);
+        const smtpSecure = normalizeEnvValue(smtpSecureSecret.value() || process.env[LOCAL_ENV_KEYS.smtpSecure]) === "true";
 
         if (!emailUser || !emailPass) {
             console.error("Missing SMTP credentials. Check EMAIL_USER/EMAIL_PASS.");

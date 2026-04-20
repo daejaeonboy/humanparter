@@ -29,7 +29,7 @@ import {
 import { getQuoteNotificationRecipientEmails } from "../src/api/quoteNotificationApi";
 import { getPublicBootstrapData } from "../src/api/publicDataApi";
 import { usePrerenderData } from "../src/prerender/context";
-import { sendQuoteInquiryNotificationEmail } from "../src/utils/email";
+import { sendQuoteInquiryFallbackEmail, sendQuoteInquiryNotificationEmail } from "../src/utils/email";
 import { buildBreadcrumbStructuredData, buildLocalBusinessStructuredData, buildSeoTitle, toAbsoluteUrl } from "../src/utils/seo";
 
 type CategoryGroup = {
@@ -134,6 +134,7 @@ export const QuoteRequestPage: React.FC = () => {
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [submissionWarning, setSubmissionWarning] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [privacyAgreed, setPrivacyAgreed] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
@@ -335,6 +336,13 @@ export const QuoteRequestPage: React.FC = () => {
         await sendQuoteInquiryNotificationEmail(payload, recipientEmails, requester);
       } catch (notificationError) {
         console.error("Failed to send quote inquiry notification email:", notificationError);
+        try {
+          await sendQuoteInquiryFallbackEmail(payload, requester);
+          setSubmissionWarning("문의는 정상 접수되었고, 기본 수신 메일로 재발송까지 완료했습니다.");
+        } catch (fallbackNotificationError) {
+          console.error("Quote inquiry notification fallback email failed:", fallbackNotificationError);
+          setSubmissionWarning("문의는 정상 접수되었지만 알림 메일 발송이 실패했습니다. 관리자에서 접수 내역을 꼭 확인해 주세요.");
+        }
       }
 
       resetAfterSuccess();
@@ -392,9 +400,17 @@ export const QuoteRequestPage: React.FC = () => {
             </div>
             <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 md:text-3xl">{TEXT.successTitle}</h1>
             <p className="mt-4 text-sm leading-relaxed text-slate-600 md:text-base px-6 md:px-0">{TEXT.successDescription}</p>
+            {submissionWarning ? (
+              <p className="mx-6 mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold leading-relaxed text-amber-700 md:mx-0">
+                {submissionWarning}
+              </p>
+            ) : null}
             <button
               type="button"
-              onClick={() => setSubmitted(false)}
+              onClick={() => {
+                setSubmitted(false);
+                setSubmissionWarning("");
+              }}
               className="mt-8 inline-flex items-center justify-center rounded-xl bg-[#001e45] px-6 py-3 text-sm font-bold text-white transition hover:bg-[#132f66]"
             >
               {TEXT.resetButton}

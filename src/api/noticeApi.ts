@@ -185,6 +185,53 @@ const formatDateForStorage = (value?: string) => {
 
 const normalizeHtml = (value?: string | null) => (value && value.trim() ? value.trim() : '<p></p>');
 
+const ATTACHMENT_BLOCK_START = '<!--hp-attachments:start-->';
+const ATTACHMENT_BLOCK_END = '<!--hp-attachments:end-->';
+
+const stripInjectedAttachmentBlock = (html?: string | null) => {
+  const normalized = normalizeHtml(html);
+  const pattern = new RegExp(`${ATTACHMENT_BLOCK_START}[\\s\\S]*?${ATTACHMENT_BLOCK_END}`, 'g');
+  return normalized.replace(pattern, '').trim() || '<p></p>';
+};
+
+const escapeAttachmentHtml = (value: string) =>
+  value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
+const injectAttachmentBlock = (html: string, attachments?: NoticeAttachment[]) => {
+  const cleanHtml = stripInjectedAttachmentBlock(html);
+
+  if (!attachments || attachments.length === 0) {
+    return cleanHtml;
+  }
+
+  const items = attachments
+    .filter((attachment) => attachment.name.trim() && attachment.url.trim())
+    .map(
+      (attachment) =>
+        `<li><a href="${escapeAttachmentHtml(attachment.url)}" target="_blank" rel="noreferrer">${escapeAttachmentHtml(attachment.name)}</a></li>`,
+    )
+    .join('');
+
+  if (!items) {
+    return cleanHtml;
+  }
+
+  return `${cleanHtml}
+${ATTACHMENT_BLOCK_START}
+<section class="hp-attachments">
+  <h2>첨부 자료</h2>
+  <ul>
+    ${items}
+  </ul>
+</section>
+${ATTACHMENT_BLOCK_END}`;
+};
+
 const sortNoticePosts = (items: NoticePost[]) =>
   [...items].sort((a, b) => {
     const aOrder = Number.isFinite(a.displayOrder) ? a.displayOrder : Number.MAX_SAFE_INTEGER;
@@ -231,7 +278,7 @@ const toSupabasePayload = (post: NoticeFormInput | NoticeUpdateInput) => {
   if (post.publishedAt !== undefined) payload.published_at = formatDateForStorage(post.publishedAt);
   if (post.category !== undefined) payload.category = post.category.trim() || '공지사항';
   if (post.contentHtml !== undefined) payload.content_html = normalizeHtml(post.contentHtml);
-  if (post.attachments !== undefined) payload.attachments = post.attachments;
+  if (post.attachments !== undefined && post.attachments.length > 0) payload.attachments = post.attachments;
   if (post.displayOrder !== undefined) payload.display_order = Number(post.displayOrder || 0);
   if (post.isActive !== undefined) payload.is_active = post.isActive !== false;
 
@@ -251,6 +298,15 @@ const createNoticeId = (title: string) => {
     : Math.random().toString(36).slice(2, 10);
 
   return `notice-${slug || timestamp}-${random}`;
+};
+
+const isMissingAttachmentsSchemaError = (error: unknown) => {
+  if (!error || typeof error !== 'object') return false;
+  const maybeError = error as { message?: string; code?: string };
+  return (
+    maybeError.code === 'PGRST204' &&
+    String(maybeError.message || '').toLowerCase().includes('attachments')
+  );
 };
 
 const fetchAdminNoticeRows = async (options?: NoticeFetchOptions): Promise<NoticePost[]> => {
@@ -345,7 +401,29 @@ export const addNoticePost = async (post: NoticeFormInput): Promise<NoticePost> 
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    if (isMissingAttachmentsSchemaError(error) && (post.attachments?.length || 0) > 0) {
+      const fallbackPayload = {
+        id: payload.id,
+        ...toSupabasePayload({
+          ...post,
+          contentHtml: injectAttachmentBlock(post.contentHtml, post.attachments),
+          attachments: [],
+        }),
+      };
+
+      const retry = await supabase
+        .from(TABLE_NAME)
+        .insert([fallbackPayload])
+        .select()
+        .single();
+
+      if (retry.error) throw retry.error;
+      return normalizeRecord(retry.data as Record<string, unknown>);
+    }
+
+    throw error;
+  }
   return normalizeRecord(data as Record<string, unknown>);
 };
 
@@ -359,7 +437,27 @@ export const updateNoticePost = async (id: string, post: NoticeUpdateInput): Pro
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    if (isMissingAttachmentsSchemaError(error) && (post.attachments?.length || 0) > 0) {
+      const retryPayload = toSupabasePayload({
+        ...post,
+        contentHtml: injectAttachmentBlock(post.contentHtml, post.attachments),
+        attachments: [],
+      });
+
+      const retry = await supabase
+        .from(TABLE_NAME)
+        .update(retryPayload)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (retry.error) throw retry.error;
+      return normalizeRecord(retry.data as Record<string, unknown>);
+    }
+
+    throw error;
+  }
   return normalizeRecord(data as Record<string, unknown>);
 };
 

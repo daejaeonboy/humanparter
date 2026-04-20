@@ -35,6 +35,7 @@ export interface PublicNoticeSummary {
   imageUrl: string;
   publishedAt: string;
   category: string;
+  attachments?: { name: string; url: string }[];
   displayOrder: number;
   isActive: boolean;
   created_at?: string;
@@ -128,6 +129,7 @@ const noticeToSummary = (item: NoticePost): PublicNoticeSummary => ({
   imageUrl: item.imageUrl,
   publishedAt: item.publishedAt,
   category: item.category,
+  attachments: item.attachments || [],
   displayOrder: item.displayOrder,
   isActive: item.isActive,
   created_at: item.created_at,

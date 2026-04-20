@@ -1,16 +1,31 @@
 import type { QuoteInquiryPayload } from "../api/inquiryApi";
 
+const HOSTED_SITE_EMAIL_API_PATH = "/api/email/send";
 const DEFAULT_SITE_EMAIL_API_URL =
-    "https://us-central1-humanpartner-77b4c.cloudfunctions.net/sendSiteEmail";
+    "https://us-central1-humanpartner-77b4c.cloudfunctions.net/sendSiteEmailV2";
 const configuredSiteEmailApiUrl = (import.meta.env.VITE_SITE_EMAIL_API_URL || "").trim();
 const DEFAULT_QUOTE_REQUEST_RECEIVER_EMAIL = "hm_solution@naver.com";
 
-const getSiteEmailApiUrl = () => {
+const normalizeEndpoint = (value?: string) => (value || "").trim();
+
+const getSiteEmailApiCandidates = () => {
+    const candidates: string[] = [];
+    const currentOrigin =
+        typeof window !== "undefined" && window.location?.origin ? window.location.origin.trim() : "";
+    const isLocalhostOrigin = /localhost|127\.0\.0\.1/i.test(currentOrigin);
+
     if (configuredSiteEmailApiUrl) {
-        return configuredSiteEmailApiUrl;
+        candidates.push(configuredSiteEmailApiUrl);
     }
 
-    return DEFAULT_SITE_EMAIL_API_URL;
+    if (currentOrigin && !isLocalhostOrigin) {
+        candidates.push(`${currentOrigin}${HOSTED_SITE_EMAIL_API_PATH}`);
+    }
+
+    candidates.push(HOSTED_SITE_EMAIL_API_PATH);
+    candidates.push(DEFAULT_SITE_EMAIL_API_URL);
+
+    return Array.from(new Set(candidates.map((item) => normalizeEndpoint(item)).filter(Boolean)));
 };
 
 const sendSiteEmailRequest = async (params: {
@@ -19,20 +34,32 @@ const sendSiteEmailRequest = async (params: {
     html: string;
     replyTo?: string;
 }) => {
-    const response = await fetch(getSiteEmailApiUrl(), {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify(params),
-    });
+    const endpoints = getSiteEmailApiCandidates();
+    let lastError: Error | null = null;
 
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        throw new Error(errorData?.error || "Email send failed");
+    for (const endpoint of endpoints) {
+        try {
+            const response = await fetch(endpoint, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(params),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => null);
+                throw new Error(errorData?.error || `Email send failed (${response.status})`);
+            }
+
+            return response.json();
+        } catch (error) {
+            lastError = error instanceof Error ? error : new Error(String(error));
+            console.error(`Email endpoint failed: ${endpoint}`, lastError);
+        }
     }
 
-    return response.json();
+    throw lastError || new Error("Email send failed");
 };
 
 const escapeHtml = (value: string) =>
