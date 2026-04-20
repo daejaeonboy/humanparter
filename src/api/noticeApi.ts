@@ -42,15 +42,22 @@ export const createEmptyNoticeAuthoringInput = (): NoticeAuthoringInput => ({
   attachments: [],
 });
 
-export const buildNoticeAuthoringInputFromPost = (post: NoticePost): NoticeAuthoringInput => ({
-  title: post.title,
-  excerpt: post.excerpt,
-  imageUrl: post.imageUrl,
-  publishedAt: post.publishedAt,
-  category: post.category,
-  contentHtml: post.contentHtml,
-  attachments: post.attachments || [],
-});
+export const buildNoticeAuthoringInputFromPost = (post: NoticePost): NoticeAuthoringInput => {
+  const columnAttachments = post.attachments && post.attachments.length > 0 ? post.attachments : [];
+  const htmlAttachments = columnAttachments.length === 0 ? parseAttachmentsFromHtml(post.contentHtml) : [];
+  const attachments = columnAttachments.length > 0 ? columnAttachments : htmlAttachments;
+  // Strip the injected block from contentHtml so it doesn't appear raw in the editor
+  const contentHtml = attachments.length > 0 ? stripInjectedAttachmentBlock(post.contentHtml) : post.contentHtml;
+  return {
+    title: post.title,
+    excerpt: post.excerpt,
+    imageUrl: post.imageUrl,
+    publishedAt: post.publishedAt,
+    category: post.category,
+    contentHtml,
+    attachments,
+  };
+};
 
 export const getNextNoticeDisplayOrder = (items: Pick<NoticePost, 'displayOrder'>[]) =>
   items.reduce((max, item) => Math.max(max, Number(item.displayOrder || 0)), 0) + 1;
@@ -187,6 +194,20 @@ const normalizeHtml = (value?: string | null) => (value && value.trim() ? value.
 
 const ATTACHMENT_BLOCK_START = '<!--hp-attachments:start-->';
 const ATTACHMENT_BLOCK_END = '<!--hp-attachments:end-->';
+
+const parseAttachmentsFromHtml = (html: string): NoticeAttachment[] => {
+  const match = html.match(/<!--hp-attachments:start-->([\s\S]*?)<!--hp-attachments:end-->/);
+  if (!match) return [];
+  const linkRegex = /<a[^>]+href="([^"]+)"[^>]*>([^<]+)<\/a>/g;
+  const results: NoticeAttachment[] = [];
+  let m;
+  while ((m = linkRegex.exec(match[1])) !== null) {
+    const url = m[1].replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+    const name = m[2].replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+    if (url && name) results.push({ url, name });
+  }
+  return results;
+};
 
 const stripInjectedAttachmentBlock = (html?: string | null) => {
   const normalized = normalizeHtml(html);

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Download, ExternalLink, Loader2, Paperclip } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Loader2, Trash2 } from "lucide-react";
+import { FileIcon, defaultStyles } from "react-file-icon";
 import { PublicCollectionHero } from "../components/PublicCollectionHero";
 import { Seo } from "../components/Seo";
 import { Container } from "../components/ui/Container";
@@ -57,12 +58,25 @@ const formatErrorMessage = (error: unknown) => {
   return String(error);
 };
 
+const parseHtmlAttachments = (html: string): { name: string; url: string }[] => {
+  const match = html.match(/<!--hp-attachments:start-->([\s\S]*?)<!--hp-attachments:end-->/);
+  if (!match) return [];
+  const linkRegex = /<a[^>]+href="([^"]+)"[^>]*>([^<]+)<\/a>/g;
+  const results: { name: string; url: string }[] = [];
+  let m;
+  while ((m = linkRegex.exec(match[1])) !== null) {
+    results.push({ url: m[1], name: m[2] });
+  }
+  return results;
+};
+
 export const NoticeDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, userProfile, isAdmin, loading: authLoading } = useAuth();
   const prerenderData = usePrerenderData();
   const publicVisuals = usePublicVisuals();
+
   const preloadedDetail = prerenderData?.noticeDetail;
   const hasPreloadedDetail = !!(id && preloadedDetail?.post?.id === id);
   const [post, setPost] = useState<NoticePost | null>(hasPreloadedDetail ? preloadedDetail?.post || null : null);
@@ -245,17 +259,7 @@ export const NoticeDetail: React.FC = () => {
         tabs={NOTICE_FILTER_TABS.map((tab) => ({ label: tab.label, value: tab.value }))}
         activeValue={activeTab}
         onSelect={(value) => navigate(`/notice?tab=${value}`)}
-        topRightAction={
-          canInlineEdit ? (
-            isEditing ? (
-              <span className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-500 shadow-sm">
-                편집 중
-              </span>
-            ) : (
-              <PublicPageEditButton onClick={startEdit} label="게시글 수정" className="mb-0" />
-            )
-          ) : null
-        }
+        topRightAction={null}
       />
 
       <Container size="detail">
@@ -274,45 +278,103 @@ export const NoticeDetail: React.FC = () => {
         ) : (
           <div className="mx-auto mt-28 max-w-[920px] md:mt-32">
             <article className="border border-[#d8dce3] bg-white px-6 py-8 md:px-10 md:py-10">
-              <Link
-                to={`/notice?tab=${activeTab}`}
-                className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#5f6b7a] transition hover:text-[#001e45]"
-              >
-                <ChevronLeft size={16} />
-                <span>{TEXT.backToNoticeList}</span>
-              </Link>
+              <div className="flex items-center justify-between">
+                <Link
+                  to={`/notice?tab=${activeTab}`}
+                  className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#5f6b7a] transition hover:text-[#001e45]"
+                >
+                  <ChevronLeft size={16} />
+                  <span>{TEXT.backToNoticeList}</span>
+                </Link>
+                {canInlineEdit && !isEditing && (
+                  <div className="flex items-center gap-2">
+                    <PublicPageEditButton onClick={startEdit} label="게시글 수정" className="mb-0" />
+                    <button
+                      type="button"
+                      onClick={handleDelete}
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-white px-4 py-2 text-sm font-bold text-red-500 shadow-sm transition hover:border-red-300 hover:bg-red-50"
+                    >
+                      <Trash2 size={14} />
+                      글 삭제
+                    </button>
+                  </div>
+                )}
+                {canInlineEdit && isEditing && (
+                  <span className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-500 shadow-sm">
+                    편집 중
+                  </span>
+                )}
+              </div>
 
               <header className="mt-6 border-b border-[#e4e8ef] pb-5">
-                <h1 className="text-[30px] font-bold leading-[1.35] tracking-[-0.04em] text-[#101826] md:text-[42px]">
+                <h1 className={`font-bold leading-[1.35] tracking-[-0.03em] text-[#101826] ${activeTab === 'resources' ? 'text-[18px] md:text-[22px]' : 'text-[22px] md:text-[28px]'}`}>
                   {post.title}
                 </h1>
                 <p className="mt-4 text-sm font-medium text-[#8b96a5]">{formatDate(post.publishedAt)}</p>
               </header>
 
-              {post.attachments && post.attachments.length > 0 ? (
-                <section className="mt-6 border border-[#d8dce3] bg-[#fafbfc]">
-                  {post.attachments.map((attachment, index) => (
-                    <a
-                      key={`${attachment.url}-${index}`}
-                      href={attachment.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex items-center justify-between gap-4 border-b border-[#e3e7ee] px-4 py-4 last:border-b-0 transition hover:bg-white"
-                    >
-                      <div className="flex min-w-0 items-center gap-3">
-                        <Paperclip size={16} className="shrink-0 text-[#6f7c8f]" />
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold text-[#172132]">{attachment.name}</p>
-                        </div>
-                      </div>
-                      <div className="flex shrink-0 items-center gap-2 text-[#001e45]">
-                        <Download size={16} />
-                        <ExternalLink size={16} />
-                      </div>
-                    </a>
-                  ))}
+              {(() => {
+                const displayAttachments =
+                  post.attachments && post.attachments.length > 0
+                    ? post.attachments
+                    : parseHtmlAttachments(post.contentHtml);
+                if (displayAttachments.length === 0) return null;
+                return (
+                <section className="mt-6">
+                  <p className="mb-3 text-xs font-bold uppercase tracking-[0.15em] text-[#8b96a5]">첨부파일 ({displayAttachments.length})</p>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {displayAttachments.map((attachment, index) => {
+                      const ext = attachment.name.split('.').pop()?.toLowerCase() || '';
+                      const isPdf = ext === 'pdf';
+                      const isDoc = ['doc','docx','hwp','hwpx'].includes(ext);
+                      const isSheet = ['xls','xlsx','csv'].includes(ext);
+                      const isImage = ['jpg','jpeg','png','gif','webp','svg'].includes(ext);
+                      const cardClass = isPdf
+                        ? 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100'
+                        : isDoc
+                        ? 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100'
+                        : isSheet
+                        ? 'border-green-200 bg-green-50 text-green-700 hover:bg-green-100'
+                        : isImage
+                        ? 'border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100'
+                        : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100';
+                      const badgeClass = isPdf
+                        ? 'bg-red-200 text-red-700'
+                        : isDoc
+                        ? 'bg-blue-200 text-blue-700'
+                        : isSheet
+                        ? 'bg-green-200 text-green-700'
+                        : isImage
+                        ? 'bg-purple-200 text-purple-700'
+                        : 'bg-slate-200 text-slate-700';
+                      const fileExt = ext || 'file';
+                      return (
+                        <a
+                          key={`${attachment.url}-${index}`}
+                          href={attachment.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          download
+                          className="group flex items-center gap-4 rounded-xl border border-[#d8dce3] bg-white px-5 py-4 transition hover:border-[#001e45] hover:shadow-sm active:scale-[0.98]"
+                        >
+                          <div className="h-12 w-10 shrink-0">
+                            <FileIcon
+                              extension={fileExt}
+                              {...(defaultStyles[fileExt as keyof typeof defaultStyles] || {})}
+                            />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-bold leading-5 text-[#172132]">{attachment.name}</p>
+                            <p className="mt-0.5 text-xs font-semibold text-[#8b96a5]">클릭하여 다운로드</p>
+                          </div>
+                          <Download size={16} className="shrink-0 text-[#b0bac8] transition group-hover:text-[#001e45] group-hover:translate-y-0.5" />
+                        </a>
+                      );
+                    })}
+                  </div>
                 </section>
-              ) : null}
+                );
+              })()}
 
               <div
                 className="prose prose-slate mt-8 max-w-none [&_.hp-attachments]:hidden [&_h2]:mt-10 [&_h2]:text-[22px] [&_h2]:font-bold [&_h2]:tracking-[-0.03em] [&_h2]:text-[#162131] [&_img]:hidden [&_p]:text-[16px] [&_p]:leading-8 [&_p]:text-[#374353] [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-[#d8dce3] [&_td]:px-3 [&_td]:py-2 [&_th]:border [&_th]:border-[#d8dce3] [&_th]:bg-[#eef1f5] [&_th]:px-3 [&_th]:py-2 [&_th]:text-left"

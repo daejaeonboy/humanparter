@@ -250,39 +250,22 @@ export const NoticeGallery: React.FC = () => {
         ) : null}
 
         {!isCreating && (
-          <div className="mx-auto mt-28 max-w-[1180px] md:mt-32">
-            <section className="border border-[#d8dce3] bg-white">
-              <div className="border-b border-[#d8dce3] bg-[#f7f8fa] px-5 py-5 md:px-8">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                  <div>
-                    <h2 className="text-[24px] font-extrabold tracking-[-0.03em] text-[#142033]">게시물 검색</h2>
-                    <p className="mt-2 text-sm text-[#5f6b7a]">
-                      제목, 요약, 첨부 파일명 기준으로 원하는 문서를 바로 찾을 수 있습니다.
-                    </p>
-                  </div>
-                  <label className="relative block w-full max-w-[520px]">
-                    <Search
-                      size={18}
-                      className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#6f7c8f]"
-                    />
-                    <input
-                      value={keyword}
-                      onChange={(event) => updateSearchParams(activeTab, event.target.value)}
-                      placeholder="검색어를 입력하세요"
-                      className="h-12 w-full border border-[#cfd5de] bg-white pl-12 pr-4 text-[15px] text-[#172132] outline-none transition placeholder:text-[#8d98a8] focus:border-[#001e45]"
-                    />
-                  </label>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-2 border-b border-[#d8dce3] px-5 py-4 text-sm text-[#4e5968] md:flex-row md:items-center md:justify-between md:px-8">
-                <p>
-                  <span className="font-bold text-[#142033]">{getTabLabel(activeTab)}</span> 게시물{" "}
-                  <span className="font-bold text-[#001e45]">{filteredNotices.length}</span>건
-                </p>
-                <p>{deferredKeyword.trim() ? `검색어: "${deferredKeyword.trim()}"` : "검색어 없이 전체 문서를 표시 중입니다."}</p>
-              </div>
-            </section>
+          <div className="mx-auto mt-20 max-w-[1180px] md:mt-24">
+            <div className="flex items-center justify-end pb-4">
+              <label className="relative flex items-center">
+                <Search
+                  size={16}
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#8d98a8]"
+                />
+                <input
+                  value={keyword}
+                  onChange={(event) => updateSearchParams(activeTab, event.target.value)}
+                  placeholder="검색어를 입력하세요"
+                  className="h-9 w-[260px] border border-[#cfd5de] bg-white pl-9 pr-4 text-[14px] text-[#172132] outline-none transition placeholder:text-[#adb5bd] focus:border-[#001e45] focus:w-[320px]"
+                  style={{ transition: "width 0.2s ease, border-color 0.2s" }}
+                />
+              </label>
+            </div>
 
             {loading ? (
               <div className="flex items-center justify-center py-24">
@@ -290,7 +273,7 @@ export const NoticeGallery: React.FC = () => {
               </div>
             ) : filteredNotices.length > 0 ? (
               <>
-                <div className="overflow-hidden border border-t-0 border-[#d8dce3] bg-white">
+                <div className="mt-5 overflow-hidden border border-[#d8dce3] bg-white">
                   <div className="hidden grid-cols-[140px_minmax(0,1fr)_140px_140px] items-center gap-6 border-b border-[#d8dce3] bg-[#eef1f5] px-8 py-4 text-xs font-bold uppercase tracking-[0.18em] text-[#5f6b7a] md:grid">
                     <span>구분</span>
                     <span>제목</span>
@@ -319,7 +302,7 @@ export const NoticeGallery: React.FC = () => {
                           </div>
 
                           <div className="min-w-0">
-                            <h2 className="text-[18px] font-bold tracking-[-0.02em] text-[#142033] transition group-hover:text-[#001e45] md:text-[20px]">
+                            <h2 className="text-[15px] font-bold tracking-[-0.02em] text-[#142033] transition group-hover:text-[#001e45] md:text-[16px]">
                               {item.title}
                             </h2>
                             <p className="mt-2 line-clamp-1 text-sm text-[#6a7584]">{item.excerpt}</p>
@@ -377,7 +360,7 @@ export const NoticeGallery: React.FC = () => {
                 ) : null}
               </>
             ) : (
-              <div className="border border-t-0 border-dashed border-[#d8dce3] bg-white px-8 py-20 text-center">
+              <div className="mt-5 border border-dashed border-[#d8dce3] bg-white px-8 py-20 text-center">
                 <p className="text-[20px] font-bold text-[#1b2535]">검색 조건에 맞는 게시물이 없습니다.</p>
                 <p className="mt-3 text-sm leading-6 text-[#6d7888]">
                   다른 검색어를 입력하거나 상단 탭을 바꿔서 다시 확인해보세요.
