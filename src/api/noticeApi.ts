@@ -195,7 +195,8 @@ const normalizeHtml = (value?: string | null) => (value && value.trim() ? value.
 const ATTACHMENT_BLOCK_START = '<!--hp-attachments:start-->';
 const ATTACHMENT_BLOCK_END = '<!--hp-attachments:end-->';
 
-const parseAttachmentsFromHtml = (html: string): NoticeAttachment[] => {
+const parseAttachmentsFromHtml = (html?: string): NoticeAttachment[] => {
+  if (!html) return [];
   const match = html.match(/<!--hp-attachments:start-->([\s\S]*?)<!--hp-attachments:end-->/);
   if (!match) return [];
   const linkRegex = /<a[^>]+href="([^"]+)"[^>]*>([^<]+)<\/a>/g;

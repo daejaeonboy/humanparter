@@ -58,7 +58,8 @@ const formatErrorMessage = (error: unknown) => {
   return String(error);
 };
 
-const parseHtmlAttachments = (html: string): { name: string; url: string }[] => {
+const parseHtmlAttachments = (html?: string): { name: string; url: string }[] => {
+  if (!html) return [];
   const match = html.match(/<!--hp-attachments:start-->([\s\S]*?)<!--hp-attachments:end-->/);
   if (!match) return [];
   const linkRegex = /<a[^>]+href="([^"]+)"[^>]*>([^<]+)<\/a>/g;
